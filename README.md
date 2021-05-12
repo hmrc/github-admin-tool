@@ -1,4 +1,3 @@
-
 # github-admin-tool - WORK IN PROGRESS
 
 This is a tool to generate a repository report for an organization.
