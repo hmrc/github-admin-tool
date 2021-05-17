@@ -1,14 +1,30 @@
-package report
+package cmd
 
 import (
 	"context"
 	"fmt"
 	"github-admin-tool/csv"
-	"github-admin-tool/loadconfig"
 	"log"
 	"strconv"
 
 	"github.com/machinebox/graphql"
+	"github.com/spf13/cobra"
+)
+
+var (
+	dryRun         bool
+	ignoreArchived bool
+	reportCmd      = &cobra.Command{
+		Use:   "report",
+		Short: "Run a report to generate a csv containing information on all organisation repos",
+		Run: func(cmd *cobra.Command, args []string) {
+			dryRun, _ = cmd.Flags().GetBool("dry-run")
+			ignoreArchived, _ = cmd.Flags().GetBool("ignore-archived")
+			all := reportRequest()
+			parsed := reportParse(all)
+			csv.Run(parsed)
+		},
+	}
 )
 
 type BranchProtectionRulesNodesList struct {
@@ -63,7 +79,12 @@ type Response struct {
 	} `json:"organization"`
 }
 
-func getQuery() string {
+func init() {
+	reportCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", false, "Ignore archived repositores")
+	rootCmd.AddCommand(reportCmd)
+}
+
+func getReportQuery() string {
 	return `
     query ($org: String! $after: String) {
         organization(login:$org) {
@@ -114,17 +135,11 @@ func getQuery() string {
     }`
 }
 
-func Run(cfg loadconfig.Config) {
-	all := request(cfg)
-	parsed := parse(all)
-	csv.Run(parsed)
-}
-
-func request(cfg loadconfig.Config) []Response {
+func reportRequest() []Response {
 	var allResults []Response
 	client := graphql.NewClient("https://api.github.com/graphql")
-	reqStr := getQuery()
-	authStr := fmt.Sprintf("bearer %s", cfg.Client.Token)
+	reqStr := getReportQuery()
+	authStr := fmt.Sprintf("bearer %s", config.Client.Token)
 
 	var cursor *string = nil
 	loopCount := 0
@@ -132,7 +147,7 @@ func request(cfg loadconfig.Config) []Response {
 
 	for loopCount <= totalRecordCount {
 		req := graphql.NewRequest(reqStr)
-		req.Var("org", cfg.Client.Org)
+		req.Var("org", config.Client.Org)
 		req.Var("after", cursor)
 		req.Header.Set("Cache-Control", "no-cache")
 		req.Header.Set("Authorization", authStr)
@@ -148,24 +163,29 @@ func request(cfg loadconfig.Config) []Response {
 			break
 		}
 
-		// if loopCount > 100 {
-		// 	break
-		// }
-
 		cursor = &respData.Organization.Repositories.PageInfo.EndCursor
 		totalRecordCount = respData.Organization.Repositories.TotalCount
+
+		if dryRun {
+			fmt.Printf("This is a dry run, the report would process %d records\n", totalRecordCount)
+			break
+		}
+
 		loopCount += 100
-		fmt.Printf("Processing %d of %d\n", loopCount, totalRecordCount)
+
+		fmt.Printf("Processing %d of %d total repos\n", loopCount, totalRecordCount)
 		allResults = append(allResults, respData)
 	}
 	return allResults
 }
 
-// Do any logic on fields in here before passing to csv
-func parse(allResults []Response) [][]string {
+func reportParse(allResults []Response) [][]string {
 	var parsed [][]string
 	for _, allData := range allResults {
 		for _, repo := range allData.Organization.Repositories.Nodes {
+			if ignoreArchived && repo.IsArchived {
+				continue
+			}
 			repoSlice := []string{
 				repo.NameWithOwner,
 				repo.DefaultBranchRef.Name,

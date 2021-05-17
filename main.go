@@ -1,12 +1,9 @@
 package main
 
 import (
-	report "github-admin-tool/cmd"
-	"github-admin-tool/loadconfig"
+	"github-admin-tool/cmd"
 )
 
 func main() {
-	var cfg loadconfig.Config
-	loadconfig.LoadConfig(&cfg)
-	report.Run(cfg)
+	cmd.Execute()
 }
