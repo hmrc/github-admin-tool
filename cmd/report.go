@@ -3,9 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github-admin-tool/csv"
 	"log"
-	"strconv"
 
 	"github.com/machinebox/graphql"
 	"github.com/spf13/cobra"
@@ -14,15 +12,17 @@ import (
 var (
 	dryRun         bool
 	ignoreArchived bool
+	allResults     []Response
 	reportCmd      = &cobra.Command{
 		Use:   "report",
 		Short: "Run a report to generate a csv containing information on all organisation repos",
 		Run: func(cmd *cobra.Command, args []string) {
 			dryRun, _ = cmd.Flags().GetBool("dry-run")
 			ignoreArchived, _ = cmd.Flags().GetBool("ignore-archived")
-			all := reportRequest()
-			parsed := reportParse(all)
-			csv.Run(parsed)
+			reportRequest()
+			if !dryRun {
+				GenerateCsv(ignoreArchived, allResults)
+			}
 		},
 	}
 )
@@ -59,7 +59,7 @@ type RepositoriesNodeList struct {
 	Parent struct {
 		Name          string `json:"name"`
 		NameWithOwner string `json:"nameWithOwner"`
-		Url           string `json:"url"`
+		URL           string `json:"url"`
 	}
 	DefaultBranchRef struct {
 		Name string `json:"name"`
@@ -135,15 +135,16 @@ func getReportQuery() string {
     }`
 }
 
-func reportRequest() []Response {
-	var allResults []Response
+func reportRequest() {
 	client := graphql.NewClient("https://api.github.com/graphql")
 	reqStr := getReportQuery()
 	authStr := fmt.Sprintf("bearer %s", config.Client.Token)
 
-	var cursor *string = nil
-	loopCount := 0
-	totalRecordCount := 0
+	var (
+		cursor           *string
+		loopCount        int
+		totalRecordCount int
+	)
 
 	for loopCount <= totalRecordCount {
 		req := graphql.NewRequest(reqStr)
@@ -176,47 +177,4 @@ func reportRequest() []Response {
 		fmt.Printf("Processing %d of %d total repos\n", loopCount, totalRecordCount)
 		allResults = append(allResults, respData)
 	}
-	return allResults
-}
-
-func reportParse(allResults []Response) [][]string {
-	var parsed [][]string
-	for _, allData := range allResults {
-		for _, repo := range allData.Organization.Repositories.Nodes {
-			if ignoreArchived && repo.IsArchived {
-				continue
-			}
-			repoSlice := []string{
-				repo.NameWithOwner,
-				repo.DefaultBranchRef.Name,
-				strconv.FormatBool(repo.IsArchived),
-				strconv.FormatBool(repo.IsPrivate),
-				strconv.FormatBool(repo.IsEmpty),
-				strconv.FormatBool(repo.IsFork),
-				repo.Parent.NameWithOwner,
-				strconv.FormatBool(repo.MergeCommitAllowed),
-				strconv.FormatBool(repo.SquashMergeAllowed),
-				strconv.FormatBool(repo.RebaseMergeAllowed),
-			}
-			for _, protection := range repo.BranchProtectionRules.Nodes {
-				repoSlice = append(repoSlice,
-					strconv.FormatBool(protection.IsAdminEnforced),
-					strconv.FormatBool(protection.RequiresCommitSignatures),
-					strconv.FormatBool(protection.RestrictsPushes),
-					strconv.FormatBool(protection.RequiresApprovingReviews),
-					strconv.FormatBool(protection.RequiresStatusChecks),
-					strconv.FormatBool(protection.RequiresCodeOwnerReviews),
-					strconv.FormatBool(protection.DismissesStaleReviews),
-					strconv.FormatBool(protection.RequiresStrictStatusChecks),
-					strconv.Itoa(protection.RequiredApprovingReviewCount),
-					strconv.FormatBool(protection.AllowsForcePushes),
-					strconv.FormatBool(protection.AllowsDeletions),
-					protection.Pattern,
-				)
-			}
-
-			parsed = append(parsed, repoSlice)
-		}
-	}
-	return parsed
 }
