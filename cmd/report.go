@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/machinebox/graphql"
 	"github.com/spf13/cobra"
 )
 
@@ -136,7 +135,7 @@ func getReportQuery() string {
 }
 
 func reportRequest() {
-	client := graphql.NewClient("https://api.github.com/graphql")
+	client := NewClient("https://api.githubddd.com/graphql")
 	reqStr := getReportQuery()
 	authStr := fmt.Sprintf("bearer %s", config.Client.Token)
 
@@ -147,7 +146,7 @@ func reportRequest() {
 	)
 
 	for loopCount <= totalRecordCount {
-		req := graphql.NewRequest(reqStr)
+		req := NewRequest(reqStr)
 		req.Var("org", config.Client.Org)
 		req.Var("after", cursor)
 		req.Header.Set("Cache-Control", "no-cache")
@@ -158,10 +157,6 @@ func reportRequest() {
 		var respData Response
 		if err := client.Run(ctx, req, &respData); err != nil {
 			log.Fatal(err)
-		}
-
-		if !respData.Organization.Repositories.PageInfo.HasNextPage {
-			break
 		}
 
 		cursor = &respData.Organization.Repositories.PageInfo.EndCursor
@@ -176,5 +171,9 @@ func reportRequest() {
 
 		fmt.Printf("Processing %d of %d total repos\n", loopCount, totalRecordCount)
 		allResults = append(allResults, respData)
+
+		if !respData.Organization.Repositories.PageInfo.HasNextPage {
+			break
+		}
 	}
 }
