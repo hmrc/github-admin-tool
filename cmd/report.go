@@ -135,7 +135,7 @@ func getReportQuery() string {
 }
 
 func reportRequest() {
-	client := NewClient("https://api.githubddd.com/graphql")
+	client := NewClient("https://api.github.com/graphql")
 	reqStr := getReportQuery()
 	authStr := fmt.Sprintf("bearer %s", config.Client.Token)
 

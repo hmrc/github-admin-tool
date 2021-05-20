@@ -18,20 +18,22 @@ type Client struct {
 
 	// closeReq will close the request body immediately allowing for reuse of client
 	closeReq bool
+	Log      func(s string)
 }
 
 // NewClient makes a new Client capable of making GraphQL requests.
-func NewClient(endpoint string, opts ...ClientOption) *Client {
+func NewClient(endpoint string) *Client {
 	c := &Client{
 		endpoint: endpoint,
+		Log:      func(string) {},
 	}
-	for _, optionFunc := range opts {
-		optionFunc(c)
-	}
-	if c.httpClient == nil {
-		c.httpClient = http.DefaultClient
-	}
+
+	c.httpClient = http.DefaultClient
 	return c
+}
+
+func (c *Client) logf(format string, args ...interface{}) {
+	c.Log(fmt.Sprintf(format, args...))
 }
 
 // Run executes the query and unmarshals the response from the data field
@@ -60,6 +62,8 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 	if err := json.NewEncoder(&requestBody).Encode(requestBodyObj); err != nil {
 		return errors.Wrap(err, "encode body")
 	}
+	c.logf(">> variables: %v", req.vars)
+	c.logf(">> query: %s", req.q)
 	gr := &graphResponse{
 		Data: resp,
 	}
@@ -75,6 +79,7 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 			r.Header.Add(key, value)
 		}
 	}
+	c.logf(">> headers: %v", r.Header)
 	r = r.WithContext(ctx)
 	res, err := c.httpClient.Do(r)
 	if err != nil {
@@ -85,6 +90,7 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 	if _, err := io.Copy(&buf, res.Body); err != nil {
 		return errors.Wrap(err, "reading body")
 	}
+	c.logf("<< %s", buf.String())
 	if err := json.NewDecoder(&buf).Decode(&gr); err != nil {
 		if res.StatusCode != http.StatusOK {
 			return fmt.Errorf("graphql: server returned a non-200 status code: %v", res.StatusCode)
@@ -96,22 +102,6 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 		return gr.Errors[0]
 	}
 	return nil
-}
-
-// WithHTTPClient specifies the underlying http.Client to use when
-// making requests.
-//  NewClient(endpoint, WithHTTPClient(specificHTTPClient))
-func WithHTTPClient(httpclient *http.Client) ClientOption {
-	return func(client *Client) {
-		client.httpClient = httpclient
-	}
-}
-
-//ImmediatelyCloseReqBody will close the req body immediately after each request body is ready
-func ImmediatelyCloseReqBody() ClientOption {
-	return func(client *Client) {
-		client.closeReq = true
-	}
 }
 
 // ClientOption are functions that are passed into NewClient to
