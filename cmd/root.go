@@ -19,8 +19,8 @@ var (
 
 type Config struct {
 	Client struct {
-		Token string `yaml:"token"`
-		Org   string `yaml:"org"`
+		Token string `mapstructure:"token"`
+		Org   string `mapstructure:"org"`
 	}
 }
 
@@ -36,6 +36,13 @@ func init() {
 }
 
 func initConfig() {
+
+	// Try ENV vars
+	viper.SetConfigType("env")
+	viper.SetEnvPrefix("ghtool")
+	viper.BindEnv("token")
+	viper.BindEnv("org")
+
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
@@ -48,5 +55,10 @@ func initConfig() {
 	if err != nil {
 		panic(fmt.Errorf("fatal error config file: %s", err))
 	}
-	viper.Unmarshal(&config)
+
+	err = viper.Unmarshal(&config)
+	if err != nil {
+		panic(fmt.Errorf("fatal error config file: %s", err))
+	}
+
 }
