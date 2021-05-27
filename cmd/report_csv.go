@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 func GenerateCsv(ignoreArchived bool, allResults []Response) {
 	parsed := parse(ignoreArchived, allResults)
-	writeCsv(parsed)
-
+	lines := writeCsv(parsed)
+	err := writeToFile(lines)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func parse(ignoreArchived bool, allResults []Response) [][]string {
@@ -21,13 +25,13 @@ func parse(ignoreArchived bool, allResults []Response) [][]string {
 				continue
 			}
 			repoSlice := []string{
-				repo.NameWithOwner,
-				repo.DefaultBranchRef.Name,
+				strings.TrimSpace(repo.NameWithOwner),
+				strings.TrimSpace(repo.DefaultBranchRef.Name),
 				strconv.FormatBool(repo.IsArchived),
 				strconv.FormatBool(repo.IsPrivate),
 				strconv.FormatBool(repo.IsEmpty),
 				strconv.FormatBool(repo.IsFork),
-				repo.Parent.NameWithOwner,
+				strings.TrimSpace(repo.Parent.NameWithOwner),
 				strconv.FormatBool(repo.MergeCommitAllowed),
 				strconv.FormatBool(repo.SquashMergeAllowed),
 				strconv.FormatBool(repo.RebaseMergeAllowed),
@@ -45,7 +49,7 @@ func parse(ignoreArchived bool, allResults []Response) [][]string {
 					strconv.Itoa(protection.RequiredApprovingReviewCount),
 					strconv.FormatBool(protection.AllowsForcePushes),
 					strconv.FormatBool(protection.AllowsDeletions),
-					protection.Pattern,
+					strings.TrimSpace(protection.Pattern),
 				)
 			}
 
@@ -55,7 +59,7 @@ func parse(ignoreArchived bool, allResults []Response) [][]string {
 	return parsed
 }
 
-func writeCsv(parsed [][]string) {
+func writeCsv(parsed [][]string) [][]string {
 	var lines = [][]string{
 		{
 			"Repo Name",
@@ -95,10 +99,11 @@ func writeCsv(parsed [][]string) {
 		},
 	}
 	lines = append(lines, parsed...)
-	writeToFile(lines)
+	return lines
+
 }
 
-func writeToFile(lines [][]string) {
+func writeToFile(lines [][]string) error {
 	file, err := os.Create("report.csv")
 	if err != nil {
 		fmt.Println(err)
@@ -108,7 +113,6 @@ func writeToFile(lines [][]string) {
 	writer := csv.NewWriter(file)
 
 	err = writer.WriteAll(lines)
-	if err != nil {
-		fmt.Println(err)
-	}
+
+	return err
 }

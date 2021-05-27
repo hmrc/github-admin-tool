@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github-admin-tool/graphqlclient"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -11,14 +12,14 @@ import (
 var (
 	dryRun         bool
 	ignoreArchived bool
-	allResults     []Response
 	reportCmd      = &cobra.Command{
 		Use:   "report",
 		Short: "Run a report to generate a csv containing information on all organisation repos",
 		Run: func(cmd *cobra.Command, args []string) {
+			client := graphqlclient.NewClient("https://api.github.com/graphql")
 			dryRun, _ = cmd.Flags().GetBool("dry-run")
 			ignoreArchived, _ = cmd.Flags().GetBool("ignore-archived")
-			reportRequest()
+			allResults := reportRequest(client)
 			if !dryRun {
 				GenerateCsv(ignoreArchived, allResults)
 			}
@@ -26,127 +27,24 @@ var (
 	}
 )
 
-type BranchProtectionRulesNodesList struct {
-	IsAdminEnforced              bool   `json:"isAdminEnforced"`
-	RequiresCommitSignatures     bool   `json:"requiresCommitSignatures"`
-	RestrictsPushes              bool   `json:"restrictsPushes"`
-	RequiresApprovingReviews     bool   `json:"requiresApprovingReviews"`
-	RequiresStatusChecks         bool   `json:"requiresStatusChecks"`
-	RequiresCodeOwnerReviews     bool   `json:"requiresCodeOwnerReviews"`
-	DismissesStaleReviews        bool   `json:"dismissesStaleReviews"`
-	RequiresStrictStatusChecks   bool   `json:"requiresStrictStatusChecks"`
-	RequiredApprovingReviewCount int    `json:"requiredApprovingReviewCount"`
-	AllowsForcePushes            bool   `json:"allowsForcePushes"`
-	AllowsDeletions              bool   `json:"allowsDeletions"`
-	Pattern                      string `json:"pattern"`
-}
-
-type RepositoriesNodeList struct {
-	DeleteBranchOnMerge   bool   `json:"deleteBranchOnMerge"`
-	IsArchived            bool   `json:"isArchived"`
-	IsEmpty               bool   `json:"isEmpty"`
-	IsFork                bool   `json:"isFork"`
-	IsPrivate             bool   `json:"isPrivate"`
-	MergeCommitAllowed    bool   `json:"mergeCommitAllowed"`
-	Name                  string `json:"name"`
-	NameWithOwner         string `json:"nameWithOwner"`
-	RebaseMergeAllowed    bool   `json:"rebaseMergeAllowed"`
-	SquashMergeAllowed    bool   `json:"squashMergeAllowed"`
-	BranchProtectionRules struct {
-		Nodes []BranchProtectionRulesNodesList `json:"nodes"`
-	} `json:"branchProtectionRules"`
-	Parent struct {
-		Name          string `json:"name"`
-		NameWithOwner string `json:"nameWithOwner"`
-		URL           string `json:"url"`
-	}
-	DefaultBranchRef struct {
-		Name string `json:"name"`
-	}
-}
-
-type Response struct {
-	Organization struct {
-		Repositories struct {
-			TotalCount int `json:"totalCount"`
-			PageInfo   struct {
-				EndCursor   string `json:"endCursor"`
-				HasNextPage bool   `json:"hasNextPage"`
-			} `json:"pageInfo"`
-			Nodes []RepositoriesNodeList `json:"nodes"`
-		} `json:"repositories"`
-	} `json:"organization"`
-}
-
 func init() {
 	reportCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", false, "Ignore archived repositores")
 	rootCmd.AddCommand(reportCmd)
 }
 
-func getReportQuery() string {
-	return `
-    query ($org: String! $after: String) {
-        organization(login:$org) {
-            repositories(first: 100, after: $after, orderBy: {field: NAME, direction: ASC}) {
-	            totalCount
-                pageInfo {
-                    endCursor
-                    hasNextPage
-                }
-                nodes {
-                    deleteBranchOnMerge
-                    isArchived
-                    isEmpty
-                    isFork
-                    isPrivate
-                    mergeCommitAllowed
-                    name
-                    nameWithOwner
-                    rebaseMergeAllowed
-	                squashMergeAllowed
-                    branchProtectionRules(first: 100) {
-                        nodes {
-                            isAdminEnforced
-                            requiresCommitSignatures
-                            restrictsPushes
-                            requiresApprovingReviews
-                            requiresStatusChecks
-                            requiresCodeOwnerReviews
-                            dismissesStaleReviews
-                            requiresStrictStatusChecks
-                            requiredApprovingReviewCount
-                            allowsForcePushes
-                            allowsDeletions
-							pattern
-                        }
-                    }
-                    defaultBranchRef {
-                        name
-                    }
-                    parent {
-                        name
-                        nameWithOwner
-                        url
-                    }
-                }
-            }
-        }
-    }`
-}
-
-func reportRequest() {
-	client := NewClient("https://api.github.com/graphql")
-	reqStr := getReportQuery()
+func reportRequest(client *graphqlclient.Client) []Response {
+	reqStr := ReportQueryStr
 	authStr := fmt.Sprintf("bearer %s", config.Client.Token)
 
 	var (
 		cursor           *string
 		loopCount        int
 		totalRecordCount int
+		allResults       []Response
 	)
 
 	for loopCount <= totalRecordCount {
-		req := NewRequest(reqStr)
+		req := graphqlclient.NewRequest(reqStr)
 		req.Var("org", config.Client.Org)
 		req.Var("after", cursor)
 		req.Header.Set("Cache-Control", "no-cache")
@@ -169,11 +67,15 @@ func reportRequest() {
 
 		loopCount += 100
 
-		fmt.Printf("Processing %d of %d total repos\n", loopCount, totalRecordCount)
-		allResults = append(allResults, respData)
+		if len(respData.Organization.Repositories.Nodes) > 0 {
+			fmt.Printf("Processing %d of %d total repos\n", loopCount, totalRecordCount)
+			allResults = append(allResults, respData)
+		}
 
 		if !respData.Organization.Repositories.PageInfo.HasNextPage {
 			break
 		}
 	}
+
+	return allResults
 }
