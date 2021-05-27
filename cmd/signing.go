@@ -18,7 +18,7 @@ var (
 			repoFile, _ = cmd.Flags().GetString("repos")
 			readList()
 			fmt.Printf("repo list is %v", repos)
-			//UpdateBranchProtectionRuleInput - requiresCommitSignatures
+			// UpdateBranchProtectionRuleInput - requiresCommitSignatures
 		},
 	}
 )

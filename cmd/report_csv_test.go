@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-var emptyList [][]string
+var TestEmptyList [][]string
 
-var emptyCsvRows = [][]string{
+var TestEmptyCsvRows = [][]string{
 	{
 		"Repo Name",
 		"Default Branch Name",
@@ -47,40 +47,39 @@ var emptyCsvRows = [][]string{
 }
 
 func Test_parse(t *testing.T) {
+	var emptyAllResults []ReportResponse
 
-	var emptyAllResults []Response
-
-	responsesWithArchived := make([]Response, 1)
+	responsesWithArchived := make([]ReportResponse, 1)
 	responsesWithArchived[0].Organization.Repositories.Nodes = append(responsesWithArchived[0].Organization.Repositories.Nodes, RepositoriesNodeList{IsArchived: true})
 
-	responsesWithUnarchived := make([]Response, 1)
+	responsesWithUnarchived := make([]ReportResponse, 1)
 	responsesWithUnarchived[0].Organization.Repositories.Nodes = append(responsesWithUnarchived[0].Organization.Repositories.Nodes, RepositoriesNodeList{IsArchived: false, NameWithOwner: "REPONAME1"})
 
-	var wantWithUnarchived = make([][]string, 1)
+	wantWithUnarchived := make([][]string, 1)
 	wantWithUnarchived[0] = append(wantWithUnarchived[0], "REPONAME1", "", "false", "false", "false", "false", "", "false", "false", "false")
 
-	var branchProtectionList = make([]BranchProtectionRulesNodesList, 1)
+	branchProtectionList := make([]BranchProtectionRulesNodesList, 1)
 	branchProtectionList[0].Pattern = " SOMEREGEXP "
-	var repositoriesNodeList = make([]RepositoriesNodeList, 1)
+	repositoriesNodeList := make([]RepositoriesNodeList, 1)
 	repositoriesNodeList[0].BranchProtectionRules.Nodes = branchProtectionList
-	responsesWithBP := make([]Response, 1)
+	responsesWithBP := make([]ReportResponse, 1)
 	responsesWithBP[0].Organization.Repositories.Nodes = repositoriesNodeList
 
-	var wantWithBP = make([][]string, 1)
+	wantWithBP := make([][]string, 1)
 	wantWithBP[0] = append(wantWithBP[0], "", "", "false", "false", "false", "false", "", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "0", "false", "false", "SOMEREGEXP")
 
 	type args struct {
 		ignoreArchived bool
-		allResults     []Response
+		allResults     []ReportResponse
 	}
 	tests := []struct {
 		name string
 		args args
 		want [][]string
 	}{
-		{name: "ParseEmptyListReturnEmpty", args: args{ignoreArchived: false, allResults: emptyAllResults}, want: emptyList},
-		{name: "ParseEmptyList", args: args{ignoreArchived: false}, want: emptyList},
-		{name: "ParseArchivedResultSet", args: args{ignoreArchived: true, allResults: responsesWithArchived}, want: emptyList},
+		{name: "ParseEmptyListReturnEmpty", args: args{ignoreArchived: false, allResults: emptyAllResults}, want: TestEmptyList},
+		{name: "ParseEmptyList", args: args{ignoreArchived: false}, want: TestEmptyList},
+		{name: "ParseArchivedResultSet", args: args{ignoreArchived: true, allResults: responsesWithArchived}, want: TestEmptyList},
 		{name: "ParseUnarchivedResultSet", args: args{ignoreArchived: true, allResults: responsesWithUnarchived}, want: wantWithUnarchived},
 		{name: "ParseBranchProtectionResultSet", args: args{ignoreArchived: true, allResults: responsesWithBP}, want: wantWithBP},
 	}
@@ -94,11 +93,10 @@ func Test_parse(t *testing.T) {
 }
 
 func Test_writeCsv(t *testing.T) {
-
-	var wantWithBP = make([][]string, 1)
+	wantWithBP := make([][]string, 1)
 	wantWithBP[0] = append(wantWithBP[0], "REPONAME1", "", "false", "false", "false", "false", "", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "0", "false", "false", "SOMEREGEXP")
 
-	var twoCsvRows = emptyCsvRows
+	twoCsvRows := TestEmptyCsvRows
 	twoCsvRows = append(twoCsvRows, wantWithBP...)
 
 	type args struct {
@@ -109,7 +107,7 @@ func Test_writeCsv(t *testing.T) {
 		args args
 		want [][]string
 	}{
-		{name: "WriteCSVReturnsNoExtraRows", args: args{parsed: emptyList}, want: emptyCsvRows},
+		{name: "WriteCSVReturnsNoExtraRows", args: args{parsed: TestEmptyList}, want: TestEmptyCsvRows},
 		{name: "WriteCSVReturnsSomeRows", args: args{parsed: wantWithBP}, want: twoCsvRows},
 	}
 	for _, tt := range tests {

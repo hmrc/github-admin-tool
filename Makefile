@@ -25,7 +25,7 @@ fmt-check: gofmt
 
 .PHONY: test
 test: go
-	@$(DOCKER) go test -cover .
+	@$(DOCKER) go test -cover ./...
 
 .PHONY: lint
 lint: golangci-lint

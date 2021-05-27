@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func GenerateCsv(ignoreArchived bool, allResults []Response) {
+func GenerateCsv(ignoreArchived bool, allResults []ReportResponse) {
 	parsed := parse(ignoreArchived, allResults)
 	lines := writeCsv(parsed)
 	err := writeToFile(lines)
@@ -17,7 +17,7 @@ func GenerateCsv(ignoreArchived bool, allResults []Response) {
 	}
 }
 
-func parse(ignoreArchived bool, allResults []Response) [][]string {
+func parse(ignoreArchived bool, allResults []ReportResponse) [][]string {
 	var parsed [][]string
 	for _, allData := range allResults {
 		for _, repo := range allData.Organization.Repositories.Nodes {
@@ -60,7 +60,7 @@ func parse(ignoreArchived bool, allResults []Response) [][]string {
 }
 
 func writeCsv(parsed [][]string) [][]string {
-	var lines = [][]string{
+	lines := [][]string{
 		{
 			"Repo Name",
 			"Default Branch Name",
@@ -100,7 +100,6 @@ func writeCsv(parsed [][]string) [][]string {
 	}
 	lines = append(lines, parsed...)
 	return lines
-
 }
 
 func writeToFile(lines [][]string) error {

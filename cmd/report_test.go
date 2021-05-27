@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"github-admin-tool/graphqlclient"
 	"reflect"
 	"testing"
+
+	"github-admin-tool/graphqlclient"
 
 	"github.com/jarcoal/httpmock"
 )
@@ -54,8 +55,8 @@ func Test_reportRequest(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
-	var emptyAllResults []Response
-	var oneResponse Response
+	var emptyAllResults []ReportResponse
+	var oneResponse ReportResponse
 
 	oneResponse.Organization.Repositories.TotalCount = 1
 	nodes := make([]RepositoriesNodeList, 1)
@@ -69,7 +70,7 @@ func Test_reportRequest(t *testing.T) {
 	tests := []struct {
 		name           string
 		mockHttpReturn string
-		want           []Response
+		want           []ReportResponse
 	}{
 		{name: "reportRequestReturnsEmpty", mockHttpReturn: mockEmptyJsonResponse, want: emptyAllResults},
 		{name: "reportRequestReturnsOne", mockHttpReturn: mockJsonResponse, want: oneResult},

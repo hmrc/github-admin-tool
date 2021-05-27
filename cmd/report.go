@@ -3,8 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github-admin-tool/graphqlclient"
 	"log"
+
+	"github-admin-tool/graphqlclient"
 
 	"github.com/spf13/cobra"
 )
@@ -32,7 +33,7 @@ func init() {
 	rootCmd.AddCommand(reportCmd)
 }
 
-func reportRequest(client *graphqlclient.Client) []Response {
+func reportRequest(client *graphqlclient.Client) []ReportResponse {
 	reqStr := ReportQueryStr
 	authStr := fmt.Sprintf("bearer %s", config.Client.Token)
 
@@ -40,7 +41,7 @@ func reportRequest(client *graphqlclient.Client) []Response {
 		cursor           *string
 		loopCount        int
 		totalRecordCount int
-		allResults       []Response
+		allResults       []ReportResponse
 	)
 
 	for loopCount <= totalRecordCount {
@@ -52,7 +53,7 @@ func reportRequest(client *graphqlclient.Client) []Response {
 
 		ctx := context.Background()
 
-		var respData Response
+		var respData ReportResponse
 		if err := client.Run(ctx, req, &respData); err != nil {
 			log.Fatal(err)
 		}
@@ -62,6 +63,7 @@ func reportRequest(client *graphqlclient.Client) []Response {
 
 		if dryRun {
 			fmt.Printf("This is a dry run, the report would process %d records\n", totalRecordCount)
+
 			break
 		}
 

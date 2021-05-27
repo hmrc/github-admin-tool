@@ -39,7 +39,7 @@ type RepositoriesNodeList struct {
 	}
 }
 
-type Response struct {
+type ReportResponse struct {
 	Organization struct {
 		Repositories struct {
 			TotalCount int `json:"totalCount"`

@@ -36,7 +36,6 @@ func init() {
 }
 
 func initConfig() {
-
 	// Try ENV vars
 	viper.SetConfigType("env")
 	viper.SetEnvPrefix("ghtool")
@@ -60,5 +59,4 @@ func initConfig() {
 	if err != nil {
 		panic(fmt.Errorf("fatal error config file: %s", err))
 	}
-
 }
