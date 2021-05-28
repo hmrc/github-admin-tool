@@ -1,12 +1,10 @@
 package cmd
 
 import (
+	"github-admin-tool/graphqlclient"
 	"io/ioutil"
 	"reflect"
 	"testing"
-
-	"github-admin-tool/graphqlclient"
-
 	"github.com/jarcoal/httpmock"
 )
 
@@ -16,8 +14,10 @@ func Test_reportRequest(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
-	var emptyAllResults []ReportResponse
-	var oneResponse ReportResponse
+	var (
+		oneResult   []ReportResponse
+		oneResponse ReportResponse
+	)
 
 	oneResponse.Organization.Repositories.TotalCount = 1
 	nodes := make([]RepositoriesNodeList, 1)
@@ -26,29 +26,32 @@ func Test_reportRequest(t *testing.T) {
 	nodes[0].DefaultBranchRef.Name = "master"
 	nodes[0].SquashMergeAllowed = true
 	oneResponse.Organization.Repositories.Nodes = nodes
-	oneResult := append(emptyAllResults, oneResponse)
+	oneResult = append(oneResult, oneResponse)
 
 	tests := []struct {
 		name               string
-		mockHttpReturnFile string
+		mockHTTPReturnFile string
 		want               []ReportResponse
 	}{
-		{name: "reportRequestReturnsEmpty", mockHttpReturnFile: "../testdata/mockEmptyJsonResponse.json", want: emptyAllResults},
-		{name: "reportRequestReturnsOne", mockHttpReturnFile: "../testdata/mockJsonResponse.json", want: oneResult},
+		{name: "reportRequestReturnsEmpty", mockHTTPReturnFile: "../testdata/mockEmptyJsonResponse.json", want: nil},
+		{name: "reportRequestReturnsOne", mockHTTPReturnFile: "../testdata/mockJsonResponse.json", want: oneResult},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockHttpReturn, err := ioutil.ReadFile(tt.mockHttpReturnFile)
+			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
 			if err != nil {
 				t.Fatalf("failed to read test data: %v", err)
 			}
 			httpmock.RegisterResponder(
 				"POST",
 				"https://api.github.com/graphql",
-				httpmock.NewStringResponder(200, string(mockHttpReturn)),
+				httpmock.NewStringResponder(200, string(mockHTTPReturn)),
 			)
 
-			if got, _ := reportRequest(client); !reflect.DeepEqual(got, tt.want) {
+			if got, err := reportRequest(client); !reflect.DeepEqual(got, tt.want) {
+				if err != nil {
+					t.Fatalf("failed to run reportRequest %v", err)
+				}
 				t.Errorf("reportRequest() = %v, want %v", got, tt.want)
 			}
 		})

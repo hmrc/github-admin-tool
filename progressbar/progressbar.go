@@ -2,6 +2,8 @@ package progressbar
 
 import "fmt"
 
+const PercentMultiplier = 50
+
 type Bar struct {
 	percent int64  // progress percentage
 	cur     int64  // current progress
@@ -13,17 +15,20 @@ type Bar struct {
 func (bar *Bar) NewOption(start, total int64) {
 	bar.cur = start
 	bar.total = total
+
 	if bar.graph == "" {
 		bar.graph = "#"
 	}
+
 	bar.percent = bar.getPercent()
+
 	for i := 0; i < int(bar.percent); i++ {
 		bar.rate += bar.graph // initial progress position
 	}
 }
 
 func (bar *Bar) getPercent() int64 {
-	return int64((float32(bar.cur) / float32(bar.total)) * 50)
+	return int64((float32(bar.cur) / float32(bar.total)) * PercentMultiplier)
 }
 
 func (bar *Bar) Play(cur int64) {
@@ -32,7 +37,7 @@ func (bar *Bar) Play(cur int64) {
 	bar.percent = bar.getPercent()
 
 	if bar.percent != last {
-		var i int64 = 0
+		var i int64
 		for ; i < bar.percent-last; i++ {
 			bar.rate += bar.graph
 		}
@@ -41,5 +46,5 @@ func (bar *Bar) Play(cur int64) {
 }
 
 func (bar *Bar) Finish() {
-	fmt.Println()
+	fmt.Println("")
 }

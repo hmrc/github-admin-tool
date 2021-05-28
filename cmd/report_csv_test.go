@@ -50,13 +50,22 @@ func Test_parse(t *testing.T) {
 	var emptyAllResults []ReportResponse
 
 	responsesWithArchived := make([]ReportResponse, 1)
-	responsesWithArchived[0].Organization.Repositories.Nodes = append(responsesWithArchived[0].Organization.Repositories.Nodes, RepositoriesNodeList{IsArchived: true})
+	responsesWithArchived[0].Organization.Repositories.Nodes = append(
+		responsesWithArchived[0].Organization.Repositories.Nodes,
+		RepositoriesNodeList{IsArchived: true},
+	)
 
 	responsesWithUnarchived := make([]ReportResponse, 1)
-	responsesWithUnarchived[0].Organization.Repositories.Nodes = append(responsesWithUnarchived[0].Organization.Repositories.Nodes, RepositoriesNodeList{IsArchived: false, NameWithOwner: "REPONAME1"})
+	responsesWithUnarchived[0].Organization.Repositories.Nodes = append(
+		responsesWithUnarchived[0].Organization.Repositories.Nodes,
+		RepositoriesNodeList{IsArchived: false, NameWithOwner: "REPONAME1"},
+	)
 
 	wantWithUnarchived := make([][]string, 1)
-	wantWithUnarchived[0] = append(wantWithUnarchived[0], "REPONAME1", "", "false", "false", "false", "false", "", "false", "false", "false")
+	wantWithUnarchived[0] = append(
+		wantWithUnarchived[0],
+		"REPONAME1", "", "false", "false", "false", "false", "", "false", "false", "false",
+	)
 
 	branchProtectionList := make([]BranchProtectionRulesNodesList, 1)
 	branchProtectionList[0].Pattern = " SOMEREGEXP "
@@ -66,23 +75,50 @@ func Test_parse(t *testing.T) {
 	responsesWithBP[0].Organization.Repositories.Nodes = repositoriesNodeList
 
 	wantWithBP := make([][]string, 1)
-	wantWithBP[0] = append(wantWithBP[0], "", "", "false", "false", "false", "false", "", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "0", "false", "false", "SOMEREGEXP")
+	wantWithBP[0] = append(
+		wantWithBP[0],
+		"", "", "false", "false", "false", "false", "", "false", "false",
+		"false", "false", "false", "false", "false", "false", "false",
+		"false", "false", "0", "false", "false", "SOMEREGEXP",
+	)
 
 	type args struct {
 		ignoreArchived bool
 		allResults     []ReportResponse
 	}
+
 	tests := []struct {
 		name string
 		args args
 		want [][]string
 	}{
-		{name: "ParseEmptyListReturnEmpty", args: args{ignoreArchived: false, allResults: emptyAllResults}, want: TestEmptyList},
-		{name: "ParseEmptyList", args: args{ignoreArchived: false}, want: TestEmptyList},
-		{name: "ParseArchivedResultSet", args: args{ignoreArchived: true, allResults: responsesWithArchived}, want: TestEmptyList},
-		{name: "ParseUnarchivedResultSet", args: args{ignoreArchived: true, allResults: responsesWithUnarchived}, want: wantWithUnarchived},
-		{name: "ParseBranchProtectionResultSet", args: args{ignoreArchived: true, allResults: responsesWithBP}, want: wantWithBP},
+		{
+			name: "ParseEmptyListReturnEmpty",
+			args: args{ignoreArchived: false, allResults: emptyAllResults},
+			want: TestEmptyList,
+		},
+		{
+			name: "ParseEmptyList",
+			args: args{ignoreArchived: false},
+			want: TestEmptyList,
+		},
+		{
+			name: "ParseArchivedResultSet",
+			args: args{ignoreArchived: true, allResults: responsesWithArchived},
+			want: TestEmptyList,
+		},
+		{
+			name: "ParseUnarchivedResultSet",
+			args: args{ignoreArchived: true, allResults: responsesWithUnarchived},
+			want: wantWithUnarchived,
+		},
+		{
+			name: "ParseBranchProtectionResultSet",
+			args: args{ignoreArchived: true, allResults: responsesWithBP},
+			want: wantWithBP,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := parse(tt.args.ignoreArchived, tt.args.allResults); !reflect.DeepEqual(got, tt.want) {
@@ -94,7 +130,12 @@ func Test_parse(t *testing.T) {
 
 func Test_writeCsv(t *testing.T) {
 	wantWithBP := make([][]string, 1)
-	wantWithBP[0] = append(wantWithBP[0], "REPONAME1", "", "false", "false", "false", "false", "", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "0", "false", "false", "SOMEREGEXP")
+	wantWithBP[0] = append(
+		wantWithBP[0],
+		"REPONAME1", "", "false", "false", "false", "false", "", "false", "false",
+		"false", "false", "false", "false", "false", "false", "false", "false",
+		"false", "0", "false", "false", "SOMEREGEXP",
+	)
 
 	twoCsvRows := TestEmptyCsvRows
 	twoCsvRows = append(twoCsvRows, wantWithBP...)
@@ -102,6 +143,7 @@ func Test_writeCsv(t *testing.T) {
 	type args struct {
 		parsed [][]string
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -110,6 +152,7 @@ func Test_writeCsv(t *testing.T) {
 		{name: "WriteCSVReturnsNoExtraRows", args: args{parsed: TestEmptyList}, want: TestEmptyCsvRows},
 		{name: "WriteCSVReturnsSomeRows", args: args{parsed: wantWithBP}, want: twoCsvRows},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := writeCsv(tt.args.parsed); !reflect.DeepEqual(got, tt.want) {

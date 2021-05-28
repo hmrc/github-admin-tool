@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -29,12 +28,13 @@ func NewClient(endpoint string) *Client {
 	}
 
 	c.httpClient = http.DefaultClient
+
 	return c
 }
 
-func (c *Client) logf(format string, args ...interface{}) {
-	c.Log(fmt.Sprintf(format, args...))
-}
+// func (c *Client) logf(format string, args ...interface{}) {
+// 	c.Log(fmt.Sprintf(format, args...))
+// }
 
 // Run executes the query and unmarshals the response from the data field
 // into the response object.
@@ -52,6 +52,7 @@ func (c *Client) Run(ctx context.Context, req *Request, resp interface{}) error 
 
 func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}) error {
 	var requestBody bytes.Buffer
+
 	requestBodyObj := struct {
 		Query     string                 `json:"query"`
 		Variables map[string]interface{} `json:"variables"`
@@ -59,6 +60,7 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 		Query:     req.q,
 		Variables: req.vars,
 	}
+
 	if err := json.NewEncoder(&requestBody).Encode(requestBodyObj); err != nil {
 		return errors.Wrap(err, "encode body")
 	}
@@ -66,13 +68,16 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 	gr := &graphResponse{
 		Data: resp,
 	}
+
 	r, err := http.NewRequest(http.MethodPost, c.endpoint, &requestBody)
 	if err != nil {
 		return errors.Wrap(err, "new request")
 	}
+
 	r.Close = c.closeReq
 	r.Header.Set("Content-Type", "application/json; charset=utf-8")
 	r.Header.Set("Accept", "application/json; charset=utf-8")
+
 	for key, values := range req.Header {
 		for _, value := range values {
 			r.Header.Add(key, value)
@@ -84,21 +89,27 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 	if err != nil {
 		return errors.Wrap(err, "running do")
 	}
+
 	defer res.Body.Close()
+
 	var buf bytes.Buffer
+
 	if _, err := io.Copy(&buf, res.Body); err != nil {
 		return errors.Wrap(err, "reading body")
 	}
+
 	if err := json.NewDecoder(&buf).Decode(&gr); err != nil {
 		if res.StatusCode != http.StatusOK {
 			return errors.Errorf("graphql: server returned a non-200 status code: %v", res.StatusCode)
 		}
+
 		return errors.Wrap(err, "decoding response")
 	}
+
 	if len(gr.Errors) > 0 {
-		// return first error
 		return gr.Errors[0]
 	}
+
 	return nil
 }
 
@@ -135,6 +146,7 @@ func NewRequest(q string) *Request {
 		q:      q,
 		Header: make(map[string][]string),
 	}
+
 	return req
 }
 
@@ -143,6 +155,7 @@ func (req *Request) Var(key string, value interface{}) {
 	if req.vars == nil {
 		req.vars = make(map[string]interface{})
 	}
+
 	req.vars[key] = value
 }
 

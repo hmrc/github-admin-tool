@@ -3,19 +3,24 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	repoFile   string
+	reposFile  string
 	repos      []string
 	signingCmd = &cobra.Command{
 		Use:   "signing",
 		Short: "Set request signing on to all repos in provided list",
 		Run: func(cmd *cobra.Command, args []string) {
-			repoFile, _ = cmd.Flags().GetString("repos")
+			var err error
+			reposFile, err = cmd.Flags().GetString("repos")
+			if err != nil {
+				log.Fatal(err)
+			}
 			readList()
 			fmt.Printf("repo list is %v", repos)
 			// UpdateBranchProtectionRuleInput - requiresCommitSignatures
@@ -24,15 +29,15 @@ var (
 )
 
 func init() {
-	signingCmd.Flags().StringVarP(&repoFile, "repos", "r", "", "repo file")
+	signingCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "repo file")
 	signingCmd.MarkFlagRequired("repos")
 	rootCmd.AddCommand(signingCmd)
 }
 
 func readList() {
-	file, err := os.Open(repoFile)
+	file, err := os.Open(reposFile)
 	if err != nil {
-		panic(fmt.Errorf("fatal error repo file: %s", err))
+		panic(fmt.Errorf("fatal error repo file: %w", err))
 	}
 	defer file.Close()
 

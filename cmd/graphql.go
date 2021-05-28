@@ -52,7 +52,8 @@ type ReportResponse struct {
 	} `json:"organization"`
 }
 
-var ReportQueryStr string = `
+// ReportQueryStr for repo search.
+var ReportQueryStr = `
 	query ($org: String! $after: String) {
 		organization(login:$org) {
 			repositories(first: 100, after: $after, orderBy: {field: NAME, direction: ASC}) {

@@ -2,8 +2,11 @@ package main
 
 import (
 	"github-admin-tool/cmd"
+	"log"
 )
 
 func main() {
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -3,13 +3,18 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"github-admin-tool/graphqlclient"
 	"github-admin-tool/progressbar"
 	"log"
-
+	"time"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+)
+
+const (
+	// IterationCount the number of repos per result set.
+	IterationCount        int   = 100
+	MillisecondMultiplier int64 = 100
 )
 
 var (
@@ -20,7 +25,7 @@ var (
 		Run: func(cmd *cobra.Command, args []string) {
 			client := graphqlclient.NewClient("https://api.github.com/graphql")
 
-			var err error = nil
+			var err error
 			dryRun, err = cmd.Flags().GetBool("dry-run")
 			if err != nil {
 				log.Fatal(err)
@@ -61,18 +66,17 @@ func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
 	req.Var("org", config.Client.Org)
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Authorization", authStr)
-	ctx := context.Background()
 
+	ctx := context.Background()
 	iteration = 0
 
 	for {
-
 		// Set new cursor on every loop to paginate through 100 at a time
 		req.Var("after", cursor)
 
 		var respData ReportResponse
 		if err := client.Run(ctx, req, &respData); err != nil {
-			return allResults, err
+			return allResults, errors.Wrap(err, "graphql call")
 		}
 
 		cursor = &respData.Organization.Repositories.PageInfo.EndCursor
@@ -87,13 +91,15 @@ func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
 		// Set up progress bar
 		if iteration == 0 {
 			bar.NewOption(0, int64(totalRecordCount))
-			if totalRecordCount <= 100 {
+
+			if totalRecordCount <= IterationCount {
 				iteration = totalRecordCount
 			}
 		} else if !respData.Organization.Repositories.PageInfo.HasNextPage {
 			iteration = totalRecordCount
 		}
-		time.Sleep(100 * time.Millisecond)
+
+		time.Sleep(time.Millisecond * time.Duration(IterationCount))
 		bar.Play(int64(iteration))
 
 		if len(respData.Organization.Repositories.Nodes) > 0 {
@@ -104,7 +110,7 @@ func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
 			break
 		}
 
-		iteration += 100
+		iteration += IterationCount
 	}
 
 	bar.Finish()

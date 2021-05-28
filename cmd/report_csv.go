@@ -3,27 +3,32 @@ package cmd
 import (
 	"encoding/csv"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 func GenerateCsv(ignoreArchived bool, allResults []ReportResponse) {
 	parsed := parse(ignoreArchived, allResults)
 	lines := writeCsv(parsed)
-	err := writeToFile(lines)
-	if err != nil {
-		fmt.Println(err)
+
+	if err := writeToFile(lines); err != nil {
+		log.Fatal(err)
 	}
 }
 
 func parse(ignoreArchived bool, allResults []ReportResponse) [][]string {
 	var parsed [][]string
+
 	for _, allData := range allResults {
 		for _, repo := range allData.Organization.Repositories.Nodes {
 			if ignoreArchived && repo.IsArchived {
 				continue
 			}
+
 			repoSlice := []string{
 				strings.TrimSpace(repo.NameWithOwner),
 				strings.TrimSpace(repo.DefaultBranchRef.Name),
@@ -36,6 +41,7 @@ func parse(ignoreArchived bool, allResults []ReportResponse) [][]string {
 				strconv.FormatBool(repo.SquashMergeAllowed),
 				strconv.FormatBool(repo.RebaseMergeAllowed),
 			}
+
 			for _, protection := range repo.BranchProtectionRules.Nodes {
 				repoSlice = append(repoSlice,
 					strconv.FormatBool(protection.IsAdminEnforced),
@@ -56,6 +62,7 @@ func parse(ignoreArchived bool, allResults []ReportResponse) [][]string {
 			parsed = append(parsed, repoSlice)
 		}
 	}
+
 	return parsed
 }
 
@@ -99,6 +106,7 @@ func writeCsv(parsed [][]string) [][]string {
 		},
 	}
 	lines = append(lines, parsed...)
+
 	return lines
 }
 
@@ -111,7 +119,11 @@ func writeToFile(lines [][]string) error {
 
 	writer := csv.NewWriter(file)
 
-	err = writer.WriteAll(lines)
+	if err = writer.WriteAll(lines); err != nil {
+		return errors.Wrap(err, "File write")
+	}
 
-	return err
+	log.Print("Report written to report.csv")
+
+	return nil
 }
