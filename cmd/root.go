@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	cfgFile string
-	config  Config
-	rootCmd = &cobra.Command{
+	configFile string
+	config     Config
+	dryRun     bool
+	rootCmd    = &cobra.Command{
 		Use:   "github-admin-tool",
 		Short: "Github admin tool allows you to perform actions on your github repos",
 		Long:  "Using Github version 4 GraphQL API to generate repo reports and administer your organisations repos etc",
@@ -31,7 +32,7 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default config.yaml)")
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file (default config.yaml)")
 	rootCmd.PersistentFlags().Bool("dry-run", true, "dry-run mode to test command line options")
 }
 
@@ -42,21 +43,18 @@ func initConfig() {
 	viper.BindEnv("token")
 	viper.BindEnv("org")
 
-	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
-	} else {
-		viper.SetConfigName("config")
-		viper.SetConfigType("yaml")
-		viper.AddConfigPath(".")
-	}
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+	viper.SetConfigFile(configFile)
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %s", err))
+		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
 
 	err = viper.Unmarshal(&config)
 	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %s", err))
+		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
 }

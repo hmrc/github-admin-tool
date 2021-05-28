@@ -3,23 +3,33 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
+	"time"
 
 	"github-admin-tool/graphqlclient"
+	"github-admin-tool/progressbar"
+	"log"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	dryRun         bool
 	ignoreArchived bool
 	reportCmd      = &cobra.Command{
 		Use:   "report",
 		Short: "Run a report to generate a csv containing information on all organisation repos",
 		Run: func(cmd *cobra.Command, args []string) {
 			client := graphqlclient.NewClient("https://api.github.com/graphql")
-			dryRun, _ = cmd.Flags().GetBool("dry-run")
-			ignoreArchived, _ = cmd.Flags().GetBool("ignore-archived")
+
+			var err error = nil
+			dryRun, err = cmd.Flags().GetBool("dry-run")
+			if err != nil {
+				log.Fatal(err)
+			}
+			ignoreArchived, err = cmd.Flags().GetBool("ignore-archived")
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			allResults := reportRequest(client)
 			if !dryRun {
 				GenerateCsv(ignoreArchived, allResults)
@@ -39,19 +49,24 @@ func reportRequest(client *graphqlclient.Client) []ReportResponse {
 
 	var (
 		cursor           *string
-		loopCount        int
 		totalRecordCount int
 		allResults       []ReportResponse
+		iteration        int
+		bar              progressbar.Bar
 	)
 
-	for loopCount <= totalRecordCount {
-		req := graphqlclient.NewRequest(reqStr)
-		req.Var("org", config.Client.Org)
-		req.Var("after", cursor)
-		req.Header.Set("Cache-Control", "no-cache")
-		req.Header.Set("Authorization", authStr)
+	req := graphqlclient.NewRequest(reqStr)
+	req.Var("org", config.Client.Org)
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Authorization", authStr)
+	ctx := context.Background()
 
-		ctx := context.Background()
+	iteration = 0
+
+	for {
+
+		// Set new cursor on every loop to paginate through 100 at a time
+		req.Var("after", cursor)
 
 		var respData ReportResponse
 		if err := client.Run(ctx, req, &respData); err != nil {
@@ -67,17 +82,30 @@ func reportRequest(client *graphqlclient.Client) []ReportResponse {
 			break
 		}
 
-		loopCount += 100
+		// Set up progress bar
+		if iteration == 0 {
+			bar.NewOption(0, int64(totalRecordCount))
+			if totalRecordCount <= 100 {
+				iteration = totalRecordCount
+			}
+		} else if !respData.Organization.Repositories.PageInfo.HasNextPage {
+			iteration = totalRecordCount
+		}
+		time.Sleep(100 * time.Millisecond)
+		bar.Play(int64(iteration))
 
 		if len(respData.Organization.Repositories.Nodes) > 0 {
-			fmt.Printf("Processing %d of %d total repos\n", loopCount, totalRecordCount)
 			allResults = append(allResults, respData)
 		}
 
 		if !respData.Organization.Repositories.PageInfo.HasNextPage {
 			break
 		}
+
+		iteration += 100
 	}
+
+	bar.Finish()
 
 	return allResults
 }
