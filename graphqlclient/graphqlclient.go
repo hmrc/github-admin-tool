@@ -85,6 +85,7 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 	}
 
 	r = r.WithContext(ctx)
+
 	res, err := c.httpClient.Do(r)
 	if err != nil {
 		return errors.Wrap(err, "running do")

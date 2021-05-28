@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"reflect"
 	"testing"
+
 	"github.com/jarcoal/httpmock"
 )
 

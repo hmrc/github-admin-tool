@@ -3,17 +3,20 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github-admin-tool/graphqlclient"
-	"github-admin-tool/progressbar"
 	"log"
 	"time"
+
+	"github-admin-tool/graphqlclient"
+	"github-admin-tool/progressbar"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
 const (
 	// IterationCount the number of repos per result set.
-	IterationCount        int   = 100
+	IterationCount int = 100
+
+	// MillisecondMultiplier for the sleep calculation.
 	MillisecondMultiplier int64 = 100
 )
 
@@ -99,7 +102,7 @@ func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
 			iteration = totalRecordCount
 		}
 
-		time.Sleep(time.Millisecond * time.Duration(IterationCount))
+		time.Sleep(time.Millisecond * time.Duration(MillisecondMultiplier))
 		bar.Play(int64(iteration))
 
 		if len(respData.Organization.Repositories.Nodes) > 0 {
