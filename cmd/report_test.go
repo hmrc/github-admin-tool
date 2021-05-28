@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"io/ioutil"
 	"reflect"
 	"testing"
 
@@ -10,46 +11,6 @@ import (
 )
 
 var client = graphqlclient.NewClient("https://api.github.com/graphql")
-
-var mockJsonResponse string = `
-{
-	"data": {
-	  "organization": {
-		"repositories": {
-		  "totalCount": 1,
-		  "pageInfo": {
-			"endCursor": "",
-			"hasNextPage": false
-		  },
-		  "nodes": [
-			{
-			  "deleteBranchOnMerge": false,
-			  "isArchived": false,
-			  "isEmpty": false,
-			  "isFork": false,
-			  "isPrivate": false,
-			  "mergeCommitAllowed": false,
-			  "name": "repo-name",
-			  "nameWithOwner": "org-name/repo-name",
-			  "rebaseMergeAllowed": false,
-			  "squashMergeAllowed": true,
-			  "defaultBranchRef": {
-				"name": "master"
-			  },
-			  "parent": null
-			}
-		  ]
-		}
-	  }
-	}
-  }
-`
-
-var mockEmptyJsonResponse string = `
-{
-	"data": {}
-}
-`
 
 func Test_reportRequest(t *testing.T) {
 	httpmock.Activate()
@@ -68,19 +29,23 @@ func Test_reportRequest(t *testing.T) {
 	oneResult := append(emptyAllResults, oneResponse)
 
 	tests := []struct {
-		name           string
-		mockHttpReturn string
-		want           []ReportResponse
+		name               string
+		mockHttpReturnFile string
+		want               []ReportResponse
 	}{
-		{name: "reportRequestReturnsEmpty", mockHttpReturn: mockEmptyJsonResponse, want: emptyAllResults},
-		{name: "reportRequestReturnsOne", mockHttpReturn: mockJsonResponse, want: oneResult},
+		{name: "reportRequestReturnsEmpty", mockHttpReturnFile: "../testdata/mockEmptyJsonResponse.json", want: emptyAllResults},
+		{name: "reportRequestReturnsOne", mockHttpReturnFile: "../testdata/mockJsonResponse.json", want: oneResult},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockHttpReturn, err := ioutil.ReadFile(tt.mockHttpReturnFile)
+			if err != nil {
+				t.Fatalf("failed to read test data: %v", err)
+			}
 			httpmock.RegisterResponder(
 				"POST",
 				"https://api.github.com/graphql",
-				httpmock.NewStringResponder(200, tt.mockHttpReturn),
+				httpmock.NewStringResponder(200, string(mockHttpReturn)),
 			)
 
 			if got, _ := reportRequest(client); !reflect.DeepEqual(got, tt.want) {

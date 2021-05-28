@@ -79,7 +79,7 @@ func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
 		totalRecordCount = respData.Organization.Repositories.TotalCount
 
 		if dryRun {
-			fmt.Printf("This is a dry run, the report would process %d records\n", totalRecordCount)
+			log.Printf("This is a dry run, the report would process %d records\n", totalRecordCount)
 
 			break
 		}
