@@ -83,7 +83,7 @@ func Test_reportRequest(t *testing.T) {
 				httpmock.NewStringResponder(200, tt.mockHttpReturn),
 			)
 
-			if got := reportRequest(client); !reflect.DeepEqual(got, tt.want) {
+			if got, _ := reportRequest(client); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("reportRequest() = %v, want %v", got, tt.want)
 			}
 		})

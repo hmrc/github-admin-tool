@@ -30,7 +30,10 @@ var (
 				log.Fatal(err)
 			}
 
-			allResults := reportRequest(client)
+			allResults, err := reportRequest(client)
+			if err != nil {
+				log.Fatal(err)
+			}
 			if !dryRun {
 				GenerateCsv(ignoreArchived, allResults)
 			}
@@ -43,8 +46,7 @@ func init() {
 	rootCmd.AddCommand(reportCmd)
 }
 
-func reportRequest(client *graphqlclient.Client) []ReportResponse {
-	reqStr := ReportQueryStr
+func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
 	authStr := fmt.Sprintf("bearer %s", config.Client.Token)
 
 	var (
@@ -55,7 +57,7 @@ func reportRequest(client *graphqlclient.Client) []ReportResponse {
 		bar              progressbar.Bar
 	)
 
-	req := graphqlclient.NewRequest(reqStr)
+	req := graphqlclient.NewRequest(ReportQueryStr)
 	req.Var("org", config.Client.Org)
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Authorization", authStr)
@@ -70,7 +72,7 @@ func reportRequest(client *graphqlclient.Client) []ReportResponse {
 
 		var respData ReportResponse
 		if err := client.Run(ctx, req, &respData); err != nil {
-			log.Fatal(err)
+			return allResults, err
 		}
 
 		cursor = &respData.Organization.Repositories.PageInfo.EndCursor
@@ -107,5 +109,5 @@ func reportRequest(client *graphqlclient.Client) []ReportResponse {
 
 	bar.Finish()
 
-	return allResults
+	return allResults, nil
 }
