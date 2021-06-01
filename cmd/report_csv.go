@@ -2,17 +2,16 @@ package cmd
 
 import (
 	"encoding/csv"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
-func GenerateCsv(ignoreArchived bool, allResults []ReportResponse) {
+func GenerateCSV(ignoreArchived bool, allResults []ReportResponse) {
 	parsed := parse(ignoreArchived, allResults)
-	lines := writeCsv(parsed)
+	lines := writeCSV(parsed)
 
 	if err := writeToFile(lines); err != nil {
 		log.Fatal(err)
@@ -23,7 +22,7 @@ func parse(ignoreArchived bool, allResults []ReportResponse) [][]string {
 	var parsed [][]string
 
 	for _, allData := range allResults {
-		for _, repo := range allData.Organization.Repositories.Nodes { // nolint
+		for _, repo := range allData.Organization.Repositories.Nodes { // nolint // not modifying
 			if ignoreArchived && repo.IsArchived {
 				continue
 			}
@@ -65,7 +64,7 @@ func parse(ignoreArchived bool, allResults []ReportResponse) [][]string {
 	return parsed
 }
 
-func writeCsv(parsed [][]string) [][]string {
+func writeCSV(parsed [][]string) [][]string {
 	lines := [][]string{
 		{
 			"Repo Name",
@@ -112,14 +111,14 @@ func writeCsv(parsed [][]string) [][]string {
 func writeToFile(lines [][]string) error {
 	file, err := os.Create("report.csv")
 	if err != nil {
-		return errors.Wrap(err, "File create")
+		return fmt.Errorf("failed to create file: %w", err)
 	}
 	defer file.Close()
 
 	writer := csv.NewWriter(file)
 
 	if err = writer.WriteAll(lines); err != nil {
-		return errors.Wrap(err, "File write")
+		return fmt.Errorf("failed to create report.csv: %w", err)
 	}
 
 	log.Print("Report written to report.csv")

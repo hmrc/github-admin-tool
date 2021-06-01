@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/pkg/errors"
 )
 
 // Client is a client for interacting with a GraphQL API.
@@ -44,7 +43,7 @@ func NewClient(endpoint string) *Client {
 func (c *Client) Run(ctx context.Context, req *Request, resp interface{}) error {
 	select {
 	case <-ctx.Done():
-		return errors.Wrap(ctx.Err(), "context done")
+		return fmt.Errorf("context done: %w", ctx.Err())
 	default:
 		return c.runWithJSON(ctx, req, resp)
 	}
@@ -62,7 +61,7 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 	}
 
 	if err := json.NewEncoder(&requestBody).Encode(requestBodyObj); err != nil {
-		return errors.Wrap(err, "encode body")
+		return fmt.Errorf("error encode body: %w", err)
 	}
 
 	gr := &graphResponse{
@@ -71,7 +70,7 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 
 	r, err := http.NewRequest(http.MethodPost, c.endpoint, &requestBody)
 	if err != nil {
-		return errors.Wrap(err, "new request")
+		return fmt.Errorf("new request: %w", err)
 	}
 
 	r.Close = c.closeReq
@@ -88,7 +87,7 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 
 	res, err := c.httpClient.Do(r)
 	if err != nil {
-		return errors.Wrap(err, "running do")
+		return fmt.Errorf("running do: %w", err)
 	}
 
 	defer res.Body.Close()
@@ -96,15 +95,15 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 	var buf bytes.Buffer
 
 	if _, err := io.Copy(&buf, res.Body); err != nil {
-		return errors.Wrap(err, "reading body")
+		return fmt.Errorf("reading body: %w", err)
 	}
 
 	if err := json.NewDecoder(&buf).Decode(&gr); err != nil {
 		if res.StatusCode != http.StatusOK {
-			return errors.Errorf("graphql: server returned a non-200 status code: %v", res.StatusCode)
+			return fmt.Errorf("graphql: server returned a non-200 status code: %w", err)
 		}
 
-		return errors.Wrap(err, "decoding response")
+		return fmt.Errorf("decoding response: %w", err)
 	}
 
 	if len(gr.Errors) > 0 {

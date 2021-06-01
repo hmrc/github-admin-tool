@@ -8,7 +8,6 @@ import (
 
 	"github-admin-tool/graphqlclient"
 	"github-admin-tool/progressbar"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -21,8 +20,8 @@ const (
 )
 
 var (
-	ignoreArchived bool              // nolint
-	reportCmd      = &cobra.Command{ // nolint
+	ignoreArchived bool              // nolint // modifying within this package
+	reportCmd      = &cobra.Command{ // nolint // needed for cobra
 		Use:   "report",
 		Short: "Run a report to generate a csv containing information on all organisation repos",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -43,21 +42,19 @@ var (
 				log.Fatal(err)
 			}
 			if !dryRun {
-				GenerateCsv(ignoreArchived, allResults)
+				GenerateCSV(ignoreArchived, allResults)
 			}
 		},
 	}
 )
 
-// nolint
+// nolint // needed for cobra
 func init() {
 	reportCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", false, "Ignore archived repositores")
 	rootCmd.AddCommand(reportCmd)
 }
 
 func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
-	authStr := fmt.Sprintf("bearer %s", config.Client.Token)
-
 	var (
 		cursor           *string
 		totalRecordCount int
@@ -66,7 +63,59 @@ func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
 		bar              progressbar.Bar
 	)
 
-	req := graphqlclient.NewRequest(ReportQueryStr)
+	authStr := fmt.Sprintf("bearer %s", config.Client.Token)
+
+	reportQueryStr := `
+		query ($org: String! $after: String) {
+			organization(login:$org) {
+				repositories(first: 100, after: $after, orderBy: {field: NAME, direction: ASC}) {
+					totalCount
+					pageInfo {
+						endCursor
+						hasNextPage
+					}
+					nodes {
+						deleteBranchOnMerge
+						isArchived
+						isEmpty
+						isFork
+						isPrivate
+						mergeCommitAllowed
+						name
+						nameWithOwner
+						rebaseMergeAllowed
+						squashMergeAllowed
+						branchProtectionRules(first: 100) {
+							nodes {
+								isAdminEnforced
+								requiresCommitSignatures
+								restrictsPushes
+								requiresApprovingReviews
+								requiresStatusChecks
+								requiresCodeOwnerReviews
+								dismissesStaleReviews
+								requiresStrictStatusChecks
+								requiredApprovingReviewCount
+								allowsForcePushes
+								allowsDeletions
+								pattern
+							}
+						}
+						defaultBranchRef {
+							name
+						}
+						parent {
+							name
+							nameWithOwner
+							url
+						}
+					}
+				}
+			}
+		}
+	`
+
+	req := graphqlclient.NewRequest(reportQueryStr)
 	req.Var("org", config.Client.Org)
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Authorization", authStr)
@@ -80,7 +129,7 @@ func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
 
 		var respData ReportResponse
 		if err := client.Run(ctx, req, &respData); err != nil {
-			return allResults, errors.Wrap(err, "graphql call")
+			return allResults, fmt.Errorf("graphql call: %w", err)
 		}
 
 		cursor = &respData.Organization.Repositories.PageInfo.EndCursor

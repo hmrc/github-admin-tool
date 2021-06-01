@@ -10,35 +10,44 @@ import (
 )
 
 var (
-	reposFile  string            // nolint
-	repos      []string          // nolint
-	signingCmd = &cobra.Command{ // nolint
+	reposFile  string            // nolint // global flag for cobra
+	signingCmd = &cobra.Command{ // nolint // needed for cobra
 		Use:   "signing",
 		Short: "Set request signing on to all repos in provided list",
 		Run: func(cmd *cobra.Command, args []string) {
-			var err error
-			reposFile, err = cmd.Flags().GetString("repos")
-			if err != nil {
+			var (
+				err   error
+				repos []string
+			)
+
+			if reposFile, err = cmd.Flags().GetString("repos"); err != nil {
 				log.Fatal(err)
 			}
-			readList()
-			fmt.Printf("repo list is %v", repos) // nolint
+
+			if repos, err = readList(); err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Printf("repo list is %v", repos) // nolint // TODO - REMOVE WHEN FINISHED building
 			// UpdateBranchProtectionRuleInput - requiresCommitSignatures
 		},
 	}
 )
 
-// nolint
+// nolint // needed for cobra
 func init() {
 	signingCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "repo file")
 	signingCmd.MarkFlagRequired("repos")
 	rootCmd.AddCommand(signingCmd)
 }
 
-func readList() {
+func readList() ([]string, error) {
 	file, err := os.Open(reposFile)
+
+	var repos []string
+
 	if err != nil {
-		panic(fmt.Errorf("fatal error repo file: %w", err))
+		return repos, fmt.Errorf("fatal error repo file: %w", err)
 	}
 	defer file.Close()
 
@@ -46,4 +55,6 @@ func readList() {
 	for scanner.Scan() {
 		repos = append(repos, scanner.Text())
 	}
+
+	return repos, nil
 }

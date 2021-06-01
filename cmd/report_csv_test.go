@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-var TestEmptyCsvRows = [][]string{ // nolint
+var TestEmptyCSVRows = [][]string{ // nolint // want to use this in both tests
 	{
 		"Repo Name",
 		"Default Branch Name",
@@ -129,7 +129,7 @@ func Test_parse(t *testing.T) {
 	}
 }
 
-func Test_writeCsv(t *testing.T) {
+func Test_writeCSV(t *testing.T) {
 	var TestEmptyList [][]string
 
 	wantWithBP := make([][]string, 1)
@@ -140,8 +140,8 @@ func Test_writeCsv(t *testing.T) {
 		"false", "0", "false", "false", "SOMEREGEXP",
 	)
 
-	twoCsvRows := TestEmptyCsvRows
-	twoCsvRows = append(twoCsvRows, wantWithBP...)
+	twoCSVRows := TestEmptyCSVRows
+	twoCSVRows = append(twoCSVRows, wantWithBP...)
 
 	type args struct {
 		parsed [][]string
@@ -152,14 +152,14 @@ func Test_writeCsv(t *testing.T) {
 		args args
 		want [][]string
 	}{
-		{name: "WriteCSVReturnsNoExtraRows", args: args{parsed: TestEmptyList}, want: TestEmptyCsvRows},
-		{name: "WriteCSVReturnsSomeRows", args: args{parsed: wantWithBP}, want: twoCsvRows},
+		{name: "WriteCSVReturnsNoExtraRows", args: args{parsed: TestEmptyList}, want: TestEmptyCSVRows},
+		{name: "WriteCSVReturnsSomeRows", args: args{parsed: wantWithBP}, want: twoCSVRows},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := writeCsv(tt.args.parsed); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("writeCsv() = %v, want %v", got, tt.want)
+			if got := writeCSV(tt.args.parsed); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("writeCSV() = %v, want %v", got, tt.want)
 			}
 		})
 	}

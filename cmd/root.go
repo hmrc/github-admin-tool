@@ -9,10 +9,10 @@ import (
 )
 
 var (
-	configFile string            // nolint
-	config     Config            // nolint
-	dryRun     bool              // nolint
-	rootCmd    = &cobra.Command{ // nolint
+	configFile string            // nolint // needed for cobra
+	config     Config            // nolint // using with viper
+	dryRun     bool              // nolint // using for global flag
+	rootCmd    = &cobra.Command{ // nolint // needed for cobra
 		Use:   "github-admin-tool",
 		Short: "Github admin tool allows you to perform actions on your github repos",
 		Long:  "Using Github version 4 GraphQL API to generate repo reports and administer your organisations repos etc",
@@ -30,7 +30,7 @@ func Execute() error {
 	return errors.Wrap(rootCmd.Execute(), "root execute")
 }
 
-// nolint
+// nolint // needed for cobra
 func init() {
 	cobra.OnInitialize(initConfig)
 

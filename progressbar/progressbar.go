@@ -33,7 +33,7 @@ func (bar *Bar) getPercent() int64 {
 
 func (bar *Bar) Play(cur int64) {
 	bar.cur = cur
-	last := bar.percent // nolint
+	last := bar.percent // nolint // needs to be set before conditional
 	bar.percent = bar.getPercent()
 
 	if bar.percent != last {
@@ -42,7 +42,7 @@ func (bar *Bar) Play(cur int64) {
 			bar.rate += bar.graph
 		}
 
-		fmt.Printf("\r[%-50s]%3d%% %8d/%d", bar.rate, bar.percent*2, bar.cur, bar.total) //nolint
+		fmt.Printf("\r[%-50s]%3d%% %8d/%d", bar.rate, bar.percent*2, bar.cur, bar.total) //nolint // output for progressbar
 	}
 }
 
