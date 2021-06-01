@@ -21,8 +21,8 @@ const (
 )
 
 var (
-	ignoreArchived bool
-	reportCmd      = &cobra.Command{
+	ignoreArchived bool              // nolint
+	reportCmd      = &cobra.Command{ // nolint
 		Use:   "report",
 		Short: "Run a report to generate a csv containing information on all organisation repos",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -49,6 +49,7 @@ var (
 	}
 )
 
+// nolint
 func init() {
 	reportCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", false, "Ignore archived repositores")
 	rootCmd.AddCommand(reportCmd)

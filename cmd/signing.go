@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	reposFile  string
-	repos      []string
-	signingCmd = &cobra.Command{
+	reposFile  string            // nolint
+	repos      []string          // nolint
+	signingCmd = &cobra.Command{ // nolint
 		Use:   "signing",
 		Short: "Set request signing on to all repos in provided list",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -22,12 +22,13 @@ var (
 				log.Fatal(err)
 			}
 			readList()
-			fmt.Printf("repo list is %v", repos)
+			fmt.Printf("repo list is %v", repos) // nolint
 			// UpdateBranchProtectionRuleInput - requiresCommitSignatures
 		},
 	}
 )
 
+// nolint
 func init() {
 	signingCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "repo file")
 	signingCmd.MarkFlagRequired("repos")

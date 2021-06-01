@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/csv"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -24,7 +23,7 @@ func parse(ignoreArchived bool, allResults []ReportResponse) [][]string {
 	var parsed [][]string
 
 	for _, allData := range allResults {
-		for _, repo := range allData.Organization.Repositories.Nodes {
+		for _, repo := range allData.Organization.Repositories.Nodes { // nolint
 			if ignoreArchived && repo.IsArchived {
 				continue
 			}
@@ -113,7 +112,7 @@ func writeCsv(parsed [][]string) [][]string {
 func writeToFile(lines [][]string) error {
 	file, err := os.Create("report.csv")
 	if err != nil {
-		fmt.Println(err)
+		return errors.Wrap(err, "File create")
 	}
 	defer file.Close()
 

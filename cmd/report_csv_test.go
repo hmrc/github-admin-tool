@@ -5,9 +5,7 @@ import (
 	"testing"
 )
 
-var TestEmptyList [][]string
-
-var TestEmptyCsvRows = [][]string{
+var TestEmptyCsvRows = [][]string{ // nolint
 	{
 		"Repo Name",
 		"Default Branch Name",
@@ -47,7 +45,10 @@ var TestEmptyCsvRows = [][]string{
 }
 
 func Test_parse(t *testing.T) {
-	var emptyAllResults []ReportResponse
+	var (
+		emptyAllResults []ReportResponse
+		TestEmptyList   [][]string
+	)
 
 	responsesWithArchived := make([]ReportResponse, 1)
 	responsesWithArchived[0].Organization.Repositories.Nodes = append(
@@ -129,6 +130,8 @@ func Test_parse(t *testing.T) {
 }
 
 func Test_writeCsv(t *testing.T) {
+	var TestEmptyList [][]string
+
 	wantWithBP := make([][]string, 1)
 	wantWithBP[0] = append(
 		wantWithBP[0],

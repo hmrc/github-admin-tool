@@ -15,44 +15,56 @@ type BranchProtectionRulesNodesList struct {
 	Pattern                      string `json:"pattern"`
 }
 
+type BranchProtectionRules struct {
+	Nodes []BranchProtectionRulesNodesList `json:"nodes"`
+}
+
+type Parent struct {
+	Name          string `json:"name"`
+	NameWithOwner string `json:"nameWithOwner"`
+	URL           string `json:"url"`
+}
+
+type DefaultBranchRef struct {
+	Name string `json:"name"`
+}
+
 type RepositoriesNodeList struct {
-	DeleteBranchOnMerge   bool   `json:"deleteBranchOnMerge"`
-	IsArchived            bool   `json:"isArchived"`
-	IsEmpty               bool   `json:"isEmpty"`
-	IsFork                bool   `json:"isFork"`
-	IsPrivate             bool   `json:"isPrivate"`
-	MergeCommitAllowed    bool   `json:"mergeCommitAllowed"`
-	Name                  string `json:"name"`
-	NameWithOwner         string `json:"nameWithOwner"`
-	RebaseMergeAllowed    bool   `json:"rebaseMergeAllowed"`
-	SquashMergeAllowed    bool   `json:"squashMergeAllowed"`
-	BranchProtectionRules struct {
-		Nodes []BranchProtectionRulesNodesList `json:"nodes"`
-	} `json:"branchProtectionRules"`
-	Parent struct {
-		Name          string `json:"name"`
-		NameWithOwner string `json:"nameWithOwner"`
-		URL           string `json:"url"`
-	}
-	DefaultBranchRef struct {
-		Name string `json:"name"`
-	}
+	DeleteBranchOnMerge   bool                  `json:"deleteBranchOnMerge"`
+	IsArchived            bool                  `json:"isArchived"`
+	IsEmpty               bool                  `json:"isEmpty"`
+	IsFork                bool                  `json:"isFork"`
+	IsPrivate             bool                  `json:"isPrivate"`
+	MergeCommitAllowed    bool                  `json:"mergeCommitAllowed"`
+	Name                  string                `json:"name"`
+	NameWithOwner         string                `json:"nameWithOwner"`
+	RebaseMergeAllowed    bool                  `json:"rebaseMergeAllowed"`
+	SquashMergeAllowed    bool                  `json:"squashMergeAllowed"`
+	BranchProtectionRules BranchProtectionRules `json:"branchProtectionRules"`
+	Parent                Parent
+	DefaultBranchRef      DefaultBranchRef
+}
+
+type PageInfo struct {
+	EndCursor   string `json:"endCursor"`
+	HasNextPage bool   `json:"hasNextPage"`
+}
+
+type Repositories struct {
+	TotalCount int                    `json:"totalCount"`
+	PageInfo   PageInfo               `json:"pageInfo"`
+	Nodes      []RepositoriesNodeList `json:"nodes"`
+}
+
+type Organization struct {
+	Repositories Repositories `json:"repositories"`
 }
 
 type ReportResponse struct {
-	Organization struct {
-		Repositories struct {
-			TotalCount int `json:"totalCount"`
-			PageInfo   struct {
-				EndCursor   string `json:"endCursor"`
-				HasNextPage bool   `json:"hasNextPage"`
-			} `json:"pageInfo"`
-			Nodes []RepositoriesNodeList `json:"nodes"`
-		} `json:"repositories"`
-	} `json:"organization"`
+	Organization Organization `json:"organization"`
 }
 
-// ReportQueryStr for repo search.
+// nolint
 var ReportQueryStr = `
 	query ($org: String! $after: String) {
 		organization(login:$org) {

@@ -9,10 +9,10 @@ import (
 )
 
 var (
-	configFile string
-	config     Config
-	dryRun     bool
-	rootCmd    = &cobra.Command{
+	configFile string            // nolint
+	config     Config            // nolint
+	dryRun     bool              // nolint
+	rootCmd    = &cobra.Command{ // nolint
 		Use:   "github-admin-tool",
 		Short: "Github admin tool allows you to perform actions on your github repos",
 		Long:  "Using Github version 4 GraphQL API to generate repo reports and administer your organisations repos etc",
@@ -30,6 +30,7 @@ func Execute() error {
 	return errors.Wrap(rootCmd.Execute(), "root execute")
 }
 
+// nolint
 func init() {
 	cobra.OnInitialize(initConfig)
 
@@ -38,24 +39,29 @@ func init() {
 }
 
 func initConfig() {
-	// Try ENV vars
+	var err error
+
 	viper.SetConfigType("env")
 	viper.SetEnvPrefix("ghtool")
-	viper.BindEnv("token")
-	viper.BindEnv("org")
+
+	if err = viper.BindEnv("token"); err != nil {
+		panic(fmt.Errorf("fatal error binding var: %w", err))
+	}
+
+	if err = viper.BindEnv("org"); err != nil {
+		panic(fmt.Errorf("fatal error binding var: %w", err))
+	}
 
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
 	viper.SetConfigFile(configFile)
 
-	err := viper.ReadInConfig()
-	if err != nil {
+	if err = viper.ReadInConfig(); err != nil {
 		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
 
-	err = viper.Unmarshal(&config)
-	if err != nil {
+	if err = viper.Unmarshal(&config); err != nil {
 		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
 }

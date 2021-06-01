@@ -9,8 +9,6 @@ import (
 	"github.com/jarcoal/httpmock"
 )
 
-var client = graphqlclient.NewClient("https://api.github.com/graphql")
-
 func Test_reportRequest(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -19,6 +17,8 @@ func Test_reportRequest(t *testing.T) {
 		oneResult   []ReportResponse
 		oneResponse ReportResponse
 	)
+
+	client := graphqlclient.NewClient("https://api.github.com/graphql")
 
 	oneResponse.Organization.Repositories.TotalCount = 1
 	nodes := make([]RepositoriesNodeList, 1)
