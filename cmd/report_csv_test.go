@@ -50,20 +50,6 @@ func Test_parse(t *testing.T) {
 		TestEmptyList   [][]string
 	)
 
-	wantWithUnarchived := make([][]string, 1)
-	wantWithUnarchived[0] = append(
-		wantWithUnarchived[0],
-		"REPONAME1", "", "false", "false", "false", "false", "", "false", "false", "false",
-	)
-
-	wantWithBP := make([][]string, 1)
-	wantWithBP[0] = append(
-		wantWithBP[0],
-		"", "", "false", "false", "false", "false", "", "false", "false",
-		"false", "false", "false", "false", "false", "false", "false",
-		"false", "false", "0", "false", "false", "SOMEREGEXP",
-	)
-
 	type args struct {
 		ignoreArchived bool
 		allResults     []ReportResponse
@@ -91,7 +77,7 @@ func Test_parse(t *testing.T) {
 			args: args{ignoreArchived: true, allResults: []ReportResponse{{
 				Organization{Repositories{Nodes: []RepositoriesNodeList{{IsArchived: false, NameWithOwner: "REPONAME1"}}}},
 			}}},
-			want: wantWithUnarchived,
+			want: [][]string{{"REPONAME1", "", "false", "false", "false", "false", "", "false", "false", "false"}},
 		},
 		{
 			name: "ParseBranchProtectionResultSet",
@@ -111,7 +97,10 @@ func Test_parse(t *testing.T) {
 					},
 				}},
 			},
-			want: wantWithBP,
+			want: [][]string{{
+				"", "", "false", "false", "false", "false", "", "false", "false", "false", "false",
+				"false", "false", "false", "false", "false", "false", "false", "0", "false", "false", "SOMEREGEXP",
+			}},
 		},
 	}
 
@@ -147,8 +136,16 @@ func Test_writeCSV(t *testing.T) {
 		args args
 		want [][]string
 	}{
-		{name: "WriteCSVReturnsNoExtraRows", args: args{parsed: TestEmptyList}, want: TestEmptyCSVRows},
-		{name: "WriteCSVReturnsSomeRows", args: args{parsed: wantWithBP}, want: twoCSVRows},
+		{
+			name: "WriteCSVReturnsNoExtraRows",
+			args: args{parsed: TestEmptyList},
+			want: TestEmptyCSVRows,
+		},
+		{
+			name: "WriteCSVReturnsSomeRows",
+			args: args{parsed: wantWithBP},
+			want: twoCSVRows,
+		},
 	}
 
 	for _, tt := range tests {

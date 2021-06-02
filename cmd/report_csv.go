@@ -14,7 +14,7 @@ func GenerateCSV(ignoreArchived bool, allResults []ReportResponse) error {
 	lines := writeCSV(parsed)
 
 	if err := writeToFile(lines); err != nil {
-		return fmt.Errorf("GenerateCSV failed: ", err)
+		return fmt.Errorf("GenerateCSV failed: %w", err)
 	}
 
 	return nil
