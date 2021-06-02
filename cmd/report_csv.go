@@ -9,13 +9,15 @@ import (
 	"strings"
 )
 
-func GenerateCSV(ignoreArchived bool, allResults []ReportResponse) {
+func GenerateCSV(ignoreArchived bool, allResults []ReportResponse) error {
 	parsed := parse(ignoreArchived, allResults)
 	lines := writeCSV(parsed)
 
 	if err := writeToFile(lines); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("GenerateCSV failed: ", err)
 	}
+
+	return nil
 }
 
 func parse(ignoreArchived bool, allResults []ReportResponse) [][]string {

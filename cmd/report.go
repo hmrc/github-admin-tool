@@ -6,7 +6,6 @@ import (
 	"github-admin-tool/graphqlclient"
 	"github-admin-tool/progressbar"
 	"log"
-	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -14,9 +13,6 @@ import (
 const (
 	// IterationCount the number of repos per result set.
 	IterationCount int = 100
-
-	// MillisecondMultiplier for the sleep calculation.
-	MillisecondMultiplier int64 = 100
 )
 
 var (
@@ -42,7 +38,9 @@ var (
 				log.Fatal(err)
 			}
 			if !dryRun {
-				GenerateCSV(ignoreArchived, allResults)
+				if err = GenerateCSV(ignoreArchived, allResults); err != nil {
+					log.Fatal(err)
+				}
 			}
 		},
 	}
@@ -141,27 +139,22 @@ func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
 			break
 		}
 
-		// Set up progress bar
-		if iteration == 0 {
-			bar.NewOption(0, int64(totalRecordCount))
-
-			if totalRecordCount <= IterationCount {
-				iteration = totalRecordCount
-			}
-		} else if !respData.Organization.Repositories.PageInfo.HasNextPage {
-			iteration = totalRecordCount
-		}
-
-		time.Sleep(time.Millisecond * time.Duration(MillisecondMultiplier))
-		bar.Play(int64(iteration))
-
 		if len(respData.Organization.Repositories.Nodes) > 0 {
 			allResults = append(allResults, respData)
 		}
 
+		if iteration == 0 {
+			bar.NewOption(0, totalRecordCount)
+		}
+
 		if !respData.Organization.Repositories.PageInfo.HasNextPage {
+			iteration = totalRecordCount
+			bar.Play(iteration)
+
 			break
 		}
+
+		bar.Play(iteration)
 
 		iteration += IterationCount
 	}

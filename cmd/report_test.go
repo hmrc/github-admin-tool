@@ -13,29 +13,31 @@ func Test_reportRequest(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
-	var (
-		oneResult   []ReportResponse
-		oneResponse ReportResponse
-	)
-
 	client := graphqlclient.NewClient("https://api.github.com/graphql")
-
-	oneResponse.Organization.Repositories.TotalCount = 1
-	nodes := make([]RepositoriesNodeList, 1)
-	nodes[0].Name = "repo-name"
-	nodes[0].NameWithOwner = "org-name/repo-name"
-	nodes[0].DefaultBranchRef.Name = "master"
-	nodes[0].SquashMergeAllowed = true
-	oneResponse.Organization.Repositories.Nodes = nodes
-	oneResult = append(oneResult, oneResponse)
 
 	tests := []struct {
 		name               string
 		mockHTTPReturnFile string
 		want               []ReportResponse
 	}{
-		{name: "reportRequestReturnsEmpty", mockHTTPReturnFile: "../testdata/mockEmptyJsonResponse.json", want: nil},
-		{name: "reportRequestReturnsOne", mockHTTPReturnFile: "../testdata/mockJsonResponse.json", want: oneResult},
+		{
+			name:               "reportRequestReturnsEmpty",
+			mockHTTPReturnFile: "../testdata/mockEmptyJsonResponse.json",
+			want:               nil,
+		},
+		{
+			name:               "reportRequestReturnsOne",
+			mockHTTPReturnFile: "../testdata/mockJsonResponse.json",
+			want: []ReportResponse{{Organization{Repositories{
+				TotalCount: 1,
+				Nodes: []RepositoriesNodeList{{
+					Name:               "repo-name",
+					NameWithOwner:      "org-name/repo-name",
+					DefaultBranchRef:   DefaultBranchRef{"master"},
+					SquashMergeAllowed: true,
+				}},
+			}}}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -43,6 +45,7 @@ func Test_reportRequest(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to read test data: %v", err)
 			}
+
 			httpmock.RegisterResponder(
 				"POST",
 				"https://api.github.com/graphql",
