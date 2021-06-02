@@ -50,30 +50,11 @@ func Test_parse(t *testing.T) {
 		TestEmptyList   [][]string
 	)
 
-	responsesWithArchived := make([]ReportResponse, 1)
-	responsesWithArchived[0].Organization.Repositories.Nodes = append(
-		responsesWithArchived[0].Organization.Repositories.Nodes,
-		RepositoriesNodeList{IsArchived: true},
-	)
-
-	responsesWithUnarchived := make([]ReportResponse, 1)
-	responsesWithUnarchived[0].Organization.Repositories.Nodes = append(
-		responsesWithUnarchived[0].Organization.Repositories.Nodes,
-		RepositoriesNodeList{IsArchived: false, NameWithOwner: "REPONAME1"},
-	)
-
 	wantWithUnarchived := make([][]string, 1)
 	wantWithUnarchived[0] = append(
 		wantWithUnarchived[0],
 		"REPONAME1", "", "false", "false", "false", "false", "", "false", "false", "false",
 	)
-
-	branchProtectionList := make([]BranchProtectionRulesNodesList, 1)
-	branchProtectionList[0].Pattern = " SOMEREGEXP "
-	repositoriesNodeList := make([]RepositoriesNodeList, 1)
-	repositoriesNodeList[0].BranchProtectionRules.Nodes = branchProtectionList
-	responsesWithBP := make([]ReportResponse, 1)
-	responsesWithBP[0].Organization.Repositories.Nodes = repositoriesNodeList
 
 	wantWithBP := make([][]string, 1)
 	wantWithBP[0] = append(
@@ -99,23 +80,37 @@ func Test_parse(t *testing.T) {
 			want: TestEmptyList,
 		},
 		{
-			name: "ParseEmptyList",
-			args: args{ignoreArchived: false},
-			want: TestEmptyList,
-		},
-		{
 			name: "ParseArchivedResultSet",
-			args: args{ignoreArchived: true, allResults: responsesWithArchived},
+			args: args{ignoreArchived: true, allResults: []ReportResponse{{
+				Organization{Repositories{Nodes: []RepositoriesNodeList{{IsArchived: true}}}},
+			}}},
 			want: TestEmptyList,
 		},
 		{
 			name: "ParseUnarchivedResultSet",
-			args: args{ignoreArchived: true, allResults: responsesWithUnarchived},
+			args: args{ignoreArchived: true, allResults: []ReportResponse{{
+				Organization{Repositories{Nodes: []RepositoriesNodeList{{IsArchived: false, NameWithOwner: "REPONAME1"}}}},
+			}}},
 			want: wantWithUnarchived,
 		},
 		{
 			name: "ParseBranchProtectionResultSet",
-			args: args{ignoreArchived: true, allResults: responsesWithBP},
+			args: args{
+				ignoreArchived: true,
+				allResults: []ReportResponse{{
+					Organization{
+						Repositories{
+							Nodes: []RepositoriesNodeList{{
+								BranchProtectionRules: BranchProtectionRules{
+									Nodes: []BranchProtectionRulesNodesList{{
+										Pattern: "SOMEREGEXP",
+									}},
+								},
+							}},
+						},
+					},
+				}},
+			},
 			want: wantWithBP,
 		},
 	}
