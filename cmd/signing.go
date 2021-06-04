@@ -87,19 +87,70 @@ func applySigning(repoSearchResult map[string]RepositoriesNodeList) ([]string, e
 	// json.Unmarshal(repoSearchResult.([]byte), &unmarshalled)
 	// fmt.Printf("unmarshalled is %v", unmarshalled)
 
+	// testrepo2-github-admin-tool - no bpr on default branch
+
 	for _, v := range repoSearchResult {
-		log.Printf("Checking status of repo %v...", v.NameWithOwner)
-		if len(v.BranchProtectionRules.Nodes) == 0 {
-			log.Print("No branch protection rules")
-		}
 		if v.DefaultBranchRef.Name == "" {
-			log.Print("No default branch")
+			// the_seven_good_dwarfs - no default branch, no bpr
+			log.Printf("No default branch for %v", v.NameWithOwner)
+			continue
 		}
+
+		if len(v.BranchProtectionRules.Nodes) == 0 {
+			// testrepo1-github-admin-tool - no bpr
+			log.Printf("No branch protection rules for %v", v.NameWithOwner)
+
+			// Create branch protection
+			// continue
+
+		} else {
+			// Check all nodes for default branch protection rule
+			defaultBranchProtectionExists := false
+			for _, node := range v.BranchProtectionRules.Nodes {
+				if v.DefaultBranchRef.Name == node.Pattern {
+					defaultBranchProtectionExists = true
+				}
+			}
+
+			if !defaultBranchProtectionExists {
+				// Create branch protection
+				// continue
+				log.Printf("No branch protection rules for default branch in repo %v with default branch %v", v.NameWithOwner, v.DefaultBranchRef.Name)
+
+			}
+
+			// Update branch protection
+		}
+
+		signedRepos = append(signedRepos, v.NameWithOwner)
 
 	}
 
 	return signedRepos, err
 }
+
+func updateBranchProtection(branchProtectionId string) (bool, error) {
+	var (
+		updated bool
+		err     error
+	)
+
+	// mutation UpdateBranchProtectionRule {
+	// 	updateBranchProtectionRule(input:{clientMutationId:"github_tool_id",branchProtectionRuleId:HOORAY}) {
+	// 	  clientMutationId
+	// 	}
+
+	//   }
+
+	return updated, err
+}
+
+// mutation CreateBranchProtectionRule {
+// 	createBranchProtectionRule(input:{clientMutationId:"github_tool_id",branchProtectionRuleId:HOORAY}) {
+// 	  clientMutationId
+// 	}
+
+//   }
 
 func generateQueryStr(repos []string) (string, error) {
 	preQueryStr := `
@@ -148,7 +199,7 @@ func generateQueryStr(repos []string) (string, error) {
 
 // nolint // needed for cobra
 func init() {
-	signingCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "csv file containing repositories without org/ prefix. Max 100 repos")
+	signingCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "file containing repositories on new line without org/ prefix. Max 100 repos")
 	signingCmd.MarkFlagRequired("repos")
 	rootCmd.AddCommand(signingCmd)
 }
