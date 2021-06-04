@@ -3,10 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
-
 	"github-admin-tool/graphqlclient"
 	"github-admin-tool/progressbar"
+	"log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -21,8 +21,6 @@ var (
 		Use:   "report",
 		Short: "Run a report to generate a csv containing information on all organisation repos",
 		Run: func(cmd *cobra.Command, args []string) {
-			client := graphqlclient.NewClient("https://api.github.com/graphql")
-
 			var err error
 			dryRun, err = cmd.Flags().GetBool("dry-run")
 			if err != nil {
@@ -33,6 +31,7 @@ var (
 				log.Fatal(err)
 			}
 
+			client := graphqlclient.NewClient("https://api.github.com/graphql")
 			allResults, err := reportRequest(client)
 			if err != nil {
 				log.Fatal(err)
@@ -61,7 +60,7 @@ func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
 		bar              progressbar.Bar
 	)
 
-	authStr := fmt.Sprintf("bearer %s", config.Client.Token)
+	authStr := fmt.Sprintf("bearer %s", config.Token)
 
 	reportQueryStr := `
 		query ($org: String! $after: String) {
@@ -114,7 +113,7 @@ func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
 	`
 
 	req := graphqlclient.NewRequest(reportQueryStr)
-	req.Var("org", config.Client.Org)
+	req.Var("org", config.Org)
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Authorization", authStr)
 

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -20,10 +21,8 @@ var (
 )
 
 type Config struct {
-	Client struct {
-		Token string `mapstructure:"token"`
-		Org   string `mapstructure:"org"`
-	}
+	Token string `mapstructure:"token"`
+	Org   string `mapstructure:"org"`
 }
 
 func Execute() error {
@@ -58,7 +57,7 @@ func initConfig() {
 	viper.SetConfigFile(configFile)
 
 	if err = viper.ReadInConfig(); err != nil {
-		panic(fmt.Errorf("fatal error config file: %w", err))
+		log.Print("Could not find any config files")
 	}
 
 	if err = viper.Unmarshal(&config); err != nil {
