@@ -1,9 +1,8 @@
 package main
 
 import (
-	"log"
-
 	"github-admin-tool/cmd"
+	"log"
 )
 
 func main() {

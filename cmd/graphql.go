@@ -1,6 +1,7 @@
 package cmd
 
 type BranchProtectionRulesNodesList struct {
+	ID                           string `json:"id"`
 	IsAdminEnforced              bool   `json:"isAdminEnforced"`
 	RequiresCommitSignatures     bool   `json:"requiresCommitSignatures"`
 	RestrictsPushes              bool   `json:"restrictsPushes"`
@@ -30,6 +31,7 @@ type DefaultBranchRef struct {
 }
 
 type RepositoriesNodeList struct {
+	ID                    string                `json:"id"`
 	DeleteBranchOnMerge   bool                  `json:"deleteBranchOnMerge"`
 	IsArchived            bool                  `json:"isArchived"`
 	IsEmpty               bool                  `json:"isEmpty"`

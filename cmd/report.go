@@ -3,10 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github-admin-tool/graphqlclient"
-	"github-admin-tool/progressbar"
 	"log"
 
+	"github-admin-tool/graphqlclient"
+	"github-admin-tool/progressbar"
 	"github.com/spf13/cobra"
 )
 
