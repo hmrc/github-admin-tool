@@ -120,15 +120,14 @@ OUTER:
 		// Check all nodes for default branch protection rule
 		for _, node := range v.BranchProtectionRules.Nodes {
 			if v.DefaultBranchRef.Name == node.Pattern {
-				branchProtectionID = node.ID
-				modifyAction = "update"
-
 				// If default branch has already got signing turned on, no need to update
 				if node.RequiresCommitSignatures {
 					info = append(info, fmt.Sprintf("Signing already turned on for %v", v.NameWithOwner))
 
 					continue OUTER
 				}
+				branchProtectionID = node.ID
+				modifyAction = "update"
 			}
 		}
 
