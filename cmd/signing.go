@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github-admin-tool/graphqlclient"
+
 	"github.com/spf13/cobra"
 )
 
@@ -171,9 +172,7 @@ func updateBranchProtection(branchProtectionID string, client *graphqlclient.Cli
 
 	ctx := context.Background()
 
-	var respData interface{}
-
-	if err := client.Run(ctx, req, &respData); err != nil {
+	if err := client.Run(ctx, req, nil); err != nil {
 		return fmt.Errorf("from API call: %w", err)
 	}
 
@@ -206,9 +205,7 @@ func createBranchProtection(repositoryID, branchName string, client *graphqlclie
 
 	ctx := context.Background()
 
-	var respData interface{}
-
-	if err := client.Run(ctx, req, &respData); err != nil {
+	if err := client.Run(ctx, req, nil); err != nil {
 		return fmt.Errorf("from API call: %w", err)
 	}
 
