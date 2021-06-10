@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/jarcoal/httpmock"
 )
 
@@ -186,7 +185,7 @@ func Test_applySigning(t *testing.T) {
 			if !reflect.DeepEqual(gotInfo, tt.wantInfo) {
 				t.Errorf("applySigning() gotInfo = %v, want %v", gotInfo, tt.wantInfo)
 			}
-			if !cmp.Equal(gotErrors, tt.wantErrors) {
+			if !reflect.DeepEqual(gotErrors, tt.wantErrors) {
 				t.Errorf("applySigning() gotErrors = %T, want %T", gotErrors, tt.wantErrors)
 			}
 		})
