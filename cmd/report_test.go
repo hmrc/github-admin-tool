@@ -33,7 +33,7 @@ func Test_reportRequest(t *testing.T) {
 				Nodes: []RepositoriesNodeList{{
 					Name:               "repo-name",
 					NameWithOwner:      "org-name/repo-name",
-					DefaultBranchRef:   DefaultBranchRef{"master"},
+					DefaultBranchRef:   DefaultBranchRef{"main"},
 					SquashMergeAllowed: true,
 				}},
 			}}}},

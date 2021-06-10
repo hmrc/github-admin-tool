@@ -3,6 +3,7 @@ module github-admin-tool
 go 1.16
 
 require (
+	github.com/google/go-cmp v0.5.6
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.1.3

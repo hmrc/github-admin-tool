@@ -4,12 +4,10 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github-admin-tool/graphqlclient"
 	"log"
 	"os"
 	"strings"
-
-	"github-admin-tool/graphqlclient"
-
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +19,11 @@ var (
 		Use:   "signing",
 		Short: "Set request signing on to all repos in provided list",
 		Run: func(cmd *cobra.Command, args []string) {
+			dryRun, err := cmd.Flags().GetBool("dry-run")
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			reposFilePath, err := cmd.Flags().GetString("repos")
 			if err != nil {
 				log.Fatal(err)
@@ -43,10 +46,15 @@ var (
 				log.Fatal(err)
 			}
 
+			if dryRun {
+				log.Printf("This is a dry run, the run would process %d repositories", numberOfRepos)
+				os.Exit(0)
+			}
+
 			updated, info, errors := applySigning(repoSearchResult, client)
 
 			for key, repo := range updated {
-				log.Printf("Modified Repo (%d): %v", key, repo)
+				log.Printf("Modified (%d): %v", key, repo)
 			}
 
 			for key, err := range errors {
@@ -58,6 +66,9 @@ var (
 			}
 		},
 	}
+
+	signingCreateFunction = createBranchProtection // nolint // Like this for testing mock
+	signingUpdateFunction = updateBranchProtection // nolint // Like this for testing mock
 )
 
 func repoRequest(queryString string, client *graphqlclient.Client) (map[string]RepositoriesNodeList, error) {
@@ -84,13 +95,22 @@ func applySigning(repoSearchResult map[string]RepositoriesNodeList, client *grap
 	info,
 	errors []string,
 ) {
+	var (
+		repositoryID  string
+		branchID      string
+		modifyAction  string
+		defaultBranch string
+		err           error
+	)
+
 OUTER:
+
 	for _, v := range repoSearchResult { // nolint
 
-		// set for repositoryID
-		modifyID := v.ID
-		modifyFunc := createBranchProtection
-		defaultBranch := v.DefaultBranchRef.Name
+		// Set for repositoryID
+		repositoryID = v.ID
+		modifyAction = "create"
+		defaultBranch = v.DefaultBranchRef.Name
 
 		if v.DefaultBranchRef.Name == "" {
 			info = append(info, fmt.Sprintf("No default branch for %v", v.NameWithOwner))
@@ -102,8 +122,8 @@ OUTER:
 		for _, node := range v.BranchProtectionRules.Nodes {
 			if v.DefaultBranchRef.Name == node.Pattern {
 				// set for branchProtectionRuleID
-				modifyID = node.ID
-				modifyFunc = updateBranchProtection
+				branchID = node.ID
+				modifyAction = "update"
 
 				// If default branch has already got signing turned on, no need to update
 				if node.RequiresCommitSignatures {
@@ -114,10 +134,18 @@ OUTER:
 			}
 		}
 
-		if err := modifyFunc(modifyID, defaultBranch, client); err != nil {
-			errors = append(errors, err.Error())
+		if modifyAction == "update" {
+			if err = signingUpdateFunction(branchID, client); err != nil {
+				errors = append(errors, err.Error())
 
-			continue OUTER
+				continue OUTER
+			}
+		} else {
+			if err = signingCreateFunction(repositoryID, defaultBranch, client); err != nil {
+				errors = append(errors, err.Error())
+
+				continue OUTER
+			}
 		}
 
 		modified = append(modified, v.NameWithOwner)
@@ -126,24 +154,24 @@ OUTER:
 	return modified, info, errors
 }
 
-func updateBranchProtection(branchProtectionID, branchName string, client *graphqlclient.Client) error {
+func updateBranchProtection(branchProtectionID string, client *graphqlclient.Client) error {
 	req := graphqlclient.NewRequest(`
-		mutation UpdateBranchProtectionRule($branchProtectionId: String! $clientMutationId: String! $pattern: String!) {
+		mutation UpdateBranchProtectionRule($branchProtectionId: String! $clientMutationId: String!) {
 			updateBranchProtectionRule(
 				input:{
 					clientMutationId: $clientMutationId,
 					branchProtectionRuleId: $branchProtectionId,
 					requiresCommitSignatures: true,
-					pattern: $pattern,
 				}
 			) {
-				clientMutationId
+				branchProtectionRule {
+					id
+				}
 			}
 		}
 	`)
 	req.Var("clientMutationId", fmt.Sprintf("github-tool-%v", branchProtectionID))
 	req.Var("branchProtectionId", branchProtectionID)
-	req.Var("pattern", branchName)
 
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Authorization", fmt.Sprintf("bearer %s", config.Token))
@@ -153,15 +181,13 @@ func updateBranchProtection(branchProtectionID, branchName string, client *graph
 	var respData interface{}
 
 	if err := client.Run(ctx, req, &respData); err != nil {
-		return fmt.Errorf("From API call: %w", err)
+		return fmt.Errorf("from API call: %w", err)
 	}
 
 	return nil
 }
 
 func createBranchProtection(repositoryID, branchName string, client *graphqlclient.Client) error {
-	log.Printf("creating for branchName %+v", branchName)
-
 	req := graphqlclient.NewRequest(`
 		mutation CreateBranchProtectionRule($repositoryId: String! $clientMutationId: String! $pattern: String!) {
 			createBranchProtectionRule(
@@ -172,7 +198,9 @@ func createBranchProtection(repositoryID, branchName string, client *graphqlclie
 					pattern: $pattern,
 				}
 			) {
-				clientMutationId
+				branchProtectionRule {
+					id
+				}
 			}
 		}
 	`)
@@ -188,7 +216,7 @@ func createBranchProtection(repositoryID, branchName string, client *graphqlclie
 	var respData interface{}
 
 	if err := client.Run(ctx, req, &respData); err != nil {
-		return fmt.Errorf("From API call: %w", err)
+		return fmt.Errorf("from API call: %w", err)
 	}
 
 	return nil

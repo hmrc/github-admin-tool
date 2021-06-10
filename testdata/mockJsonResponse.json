@@ -20,7 +20,7 @@
 			  "rebaseMergeAllowed": false,
 			  "squashMergeAllowed": true,
 			  "defaultBranchRef": {
-				"name": "master"
+				"name": "main"
 			  },
 			  "parent": null
 			}

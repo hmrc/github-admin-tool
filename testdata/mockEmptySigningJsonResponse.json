@@ -14,7 +14,7 @@
             "column": 3
           }
         ],
-        "message": "Could not resolve to a Repository with the name 'hmrc/the_seven_good_dwasdasdarfs'."
+        "message": "Could not resolve to a Repository with the name 'org/some-repo-name-blah'."
       }
     ]
   }
