@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github-admin-tool/graphqlclient"
 	"log"
 	"os"
 	"strings"
 
+	"github-admin-tool/graphqlclient"
 	"github.com/spf13/cobra"
 )
 
@@ -99,7 +99,6 @@ func applySigning(repoSearchResult map[string]RepositoriesNodeList, client *grap
 	var (
 		repositoryID       string
 		branchProtectionID string
-		modifyAction       string
 		defaultBranch      string
 		err                error
 	)
@@ -108,7 +107,6 @@ OUTER:
 
 	for _, v := range repoSearchResult { // nolint
 		repositoryID = v.ID
-		modifyAction = "create"
 		defaultBranch = v.DefaultBranchRef.Name
 
 		if v.DefaultBranchRef.Name == "" {
@@ -127,24 +125,22 @@ OUTER:
 					continue OUTER
 				}
 				branchProtectionID = node.ID
-				modifyAction = "update"
-			}
-		}
+				if err = signingUpdateFunction(branchProtectionID, client); err != nil {
+					errors = append(errors, err.Error())
 
-		if modifyAction == "update" {
-			if err = signingUpdateFunction(branchProtectionID, client); err != nil {
-				errors = append(errors, err.Error())
-
-				continue OUTER
-			}
-		} else {
-			if err = signingCreateFunction(repositoryID, defaultBranch, client); err != nil {
-				errors = append(errors, err.Error())
+					continue OUTER
+				}
+				modified = append(modified, v.NameWithOwner)
 
 				continue OUTER
 			}
 		}
 
+		if err = signingCreateFunction(repositoryID, defaultBranch, client); err != nil {
+			errors = append(errors, err.Error())
+
+			continue OUTER
+		}
 		modified = append(modified, v.NameWithOwner)
 	}
 
