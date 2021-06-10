@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
+
 	"github.com/spf13/cobra"
 )
 
@@ -96,18 +97,16 @@ func applySigning(repoSearchResult map[string]RepositoriesNodeList, client *grap
 	errors []string,
 ) {
 	var (
-		repositoryID  string
-		branchID      string
-		modifyAction  string
-		defaultBranch string
-		err           error
+		repositoryID       string
+		branchProtectionID string
+		modifyAction       string
+		defaultBranch      string
+		err                error
 	)
 
 OUTER:
 
 	for _, v := range repoSearchResult { // nolint
-
-		// Set for repositoryID
 		repositoryID = v.ID
 		modifyAction = "create"
 		defaultBranch = v.DefaultBranchRef.Name
@@ -121,8 +120,7 @@ OUTER:
 		// Check all nodes for default branch protection rule
 		for _, node := range v.BranchProtectionRules.Nodes {
 			if v.DefaultBranchRef.Name == node.Pattern {
-				// set for branchProtectionRuleID
-				branchID = node.ID
+				branchProtectionID = node.ID
 				modifyAction = "update"
 
 				// If default branch has already got signing turned on, no need to update
@@ -135,7 +133,7 @@ OUTER:
 		}
 
 		if modifyAction == "update" {
-			if err = signingUpdateFunction(branchID, client); err != nil {
+			if err = signingUpdateFunction(branchProtectionID, client); err != nil {
 				errors = append(errors, err.Error())
 
 				continue OUTER
