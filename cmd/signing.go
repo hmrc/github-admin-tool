@@ -3,13 +3,14 @@ package cmd
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 
 	"github-admin-tool/graphqlclient"
-
 	"github.com/spf13/cobra"
 )
 
@@ -53,13 +54,13 @@ var (
 				os.Exit(0)
 			}
 
-			updated, info, errors := applySigning(repoSearchResult, client)
+			updated, info, problems := applySigning(repoSearchResult, client)
 
 			for key, repo := range updated {
 				log.Printf("Modified (%d): %v", key, repo)
 			}
 
-			for key, err := range errors {
+			for key, err := range problems {
 				log.Printf("Error (%d): %v", key, err)
 			}
 
@@ -95,7 +96,7 @@ func repoRequest(queryString string, client *graphqlclient.Client) (map[string]R
 func applySigning(repoSearchResult map[string]RepositoriesNodeList, client *graphqlclient.Client) (
 	modified,
 	info,
-	errors []string,
+	problems []string,
 ) {
 	var (
 		repositoryID       string
@@ -127,7 +128,7 @@ OUTER:
 				}
 				branchProtectionID = node.ID
 				if err = signingUpdateFunction(branchProtectionID, client); err != nil {
-					errors = append(errors, err.Error())
+					problems = append(problems, err.Error())
 
 					continue OUTER
 				}
@@ -138,14 +139,14 @@ OUTER:
 		}
 
 		if err = signingCreateFunction(repositoryID, defaultBranch, client); err != nil {
-			errors = append(errors, err.Error())
+			problems = append(problems, err.Error())
 
 			continue OUTER
 		}
 		modified = append(modified, v.NameWithOwner)
 	}
 
-	return modified, info, errors
+	return modified, info, problems
 }
 
 func updateBranchProtection(branchProtectionID string, client *graphqlclient.Client) error {
@@ -259,15 +260,22 @@ func init() {
 func readList(reposFile string) ([]string, error) {
 	var repos []string
 
+	validRepoName := regexp.MustCompile("^[A-Za-z0-9_.-]+$")
+
 	file, err := os.Open(reposFile)
 	if err != nil {
-		return repos, fmt.Errorf("fatal error repo file: %w", err)
+		return repos, fmt.Errorf("could not open repo file: %w", err)
 	}
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		repos = append(repos, scanner.Text())
+		repoName := scanner.Text()
+		if !validRepoName.MatchString(repoName) {
+			return repos, errors.New(fmt.Sprintf("not a valid repo name: %s", repoName))
+		}
+
+		repos = append(repos, repoName)
 	}
 
 	return repos, nil

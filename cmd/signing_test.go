@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github-admin-tool/graphqlclient"
+
 	"github.com/jarcoal/httpmock"
 )
 
@@ -393,6 +394,14 @@ func Test_readList(t *testing.T) {
 			},
 			want:    []string{"a-test-repo", "a-test-repo2"},
 			wantErr: false,
+		},
+		{
+			name: "ReadListThrowsError",
+			args: args{
+				reposFile: "../testdata/repo_list_bad.txt",
+			},
+			want:    nil,
+			wantErr: true,
 		},
 	}
 
