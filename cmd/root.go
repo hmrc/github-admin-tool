@@ -16,14 +16,16 @@ import (
 )
 
 var (
-	configFile     string // nolint // needed for cobra
-	reposFile      string // nolint // needed for cobra
-	config         Config // nolint // using with viper
-	dryRun         bool   // nolint // using for global flag
-	errInvalidRepo = errors.New("invalid repo name")
-	signingCreate  = createSigningBranchProtection // nolint // Like this for testing mock
-	signingUpdate  = updateSigningBranchProtection // nolint // Like this for testing mock
-	rootCmd        = &cobra.Command{               // nolint // needed for cobra
+	configFile       string // nolint // needed for cobra
+	reposFile        string // nolint // needed for cobra
+	config           Config // nolint // using with viper
+	dryRun           bool   // nolint // using for global flag
+	errInvalidRepo   = errors.New("invalid repo name")
+	signingCreate    = createSigningBranchProtection    // nolint // Like this for testing mock
+	signingUpdate    = updateSigningBranchProtection    // nolint // Like this for testing mock
+	prApprovalCreate = createPrApprovalBranchProtection // nolint // Like this for testing mock
+	prApprovalUpdate = updatePrApprovalBranchProtection // nolint // Like this for testing mock
+	rootCmd          = &cobra.Command{                  // nolint // needed for cobra
 		Use:   "github-admin-tool",
 		Short: "Github admin tool allows you to perform actions on your github repos",
 		Long:  "Using Github version 4 GraphQL API to generate repo reports and administer your organisations repos etc",
@@ -100,35 +102,29 @@ func readRepoList(reposFile string) ([]string, error) {
 }
 
 func generateRepoQuery(repos []string) string {
-	preQueryStr := `
-		fragment repoProperties on Repository {
-			id
-			nameWithOwner
-			description
-			defaultBranchRef {
-				name
-			}
-			branchProtectionRules(first: 100) {
-				nodes {
-					id
-					requiresCommitSignatures
-					pattern
-				}
-			}
-		}
-		query ($org: String!) {
-	`
-
 	var signingQueryStr strings.Builder
 
-	signingQueryStr.WriteString(preQueryStr)
+	signingQueryStr.WriteString("fragment repoProperties on Repository {")
+	signingQueryStr.WriteString("	id")
+	signingQueryStr.WriteString("	nameWithOwner")
+	signingQueryStr.WriteString("	description")
+	signingQueryStr.WriteString("	defaultBranchRef {")
+	signingQueryStr.WriteString("		name")
+	signingQueryStr.WriteString("	}")
+	signingQueryStr.WriteString("	branchProtectionRules(first: 100) {")
+	signingQueryStr.WriteString("		nodes {")
+	signingQueryStr.WriteString("			id")
+	signingQueryStr.WriteString("			requiresCommitSignatures")
+	signingQueryStr.WriteString("			pattern")
+	signingQueryStr.WriteString("		}")
+	signingQueryStr.WriteString("	}")
+	signingQueryStr.WriteString("}")
+	signingQueryStr.WriteString("query ($org: String!) {")
 
 	for i := 0; i < len(repos); i++ {
-		signingQueryStr.WriteString(fmt.Sprintf(`
-			repo%d: repository(owner: $org, name: "%s") {
-				...repoProperties
-		  	}
-		`, i, repos[i]))
+		signingQueryStr.WriteString(fmt.Sprintf("repo%d: repository(owner: $org, name: \"%s\") {", i, repos[i]))
+		signingQueryStr.WriteString("	...repoProperties")
+		signingQueryStr.WriteString("}")
 	}
 
 	signingQueryStr.WriteString("}")
