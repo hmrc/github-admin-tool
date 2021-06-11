@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"github-admin-tool/graphqlclient"
 	"io/ioutil"
 	"reflect"
@@ -9,6 +11,8 @@ import (
 
 	"github.com/jarcoal/httpmock"
 )
+
+var errMockTest = errors.New("test")
 
 func Test_repoRequest(t *testing.T) {
 	httpmock.Activate()
@@ -86,6 +90,14 @@ func mockedCreateBranchProtection(repositoryID, branchName string, client *graph
 	return nil
 }
 
+func mockedUpdateBranchProtectionError(branchProtectionID string, client *graphqlclient.Client) error {
+	return fmt.Errorf("update: %w", errMockTest)
+}
+
+func mockedCreateBranchProtectionError(repositoryID, branchName string, client *graphqlclient.Client) error {
+	return fmt.Errorf("create: %w", errMockTest)
+}
+
 func Test_applySigning(t *testing.T) {
 	type args struct {
 		repoSearchResult map[string]RepositoriesNodeList
@@ -99,12 +111,13 @@ func Test_applySigning(t *testing.T) {
 	defer func() { signingCreate = createBranchProtection }()
 
 	tests := []struct {
-		name         string
-		args         args
-		wantModified []string
-		wantCreated  []string
-		wantInfo     []string
-		wantErrors   []string
+		name               string
+		args               args
+		wantModified       []string
+		wantCreated        []string
+		wantInfo           []string
+		wantErrors         []string
+		mockErrorFunctions bool
 	}{
 		{
 			name: "ApplySigningWithNoDefaultBranch",
@@ -185,10 +198,58 @@ func Test_applySigning(t *testing.T) {
 			wantInfo:     nil,
 			wantErrors:   nil,
 		},
+		{
+			name: "ApplySigningCreatingFailure",
+			args: args{
+				repoSearchResult: map[string]RepositoriesNodeList{"repo0": {
+					ID:            "repoIdTEST",
+					NameWithOwner: "org/signing-off",
+					DefaultBranchRef: DefaultBranchRef{
+						Name: "default-branch-name",
+					},
+				}},
+			},
+			wantModified:       nil,
+			wantCreated:        nil,
+			wantInfo:           nil,
+			wantErrors:         []string{"create: test"},
+			mockErrorFunctions: true,
+		},
+		{
+			name: "ApplySigningUpdatingFailure",
+			args: args{
+				repoSearchResult: map[string]RepositoriesNodeList{"repo0": {
+					ID:            "repoIdTEST",
+					NameWithOwner: "org/signing-off",
+					DefaultBranchRef: DefaultBranchRef{
+						Name: "default-branch-name",
+					},
+					BranchProtectionRules: BranchProtectionRules{
+						Nodes: []BranchProtectionRulesNodesList{{
+							RequiresCommitSignatures: false,
+							Pattern:                  "default-branch-name",
+						}},
+					},
+				}},
+			},
+			wantModified:       nil,
+			wantCreated:        nil,
+			wantInfo:           nil,
+			wantErrors:         []string{"update: test"},
+			mockErrorFunctions: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.mockErrorFunctions {
+				signingUpdate = mockedUpdateBranchProtectionError
+				defer func() { signingUpdate = updateBranchProtection }()
+
+				signingCreate = mockedCreateBranchProtectionError
+				defer func() { signingCreate = createBranchProtection }()
+			}
+
 			gotModified, gotCreated, gotInfo, gotErrors := applySigning(tt.args.repoSearchResult, tt.args.client)
 			if !reflect.DeepEqual(gotModified, tt.wantModified) {
 				t.Errorf("applySigning() gotModified = %v, want %v", gotModified, tt.wantModified)

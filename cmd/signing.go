@@ -76,7 +76,7 @@ var (
 
 	signingCreate  = createBranchProtection // nolint // Like this for testing mock
 	signingUpdate  = updateBranchProtection // nolint // Like this for testing mock
-	errInvalidRepo = errors.New("not a valid repo name")
+	errInvalidRepo = errors.New("invalid repo name")
 )
 
 func repoRequest(queryString string, client *graphqlclient.Client) (map[string]RepositoriesNodeList, error) {
