@@ -1,0 +1,20 @@
+{
+  "data": {
+    "createBranchProtectionRule": null
+  },
+  "errors": [
+    {
+      "type": "NOT_FOUND",
+      "path": [
+        "createBranchProtectionRule"
+      ],
+      "locations": [
+        {
+          "line": 2,
+          "column": 4
+        }
+      ],
+      "message": "Could not resolve to a node with the global id of 'some-repo-id'."
+    }
+  ]
+}

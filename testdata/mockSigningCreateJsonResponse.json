@@ -1,0 +1,9 @@
+{
+    "data": {
+      "createBranchProtectionRule": {
+        "branchProtectionRule": {
+          "id": "some-random-branch-protection-rule-id"
+        }
+      }
+    }
+  }

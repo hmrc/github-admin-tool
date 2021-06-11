@@ -1,0 +1,20 @@
+{
+    "data": {
+      "repo0": null
+    },
+    "errors": [
+      {
+        "type": "NOT_FOUND",
+        "path": [
+          "repo0"
+        ],
+        "locations": [
+          {
+            "line": 28,
+            "column": 3
+          }
+        ],
+        "message": "Could not resolve to a Repository with the name 'org/some-repo-name-blah'."
+      }
+    ]
+  }

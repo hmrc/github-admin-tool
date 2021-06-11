@@ -1,0 +1,10 @@
+{
+    "data": {
+        "repo0": {
+            "id": "repoIdTEST",
+            "nameWithOwner": "org/some-repo-name",
+            "defaultBranchRef": null,
+            "branchProtectionRules": null
+        }
+    }
+}

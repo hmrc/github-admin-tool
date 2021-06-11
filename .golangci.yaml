@@ -21,6 +21,7 @@ linters:
     - paralleltest
     - scopelint
     - testpackage
+    - gci
 linters-settings:
   gocritic:
     # Enable multiple checks by tags, run `GL_DEBUG=gocritic golangci-lint run` to see all tags and checks.

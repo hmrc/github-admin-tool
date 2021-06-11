@@ -2,3 +2,4 @@ config.yml
 github-admin-tool
 *.csv
 cmd/*.csv
+/*.txt
