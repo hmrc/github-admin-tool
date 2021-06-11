@@ -1,15 +1,11 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"github-admin-tool/graphqlclient"
 	"log"
 	"os"
-	"regexp"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -17,7 +13,6 @@ import (
 const maxRepositories = 100
 
 var (
-	reposFile  string            // nolint // global flag for cobra
 	signingCmd = &cobra.Command{ // nolint // needed for cobra
 		Use:   "signing",
 		Short: "Set request signing on to all repos in provided list",
@@ -32,7 +27,7 @@ var (
 				log.Fatal(err)
 			}
 
-			repoMap, err := readList(reposFilePath)
+			repoMap, err := readRepoList(reposFilePath)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -42,7 +37,7 @@ var (
 				log.Fatal("Number of repos passed in must be more than 1 and less than 100")
 			}
 
-			queryString := generateQuery(repoMap)
+			queryString := generateRepoQuery(repoMap)
 			client := graphqlclient.NewClient("https://api.github.com/graphql")
 			repoSearchResult, err := repoRequest(queryString, client)
 			if err != nil {
@@ -73,30 +68,7 @@ var (
 			}
 		},
 	}
-
-	signingCreate  = createBranchProtection // nolint // Like this for testing mock
-	signingUpdate  = updateBranchProtection // nolint // Like this for testing mock
-	errInvalidRepo = errors.New("invalid repo name")
 )
-
-func repoRequest(queryString string, client *graphqlclient.Client) (map[string]RepositoriesNodeList, error) {
-	authStr := fmt.Sprintf("bearer %s", config.Token)
-
-	req := graphqlclient.NewRequest(queryString)
-	req.Var("org", config.Org)
-	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Authorization", authStr)
-
-	ctx := context.Background()
-
-	var respData map[string]RepositoriesNodeList
-
-	if err := client.Run(ctx, req, &respData); err != nil {
-		return respData, fmt.Errorf("graphql call: %w", err)
-	}
-
-	return respData, nil
-}
 
 func applySigning(repoSearchResult map[string]RepositoriesNodeList, client *graphqlclient.Client) (
 	modified,
@@ -150,7 +122,7 @@ OUTER:
 	return modified, created, info, problems
 }
 
-func updateBranchProtection(branchProtectionID string, client *graphqlclient.Client) error {
+func updateSigningBranchProtection(branchProtectionID string, client *graphqlclient.Client) error {
 	req := graphqlclient.NewRequest(`
 		mutation UpdateBranchProtectionRule($branchProtectionId: String! $clientMutationId: String!) {
 			updateBranchProtectionRule(
@@ -181,7 +153,7 @@ func updateBranchProtection(branchProtectionID string, client *graphqlclient.Cli
 	return nil
 }
 
-func createBranchProtection(repositoryID, branchName string, client *graphqlclient.Client) error {
+func createSigningBranchProtection(repositoryID, branchName string, client *graphqlclient.Client) error {
 	req := graphqlclient.NewRequest(`
 		mutation CreateBranchProtectionRule($repositoryId: String! $clientMutationId: String! $pattern: String!) {
 			createBranchProtectionRule(
@@ -214,70 +186,9 @@ func createBranchProtection(repositoryID, branchName string, client *graphqlclie
 	return nil
 }
 
-func generateQuery(repos []string) string {
-	preQueryStr := `
-		fragment repoProperties on Repository {
-			id
-			nameWithOwner
-			description
-			defaultBranchRef {
-				name
-			}
-			branchProtectionRules(first: 100) {
-				nodes {
-					id
-					requiresCommitSignatures
-					pattern
-				}
-			}
-		}
-		query ($org: String!) {
-	`
-
-	var signingQueryStr strings.Builder
-
-	signingQueryStr.WriteString(preQueryStr)
-
-	for i := 0; i < len(repos); i++ {
-		signingQueryStr.WriteString(fmt.Sprintf(`
-			repo%d: repository(owner: $org, name: "%s") {
-				...repoProperties
-		  	}
-		`, i, repos[i]))
-	}
-
-	signingQueryStr.WriteString("}")
-
-	return signingQueryStr.String()
-}
-
 // nolint // needed for cobra
 func init() {
 	signingCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "file containing repositories on new line without org/ prefix. Max 100 repos")
 	signingCmd.MarkFlagRequired("repos")
 	rootCmd.AddCommand(signingCmd)
-}
-
-func readList(reposFile string) ([]string, error) {
-	var repos []string
-
-	validRepoName := regexp.MustCompile("^[A-Za-z0-9_.-]+$")
-
-	file, err := os.Open(reposFile)
-	if err != nil {
-		return repos, fmt.Errorf("could not open repo file: %w", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		repoName := scanner.Text()
-		if !validRepoName.MatchString(repoName) {
-			return repos, fmt.Errorf("%w: %s", errInvalidRepo, repoName)
-		}
-
-		repos = append(repos, repoName)
-	}
-
-	return repos, nil
 }
