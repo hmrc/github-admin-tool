@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github-admin-tool/graphqlclient"
-
 	"github.com/jarcoal/httpmock"
 )
 
@@ -181,13 +180,13 @@ func Test_applySigning(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotModified, gotInfo, gotErrors := applySigning(tt.args.repoSearchResult, tt.args.client)
 			if !reflect.DeepEqual(gotModified, tt.wantModified) {
-				t.Errorf("applySigning() gotModified = %T, want %T", gotModified, tt.wantModified)
+				t.Errorf("applySigning() gotModified = %v, want %v", gotModified, tt.wantModified)
 			}
 			if !reflect.DeepEqual(gotInfo, tt.wantInfo) {
 				t.Errorf("applySigning() gotInfo = %v, want %v", gotInfo, tt.wantInfo)
 			}
 			if !reflect.DeepEqual(gotErrors, tt.wantErrors) {
-				t.Errorf("applySigning() gotErrors = %T, want %T", gotErrors, tt.wantErrors)
+				t.Errorf("applySigning() gotErrors = %v, want %v", gotErrors, tt.wantErrors)
 			}
 		})
 	}

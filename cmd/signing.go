@@ -72,6 +72,7 @@ var (
 
 	signingCreateFunction = createBranchProtection // nolint // Like this for testing mock
 	signingUpdateFunction = updateBranchProtection // nolint // Like this for testing mock
+	errInvalidRepo        = errors.New("not a valid repo name")
 )
 
 func repoRequest(queryString string, client *graphqlclient.Client) (map[string]RepositoriesNodeList, error) {
@@ -99,51 +100,50 @@ func applySigning(repoSearchResult map[string]RepositoriesNodeList, client *grap
 	problems []string,
 ) {
 	var (
-		repositoryID       string
-		branchProtectionID string
-		defaultBranch      string
-		err                error
+		defaultBranch string
+		err           error
 	)
 
 OUTER:
 
-	for _, v := range repoSearchResult { // nolint
-		repositoryID = v.ID
-		defaultBranch = v.DefaultBranchRef.Name
+	for _, repository := range repoSearchResult { // nolint
+		defaultBranch = repository.DefaultBranchRef.Name
 
-		if v.DefaultBranchRef.Name == "" {
-			info = append(info, fmt.Sprintf("No default branch for %v", v.NameWithOwner))
+		if repository.DefaultBranchRef.Name == "" {
+			info = append(info, fmt.Sprintf("No default branch for %v", repository.NameWithOwner))
 
 			continue OUTER
 		}
 
 		// Check all nodes for default branch protection rule
-		for _, node := range v.BranchProtectionRules.Nodes {
-			if v.DefaultBranchRef.Name == node.Pattern {
-				// If default branch has already got signing turned on, no need to update
-				if node.RequiresCommitSignatures {
-					info = append(info, fmt.Sprintf("Signing already turned on for %v", v.NameWithOwner))
+		for _, branchProtection := range repository.BranchProtectionRules.Nodes {
+			if repository.DefaultBranchRef.Name != branchProtection.Pattern {
+				continue
+			}
 
-					continue OUTER
-				}
-				branchProtectionID = node.ID
-				if err = signingUpdateFunction(branchProtectionID, client); err != nil {
-					problems = append(problems, err.Error())
-
-					continue OUTER
-				}
-				modified = append(modified, v.NameWithOwner)
+			// If default branch has already got signing turned on, no need to update
+			if branchProtection.RequiresCommitSignatures {
+				info = append(info, fmt.Sprintf("Signing already turned on for %v", repository.NameWithOwner))
 
 				continue OUTER
 			}
+
+			if err = signingUpdateFunction(branchProtection.ID, client); err != nil {
+				problems = append(problems, err.Error())
+
+				continue OUTER
+			}
+			modified = append(modified, repository.NameWithOwner)
+
+			continue OUTER
 		}
 
-		if err = signingCreateFunction(repositoryID, defaultBranch, client); err != nil {
+		if err = signingCreateFunction(repository.ID, defaultBranch, client); err != nil {
 			problems = append(problems, err.Error())
 
 			continue OUTER
 		}
-		modified = append(modified, v.NameWithOwner)
+		modified = append(modified, repository.NameWithOwner)
 	}
 
 	return modified, info, problems
@@ -272,7 +272,7 @@ func readList(reposFile string) ([]string, error) {
 	for scanner.Scan() {
 		repoName := scanner.Text()
 		if !validRepoName.MatchString(repoName) {
-			return repos, errors.New(fmt.Sprintf("not a valid repo name: %s", repoName))
+			return repos, fmt.Errorf("%w: %s", errInvalidRepo, repoName)
 		}
 
 		repos = append(repos, repoName)
