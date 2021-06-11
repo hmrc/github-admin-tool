@@ -1,12 +1,12 @@
 package cmd
 
 import (
+	"github-admin-tool/graphqlclient"
 	"io/ioutil"
 	"reflect"
 	"strings"
 	"testing"
 
-	"github-admin-tool/graphqlclient"
 	"github.com/jarcoal/httpmock"
 )
 
@@ -102,6 +102,7 @@ func Test_applySigning(t *testing.T) {
 		name         string
 		args         args
 		wantModified []string
+		wantCreated  []string
 		wantInfo     []string
 		wantErrors   []string
 	}{
@@ -114,6 +115,7 @@ func Test_applySigning(t *testing.T) {
 				}},
 			},
 			wantModified: nil,
+			wantCreated:  nil,
 			wantInfo:     []string{"No default branch for org/some-repo-name"},
 			wantErrors:   nil,
 		},
@@ -126,9 +128,16 @@ func Test_applySigning(t *testing.T) {
 					DefaultBranchRef: DefaultBranchRef{
 						Name: "default-branch-name",
 					},
+					BranchProtectionRules: BranchProtectionRules{
+						Nodes: []BranchProtectionRulesNodesList{{
+							RequiresCommitSignatures: true,
+							Pattern:                  "another-branch-name",
+						}},
+					},
 				}},
 			},
-			wantModified: []string{"org/no-branch-protection"},
+			wantModified: nil,
+			wantCreated:  []string{"org/no-branch-protection"},
 			wantInfo:     nil,
 			wantErrors:   nil,
 		},
@@ -150,6 +159,7 @@ func Test_applySigning(t *testing.T) {
 				}},
 			},
 			wantModified: nil,
+			wantCreated:  nil,
 			wantInfo:     []string{"Signing already turned on for org/signing-on"},
 			wantErrors:   nil,
 		},
@@ -171,6 +181,7 @@ func Test_applySigning(t *testing.T) {
 				}},
 			},
 			wantModified: []string{"org/signing-off"},
+			wantCreated:  nil,
 			wantInfo:     nil,
 			wantErrors:   nil,
 		},
@@ -178,9 +189,12 @@ func Test_applySigning(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotModified, gotInfo, gotErrors := applySigning(tt.args.repoSearchResult, tt.args.client)
+			gotModified, gotCreated, gotInfo, gotErrors := applySigning(tt.args.repoSearchResult, tt.args.client)
 			if !reflect.DeepEqual(gotModified, tt.wantModified) {
 				t.Errorf("applySigning() gotModified = %v, want %v", gotModified, tt.wantModified)
+			}
+			if !reflect.DeepEqual(gotCreated, tt.wantCreated) {
+				t.Errorf("applySigning() gotCreated = %v, want %v", gotCreated, tt.wantCreated)
 			}
 			if !reflect.DeepEqual(gotInfo, tt.wantInfo) {
 				t.Errorf("applySigning() gotInfo = %v, want %v", gotInfo, tt.wantInfo)

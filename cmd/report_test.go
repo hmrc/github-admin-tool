@@ -1,11 +1,11 @@
 package cmd
 
 import (
+	"github-admin-tool/graphqlclient"
 	"io/ioutil"
 	"reflect"
 	"testing"
 
-	"github-admin-tool/graphqlclient"
 	"github.com/jarcoal/httpmock"
 )
 

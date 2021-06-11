@@ -5,12 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github-admin-tool/graphqlclient"
 	"log"
 	"os"
 	"regexp"
 	"strings"
 
-	"github-admin-tool/graphqlclient"
 	"github.com/spf13/cobra"
 )
 
@@ -54,10 +54,14 @@ var (
 				os.Exit(0)
 			}
 
-			updated, info, problems := applySigning(repoSearchResult, client)
+			updated, created, info, problems := applySigning(repoSearchResult, client)
 
 			for key, repo := range updated {
 				log.Printf("Modified (%d): %v", key, repo)
+			}
+
+			for key, repo := range created {
+				log.Printf("Created (%d): %v", key, repo)
 			}
 
 			for key, err := range problems {
@@ -96,6 +100,7 @@ func repoRequest(queryString string, client *graphqlclient.Client) (map[string]R
 
 func applySigning(repoSearchResult map[string]RepositoriesNodeList, client *graphqlclient.Client) (
 	modified,
+	created,
 	info,
 	problems []string,
 ) {
@@ -143,10 +148,11 @@ OUTER:
 
 			continue OUTER
 		}
-		modified = append(modified, repository.NameWithOwner)
+
+		created = append(created, repository.NameWithOwner)
 	}
 
-	return modified, info, problems
+	return modified, created, info, problems
 }
 
 func updateBranchProtection(branchProtectionID string, client *graphqlclient.Client) error {
