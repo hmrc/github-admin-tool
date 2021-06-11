@@ -104,16 +104,11 @@ func applySigning(repoSearchResult map[string]RepositoriesNodeList, client *grap
 	info,
 	problems []string,
 ) {
-	var (
-		defaultBranch string
-		err           error
-	)
+	var err error
 
 OUTER:
 
 	for _, repository := range repoSearchResult { // nolint
-		defaultBranch = repository.DefaultBranchRef.Name
-
 		if repository.DefaultBranchRef.Name == "" {
 			info = append(info, fmt.Sprintf("No default branch for %v", repository.NameWithOwner))
 
@@ -143,7 +138,7 @@ OUTER:
 			continue OUTER
 		}
 
-		if err = signingCreateFunction(repository.ID, defaultBranch, client); err != nil {
+		if err = signingCreateFunction(repository.ID, repository.DefaultBranchRef.Name, client); err != nil {
 			problems = append(problems, err.Error())
 
 			continue OUTER
