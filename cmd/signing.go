@@ -74,9 +74,9 @@ var (
 		},
 	}
 
-	signingCreateFunction = createBranchProtection // nolint // Like this for testing mock
-	signingUpdateFunction = updateBranchProtection // nolint // Like this for testing mock
-	errInvalidRepo        = errors.New("not a valid repo name")
+	signingCreate  = createBranchProtection // nolint // Like this for testing mock
+	signingUpdate  = updateBranchProtection // nolint // Like this for testing mock
+	errInvalidRepo = errors.New("not a valid repo name")
 )
 
 func repoRequest(queryString string, client *graphqlclient.Client) (map[string]RepositoriesNodeList, error) {
@@ -128,7 +128,7 @@ OUTER:
 				continue OUTER
 			}
 
-			if err = signingUpdateFunction(branchProtection.ID, client); err != nil {
+			if err = signingUpdate(branchProtection.ID, client); err != nil {
 				problems = append(problems, err.Error())
 
 				continue OUTER
@@ -138,7 +138,7 @@ OUTER:
 			continue OUTER
 		}
 
-		if err = signingCreateFunction(repository.ID, repository.DefaultBranchRef.Name, client); err != nil {
+		if err = signingCreate(repository.ID, repository.DefaultBranchRef.Name, client); err != nil {
 			problems = append(problems, err.Error())
 
 			continue OUTER

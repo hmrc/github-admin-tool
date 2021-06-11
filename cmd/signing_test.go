@@ -92,11 +92,11 @@ func Test_applySigning(t *testing.T) {
 		client           *graphqlclient.Client
 	}
 
-	signingUpdateFunction = mockedUpdateBranchProtection
-	defer func() { signingUpdateFunction = updateBranchProtection }()
+	signingUpdate = mockedUpdateBranchProtection
+	defer func() { signingUpdate = updateBranchProtection }()
 
-	signingCreateFunction = mockedCreateBranchProtection
-	defer func() { signingCreateFunction = createBranchProtection }()
+	signingCreate = mockedCreateBranchProtection
+	defer func() { signingCreate = createBranchProtection }()
 
 	tests := []struct {
 		name         string
