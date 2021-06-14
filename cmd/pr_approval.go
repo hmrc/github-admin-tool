@@ -28,27 +28,28 @@ var (
 				log.Fatal(err)
 			}
 
-			repoMap, err := readRepoList(reposFilePath)
+			repoList, err := readRepoList(reposFilePath)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			numberOfRepos := len(repoMap)
+			numberOfRepos := len(repoList)
 			if numberOfRepos < 1 || numberOfRepos > maxRepositories {
 				log.Fatal("Number of repos passed in must be more than 1 and less than 100")
-			}
-
-			queryString := generateRepoQuery(repoMap)
-			client := graphqlclient.NewClient("https://api.github.com/graphql")
-			repoSearchResult, err := repoRequest(queryString, client)
-			if err != nil {
-				log.Fatal(err)
 			}
 
 			if dryRun {
 				log.Printf("This is a dry run, the run would process %d repositories", numberOfRepos)
 				os.Exit(0)
 			}
+
+			queryString := generateRepoQuery(repoList)
+			client := graphqlclient.NewClient("https://api.github.com/graphql")
+			repoSearchResult, err := repoRequest(queryString, client)
+			if err != nil {
+				log.Fatal(err)
+			}
+
 
 			updated, created, info, problems := applyPrApproval(repoSearchResult, client)
 
@@ -116,23 +117,39 @@ OUTER:
 	return modified, created, info, problems
 }
 
-func updatePrApprovalBranchProtection(branchProtectionID string, client *graphqlclient.Client) error {
+func updatePrApprovalBranchProtection(branchProtectionRuleID string, client *graphqlclient.Client) error {
 	req := graphqlclient.NewRequest(`
-		mutation UpdateBranchProtectionRule($branchProtectionId: String! $clientMutationId: String!) {
+		mutation UpdateBranchProtectionRule(
+			$branchProtectionRuleId: String!, 
+			$clientMutationId: String!, 
+			$requiredApprovingReviewCount: Int!,
+			$dismissesStaleReviews: Boolean!,
+			$requiresCodeOwnerReviews: Boolean!
+		){
 			updateBranchProtectionRule(
 				input:{
-					clientMutationId: $clientMutationId,
-					branchProtectionRuleId: $branchProtectionId,
+					clientMutationId: $clientMutationId, 
+					branchProtectionRuleId: $branchProtectionRuleId, 
+					requiresApprovingReviews: true, 
+					requiredApprovingReviewCount: $requiredApprovingReviewCount, 
+					dismissesStaleReviews:  $dismissesStaleReviews,
+					requiresCodeOwnerReviews: $requiresCodeOwnerReviews
 				}
-			) {
+			){
 				branchProtectionRule {
 					id
 				}
 			}
 		}
 	`)
-	req.Var("clientMutationId", fmt.Sprintf("github-tool-%v", branchProtectionID))
-	req.Var("branchProtectionId", branchProtectionID)
+
+	req.Var("clientMutationId", fmt.Sprintf("github-tool-%v", branchProtectionRuleID))
+	req.Var("branchProtectionRuleId", branchProtectionRuleID)
+	req.Var("requiredApprovingReviewCount", prApprovalNumber)
+	req.Var("dismissesStaleReviews", prApprovalDismissStale)
+	req.Var("requiresCodeOwnerReviews", prApprovalCodeOwnerReview)
+
+
 
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Authorization", fmt.Sprintf("bearer %s", config.Token))
@@ -148,13 +165,23 @@ func updatePrApprovalBranchProtection(branchProtectionID string, client *graphql
 
 func createPrApprovalBranchProtection(repositoryID, branchName string, client *graphqlclient.Client) error {
 	req := graphqlclient.NewRequest(`
-		mutation CreateBranchProtectionRule($repositoryId: String! $clientMutationId: String! $pattern: String!) {
+		mutation CreateBranchProtectionRule(
+			$repositoryId: String!,
+			$clientMutationId: String!,
+			$requiredApprovingReviewCount: Int!,
+			$pattern: String!,
+			$dismissesStaleReviews: Boolean!,
+			$requiresCodeOwnerReviews: Boolean!
+		) {
 			createBranchProtectionRule(
 				input:{
 					clientMutationId: $clientMutationId,
 					repositoryId: $repositoryId,
-					requiresCommitSignatures: true,
+					requiresApprovingReviews: true, 
+					requiredApprovingReviewCount: $requiredApprovingReviewCount,
 					pattern: $pattern,
+					dismissesStaleReviews:  $dismissesStaleReviews,
+					requiresCodeOwnerReviews: $requiresCodeOwnerReviews
 				}
 			) {
 				branchProtectionRule {
@@ -163,9 +190,13 @@ func createPrApprovalBranchProtection(repositoryID, branchName string, client *g
 			}
 		}
 	`)
+
 	req.Var("clientMutationId", fmt.Sprintf("github-tool-%v", repositoryID))
 	req.Var("repositoryId", repositoryID)
+	req.Var("requiredApprovingReviewCount", prApprovalNumber)
 	req.Var("pattern", branchName)
+	req.Var("dismissesStaleReviews", prApprovalDismissStale)
+	req.Var("requiresCodeOwnerReviews", prApprovalCodeOwnerReview)
 
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Authorization", fmt.Sprintf("bearer %s", config.Token))
