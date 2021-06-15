@@ -223,7 +223,7 @@ func Test_updateSigningBranchProtection(t *testing.T) {
 				client:             client,
 			},
 			wantErr:            false,
-			mockHTTPReturnFile: "../testdata/mockSigningUpdateJsonResponse.json",
+			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateJsonResponse.json",
 			mockHTTPStatusCode: 200,
 		},
 		{
@@ -233,7 +233,7 @@ func Test_updateSigningBranchProtection(t *testing.T) {
 				client:             client,
 			},
 			wantErr:            true,
-			mockHTTPReturnFile: "../testdata/mockSigningUpdateErrorJsonResponse.json",
+			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateErrorJsonResponse.json",
 			mockHTTPStatusCode: 200,
 		},
 	}
@@ -280,23 +280,23 @@ func Test_createSigningBranchProtection(t *testing.T) {
 		mockHTTPStatusCode int
 	}{
 		{
-			name: "CreeateSigningBranchProtectionSuccess",
+			name: "CreateSigningBranchProtectionSuccess",
 			args: args{
 				repositoryID: "some-repo-id",
 				client:       client,
 			},
 			wantErr:            false,
-			mockHTTPReturnFile: "../testdata/mockSigningCreateJsonResponse.json",
+			mockHTTPReturnFile: "../testdata/mockBranchProtectionCreateJsonResponse.json",
 			mockHTTPStatusCode: 200,
 		},
 		{
-			name: "CreeateSigningBranchProtectionSuccess",
+			name: "CreateSigningBranchProtectionError",
 			args: args{
 				repositoryID: "some-repo-id",
 				client:       client,
 			},
 			wantErr:            true,
-			mockHTTPReturnFile: "../testdata/mockSigningCreateErrorJsonResponse.json",
+			mockHTTPReturnFile: "../testdata/mockBranchProtectionCreateErrorJsonResponse.json",
 			mockHTTPStatusCode: 200,
 		},
 	}

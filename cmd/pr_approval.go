@@ -49,8 +49,6 @@ var (
 			if err != nil {
 				log.Fatal(err)
 			}
-
-
 			updated, created, info, problems := applyPrApproval(repoSearchResult, client)
 
 			for key, repo := range updated {
@@ -148,8 +146,6 @@ func updatePrApprovalBranchProtection(branchProtectionRuleID string, client *gra
 	req.Var("requiredApprovingReviewCount", prApprovalNumber)
 	req.Var("dismissesStaleReviews", prApprovalDismissStale)
 	req.Var("requiresCodeOwnerReviews", prApprovalCodeOwnerReview)
-
-
 
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Authorization", fmt.Sprintf("bearer %s", config.Token))
