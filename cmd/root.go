@@ -37,6 +37,12 @@ type Config struct {
 	Org   string `mapstructure:"org"`
 }
 
+type BranchProtectionArgs struct {
+	Name     string
+	DataType string
+	Value    string
+}
+
 func Execute() error {
 	return errors.Wrap(rootCmd.Execute(), "root execute")
 }
@@ -152,4 +158,58 @@ func repoRequest(queryString string, client *graphqlclient.Client) (map[string]R
 	}
 
 	return respData, nil
+}
+
+func updateBranchProtection(branchProtectionRuleID string, args []BranchProtectionArgs, client *graphqlclient.Client) error {
+	var mutation, input, output strings.Builder
+	mutation.WriteString("	mutation UpdateBranchProtectionRule(")
+	mutation.WriteString("		$branchProtectionRuleId: String!,")
+	mutation.WriteString("		$clientMutationId: String!,")
+
+	input.WriteString("	updateBranchProtectionRule(")
+	input.WriteString("		input:{")
+	input.WriteString("			clientMutationId: $clientMutationId,")
+	input.WriteString("			branchProtectionRuleId: $branchProtectionRuleId,")
+
+	// [0] = [
+	// 	"name": "requiresApprovingReviews"
+	// 	"datatype": "Boolean"
+	// 	"value": "true"
+	// ]
+
+	requestVars := make(map[string]string)
+
+	for _, bprs := range args {
+		mutation.WriteString(fmt.Sprintf("$%s: %s!,", bprs.Name, bprs.DataType))
+		input.WriteString(fmt.Sprintf("%s: $%s,", bprs.Name, bprs.Name))
+		requestVars[bprs.Name] = bprs.Value
+	}
+
+	mutation.WriteString("){")
+	input.WriteString("})")
+
+	output.WriteString("{")
+	output.WriteString("	branchProtectionRule {")
+	output.WriteString("		id")
+	output.WriteString("	}")
+	output.WriteString("}}")
+
+	req := graphqlclient.NewRequest(mutation.String() + input.String() + output.String())
+	req.Var("clientMutationId", fmt.Sprintf("github-tool-%v", branchProtectionRuleID))
+	req.Var("branchProtectionRuleId", branchProtectionRuleID)
+
+	for key, value := range requestVars {
+		req.Var(key, value)
+	}
+
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Authorization", fmt.Sprintf("bearer %s", config.Token))
+
+	ctx := context.Background()
+
+	if err := client.Run(ctx, req, nil); err != nil {
+		return fmt.Errorf("from API call: %w", err)
+	}
+
+	return nil
 }

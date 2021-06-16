@@ -138,7 +138,7 @@ func Test_repoRequest(t *testing.T) {
 				NameWithOwner: "org/some-repo-name",
 			}},
 			wantErr:            false,
-			mockHTTPReturnFile: "../testdata/mockSigningJsonResponse.json",
+			mockHTTPReturnFile: "../testdata/mockRepoJsonResponse.json",
 			mockHTTPStatusCode: 200,
 		},
 		{
@@ -148,7 +148,7 @@ func Test_repoRequest(t *testing.T) {
 			},
 			want:               map[string]RepositoriesNodeList{"repo0": {}},
 			wantErr:            true,
-			mockHTTPReturnFile: "../testdata/mockEmptySigningJsonResponse.json",
+			mockHTTPReturnFile: "../testdata/mockEmptyBranchProtectionJsonResponse.json",
 			mockHTTPStatusCode: 400,
 		},
 	}
