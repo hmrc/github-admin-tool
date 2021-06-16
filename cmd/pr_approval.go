@@ -88,12 +88,13 @@ OUTER:
 		}
 
 		// Check all nodes for default branch protection rule
-		for _, branchProtection := range repository.BranchProtectionRules.Nodes {
-			if repository.DefaultBranchRef.Name != branchProtection.Pattern {
+		for _, branchProtectionRule := range repository.BranchProtectionRules.Nodes {
+			if repository.DefaultBranchRef.Name != branchProtectionRule.Pattern {
 				continue
 			}
 
-			if err = prApprovalUpdate(branchProtection.ID, client); err != nil {
+			updateArgs := setApprovalArgs(branchProtectionRule.ID)
+			if err = prApprovalUpdate(branchProtectionRule.ID, updateArgs, client); err != nil {
 				problems = append(problems, err.Error())
 
 				continue OUTER
@@ -115,48 +116,32 @@ OUTER:
 	return modified, created, info, problems
 }
 
-func updatePrApprovalBranchProtection(branchProtectionRuleID string, client *graphqlclient.Client) error {
-	req := graphqlclient.NewRequest(`
-		mutation UpdateBranchProtectionRule(
-			$branchProtectionRuleId: String!, 
-			$clientMutationId: String!, 
-			$requiredApprovingReviewCount: Int!,
-			$dismissesStaleReviews: Boolean!,
-			$requiresCodeOwnerReviews: Boolean!
-		){
-			updateBranchProtectionRule(
-				input:{
-					clientMutationId: $clientMutationId, 
-					branchProtectionRuleId: $branchProtectionRuleId, 
-					requiresApprovingReviews: true, 
-					requiredApprovingReviewCount: $requiredApprovingReviewCount, 
-					dismissesStaleReviews:  $dismissesStaleReviews,
-					requiresCodeOwnerReviews: $requiresCodeOwnerReviews
-				}
-			){
-				branchProtectionRule {
-					id
-				}
-			}
-		}
-	`)
+func setApprovalArgs(branchProtectionRuleID string) (branchProtectionArgs []BranchProtectionArgs) {
+	branchProtectionArgs = append(branchProtectionArgs, BranchProtectionArgs{
+		Name:     "requiresApprovingReviews",
+		DataType: "Boolean",
+		Value:    true,
+	})
 
-	req.Var("clientMutationId", fmt.Sprintf("github-tool-%v", branchProtectionRuleID))
-	req.Var("branchProtectionRuleId", branchProtectionRuleID)
-	req.Var("requiredApprovingReviewCount", prApprovalNumber)
-	req.Var("dismissesStaleReviews", prApprovalDismissStale)
-	req.Var("requiresCodeOwnerReviews", prApprovalCodeOwnerReview)
+	branchProtectionArgs = append(branchProtectionArgs, BranchProtectionArgs{
+		Name:     "requiredApprovingReviewCount",
+		DataType: "Int",
+		Value:    prApprovalNumber,
+	})
 
-	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Authorization", fmt.Sprintf("bearer %s", config.Token))
+	branchProtectionArgs = append(branchProtectionArgs, BranchProtectionArgs{
+		Name:     "dismissesStaleReviews",
+		DataType: "Boolean",
+		Value:    prApprovalDismissStale,
+	})
 
-	ctx := context.Background()
+	branchProtectionArgs = append(branchProtectionArgs, BranchProtectionArgs{
+		Name:     "requiresCodeOwnerReviews",
+		DataType: "Boolean",
+		Value:    prApprovalCodeOwnerReview,
+	})
 
-	if err := client.Run(ctx, req, nil); err != nil {
-		return fmt.Errorf("from API call: %w", err)
-	}
-
-	return nil
+	return branchProtectionArgs
 }
 
 func createPrApprovalBranchProtection(repositoryID, branchName string, client *graphqlclient.Client) error {

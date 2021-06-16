@@ -10,25 +10,29 @@ import (
 	"github.com/pkg/errors"
 )
 
-func mockedUpdatePrApprovalBranchProtection(branchProtectionRuleID string, client *graphqlclient.Client) error {
+func mockedUpdatePrApprovalBranchProtection(
+	bprid string,
+	args []BranchProtectionArgs,
+	client *graphqlclient.Client,
+) error {
 	return nil
 }
 
-func mockedCreatePrApprovalBranchProtection(repositoryID, branchName string, client *graphqlclient.Client) error {
+func mockedCreatePrApprovalBranchProtection(rid, branchName string, client *graphqlclient.Client) error {
 	return nil
 }
 
-func mockedUpdatePrApprovalBranchProtectionError(branchProtectionRuleID string, client *graphqlclient.Client) error {
+func mockedUpdatePrApprovalBranchProtectionError(bprid string, args []BranchProtectionArgs, client *graphqlclient.Client) error {
 	return errors.New("Test update error")
 }
 
-func mockedCreatePrApprovalBranchProtectionError(repositoryID, branchName string, client *graphqlclient.Client) error {
+func mockedCreatePrApprovalBranchProtectionError(rid, branchName string, client *graphqlclient.Client) error {
 	return errors.New("Test create error")
 }
 
 func Test_applyPrApproval(t *testing.T) {
 	prApprovalUpdate = mockedUpdatePrApprovalBranchProtection
-	defer func() { prApprovalUpdate = updatePrApprovalBranchProtection }()
+	defer func() { prApprovalUpdate = updateBranchProtection }()
 
 	prApprovalCreate = mockedCreatePrApprovalBranchProtection
 	defer func() { prApprovalCreate = createPrApprovalBranchProtection }()

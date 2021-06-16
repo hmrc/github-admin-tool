@@ -24,7 +24,7 @@ var (
 	signingCreate    = createSigningBranchProtection    // nolint // Like this for testing mock
 	signingUpdate    = updateSigningBranchProtection    // nolint // Like this for testing mock
 	prApprovalCreate = createPrApprovalBranchProtection // nolint // Like this for testing mock
-	prApprovalUpdate = updatePrApprovalBranchProtection // nolint // Like this for testing mock
+	prApprovalUpdate = updateBranchProtection           // nolint // Like this for testing mock
 	rootCmd          = &cobra.Command{                  // nolint // needed for cobra
 		Use:   "github-admin-tool",
 		Short: "Github admin tool allows you to perform actions on your github repos",
@@ -40,7 +40,7 @@ type Config struct {
 type BranchProtectionArgs struct {
 	Name     string
 	DataType string
-	Value    string
+	Value    interface{}
 }
 
 func Execute() error {
@@ -160,8 +160,13 @@ func repoRequest(queryString string, client *graphqlclient.Client) (map[string]R
 	return respData, nil
 }
 
-func updateBranchProtection(branchProtectionRuleID string, args []BranchProtectionArgs, client *graphqlclient.Client) error {
+func updateBranchProtection(
+	branchProtectionRuleID string,
+	branchProtectionArgs []BranchProtectionArgs,
+	client *graphqlclient.Client,
+) error {
 	var mutation, input, output strings.Builder
+
 	mutation.WriteString("	mutation UpdateBranchProtectionRule(")
 	mutation.WriteString("		$branchProtectionRuleId: String!,")
 	mutation.WriteString("		$clientMutationId: String!,")
@@ -177,15 +182,12 @@ func updateBranchProtection(branchProtectionRuleID string, args []BranchProtecti
 	// 	"value": "true"
 	// ]
 
-	requestVars := make(map[string]string)
+	mutationBlock, inputBlock, requestVars := createQueryBlocks(branchProtectionArgs)
 
-	for _, bprs := range args {
-		mutation.WriteString(fmt.Sprintf("$%s: %s!,", bprs.Name, bprs.DataType))
-		input.WriteString(fmt.Sprintf("%s: $%s,", bprs.Name, bprs.Name))
-		requestVars[bprs.Name] = bprs.Value
-	}
-
+	mutation.WriteString(mutationBlock.String())
 	mutation.WriteString("){")
+
+	input.WriteString(inputBlock.String())
 	input.WriteString("})")
 
 	output.WriteString("{")
@@ -212,4 +214,19 @@ func updateBranchProtection(branchProtectionRuleID string, args []BranchProtecti
 	}
 
 	return nil
+}
+
+func createQueryBlocks(branchProtectionArgs []BranchProtectionArgs) (
+	mutation, input strings.Builder,
+	requestVars map[string]interface{},
+) {
+	requestVars = make(map[string]interface{})
+
+	for _, bprs := range branchProtectionArgs {
+		mutation.WriteString(fmt.Sprintf("$%s: %s!,", bprs.Name, bprs.DataType))
+		input.WriteString(fmt.Sprintf("%s: $%s,", bprs.Name, bprs.Name))
+		requestVars[bprs.Name] = bprs.Value
+	}
+
+	return mutation, input, requestVars
 }

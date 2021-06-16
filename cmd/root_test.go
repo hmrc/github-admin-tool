@@ -176,3 +176,141 @@ func Test_repoRequest(t *testing.T) {
 		})
 	}
 }
+
+func Test_createQueryBlocks(t *testing.T) {
+	type args struct {
+		args []BranchProtectionArgs
+	}
+
+	tests := []struct {
+		name            string
+		args            args
+		wantMutation    string
+		wantInput       string
+		wantRequestVars map[string]interface{}
+	}{
+		{
+			name: "createQueryBlocks",
+			args: args{
+				[]BranchProtectionArgs{{
+					Name:     "requiresApprovingReviews",
+					DataType: "Boolean",
+					Value:    true,
+				}},
+			},
+			wantMutation:    "$requiresApprovingReviews: Boolean!,",
+			wantInput:       "requiresApprovingReviews: $requiresApprovingReviews,",
+			wantRequestVars: map[string]interface{}{"requiresApprovingReviews": true},
+		},
+		{
+			name: "createQueryBlocksWithMoreThanOneArg",
+			args: args{
+				[]BranchProtectionArgs{
+					{
+						Name:     "requiresApprovingReviews",
+						DataType: "Boolean",
+						Value:    true,
+					},
+					{
+						Name:     "requiredApprovingReviewCount",
+						DataType: "Int",
+						Value:    5,
+					},
+				},
+			},
+			wantMutation: "$requiresApprovingReviews: Boolean!,$requiredApprovingReviewCount: Int!,",
+			wantInput: "requiresApprovingReviews: $requiresApprovingReviews," +
+				"requiredApprovingReviewCount: $requiredApprovingReviewCount,",
+			wantRequestVars: map[string]interface{}{"requiresApprovingReviews": true, "requiredApprovingReviewCount": 5},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotMutation, gotInput, gotRequestVars := createQueryBlocks(tt.args.args)
+			if !reflect.DeepEqual(gotMutation.String(), tt.wantMutation) {
+				t.Errorf("createQueryBlocks() gotMutation = %v, want %v", gotMutation.String(), tt.wantMutation)
+			}
+			if !reflect.DeepEqual(gotInput.String(), tt.wantInput) {
+				t.Errorf("createQueryBlocks() gotInput = %v, want = %v", gotInput.String(), tt.wantInput)
+			}
+			if !reflect.DeepEqual(gotRequestVars, tt.wantRequestVars) {
+				t.Errorf("createQueryBlocks() gotRequestVars = %v, want %v", gotRequestVars, tt.wantRequestVars)
+			}
+		})
+	}
+}
+
+func Test_updateBranchProtection(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	client := graphqlclient.NewClient("https://api.github.com/graphql")
+
+	type args struct {
+		branchProtectionRuleID string
+		branchProtectionArgs   []BranchProtectionArgs
+		client                 *graphqlclient.Client
+	}
+
+	tests := []struct {
+		name               string
+		args               args
+		wantErr            bool
+		mockHTTPReturnFile string
+		mockHTTPStatusCode int
+	}{
+		{
+			name: "updateBranchProtectionSuccess",
+			args: args{
+				branchProtectionRuleID: "some-id",
+				branchProtectionArgs: []BranchProtectionArgs{{
+					Name:     "requiresApprovingReviews",
+					DataType: "Boolean",
+					Value:    "true",
+				}},
+				client: client,
+			},
+			wantErr:            false,
+			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateJsonResponse.json",
+			mockHTTPStatusCode: 200,
+		},
+		{
+			name: "updateBranchProtectionError",
+			args: args{
+				branchProtectionRuleID: "some-id",
+				branchProtectionArgs: []BranchProtectionArgs{{
+					Name:     "requiresApprovingReviews",
+					DataType: "Boolean",
+					Value:    "true",
+				}},
+				client: client,
+			},
+			wantErr:            true,
+			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateErrorJsonResponse.json",
+			mockHTTPStatusCode: 400,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
+			if err != nil {
+				t.Fatalf("failed to read test data: %v", err)
+			}
+
+			httpmock.RegisterResponder(
+				"POST",
+				"https://api.github.com/graphql",
+				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
+			)
+
+			if err := updateBranchProtection(
+				tt.args.branchProtectionRuleID,
+				tt.args.branchProtectionArgs,
+				tt.args.client,
+			); (err != nil) != tt.wantErr {
+				t.Errorf("updateBranchProtection() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
