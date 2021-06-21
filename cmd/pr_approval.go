@@ -87,14 +87,13 @@ OUTER:
 		}
 
 		prApprovalArgs := setApprovalArgs()
-		
+
 		// Check all nodes for default branch protection rule
 		for _, branchProtectionRule := range repository.BranchProtectionRules.Nodes {
 			if repository.DefaultBranchRef.Name != branchProtectionRule.Pattern {
 				continue
 			}
 
-		
 			if err = prApprovalUpdate(branchProtectionRule.ID, prApprovalArgs, client); err != nil {
 				problems = append(problems, err.Error())
 

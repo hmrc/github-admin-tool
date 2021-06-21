@@ -4,7 +4,6 @@ import (
 	"github-admin-tool/graphqlclient"
 	"reflect"
 	"testing"
-	"github.com/pkg/errors"
 )
 
 func mockedUpdateBranchProtection(
@@ -15,15 +14,29 @@ func mockedUpdateBranchProtection(
 	return nil
 }
 
-func mockedCreateBranchProtection(rid, branchName string,args []BranchProtectionArgs, client *graphqlclient.Client) error {
+func mockedCreateBranchProtection(
+	rid,
+	branchName string,
+	args []BranchProtectionArgs,
+	client *graphqlclient.Client,
+) error {
 	return nil
 }
 
-func mockedUpdateBranchProtectionError(bprid string, args []BranchProtectionArgs, client *graphqlclient.Client) error {
+func mockedUpdateBranchProtectionError(
+	bprid string,
+	args []BranchProtectionArgs,
+	client *graphqlclient.Client,
+) error {
 	return errors.New("Test update error")
 }
 
-func mockedCreateBranchProtectionError(rid, branchName string, args []BranchProtectionArgs, client *graphqlclient.Client) error {
+func mockedCreateBranchProtectionError(
+	rid,
+	branchName string,
+	args []BranchProtectionArgs,
+	client *graphqlclient.Client,
+) error {
 	return errors.New("Test create error")
 }
 
