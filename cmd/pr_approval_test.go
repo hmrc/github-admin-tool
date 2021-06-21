@@ -2,11 +2,8 @@ package cmd
 
 import (
 	"github-admin-tool/graphqlclient"
-	"io/ioutil"
 	"reflect"
 	"testing"
-
-	"github.com/jarcoal/httpmock"
 	"github.com/pkg/errors"
 )
 
@@ -18,7 +15,7 @@ func mockedUpdateBranchProtection(
 	return nil
 }
 
-func mockedCreatePrApprovalBranchProtection(rid, branchName string, client *graphqlclient.Client) error {
+func mockedCreateBranchProtection(rid, branchName string,args []BranchProtectionArgs, client *graphqlclient.Client) error {
 	return nil
 }
 
@@ -26,7 +23,7 @@ func mockedUpdateBranchProtectionError(bprid string, args []BranchProtectionArgs
 	return errors.New("Test update error")
 }
 
-func mockedCreatePrApprovalBranchProtectionError(rid, branchName string, client *graphqlclient.Client) error {
+func mockedCreateBranchProtectionError(rid, branchName string, args []BranchProtectionArgs, client *graphqlclient.Client) error {
 	return errors.New("Test create error")
 }
 
@@ -34,8 +31,8 @@ func Test_applyPrApproval(t *testing.T) {
 	prApprovalUpdate = mockedUpdateBranchProtection
 	defer func() { prApprovalUpdate = updateBranchProtection }()
 
-	prApprovalCreate = mockedCreatePrApprovalBranchProtection
-	defer func() { prApprovalCreate = createPrApprovalBranchProtection }()
+	prApprovalCreate = mockedCreateBranchProtection
+	defer func() { prApprovalCreate = createBranchProtection }()
 
 	type args struct {
 		repoSearchResult map[string]RepositoriesNodeList
@@ -141,7 +138,7 @@ func Test_applyPrApproval(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.returnError {
 				prApprovalUpdate = mockedUpdateBranchProtectionError
-				prApprovalCreate = mockedCreatePrApprovalBranchProtectionError
+				prApprovalCreate = mockedCreateBranchProtectionError
 			}
 
 			gotModified, gotCreated, gotInfo, gotProblems := applyPrApproval(tt.args.repoSearchResult, tt.args.client)
@@ -156,82 +153,6 @@ func Test_applyPrApproval(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotProblems, tt.wantProblems) {
 				t.Errorf("applyPrApproval() gotProblems = %v, want %v", gotProblems, tt.wantProblems)
-			}
-		})
-	}
-}
-
-func Test_createPrApprovalBranchProtection(t *testing.T) {
-	type args struct {
-		repositoryID           string
-		branchProtectionRuleID string
-		branchName             string
-		client                 *graphqlclient.Client
-	}
-
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
-
-	tests := []struct {
-		name               string
-		args               args
-		wantErr            bool
-		mockHTTPReturnFile string
-		mockHTTPStatusCode int
-	}{
-		{
-			name: "CreatePrApprovalBranchProtectionSuccess",
-			args: args{
-				repositoryID: "some-repo-id",
-				client:       client,
-			},
-			wantErr:            false,
-			mockHTTPReturnFile: "../testdata/mockBranchProtectionCreateJsonResponse.json",
-			mockHTTPStatusCode: 200,
-		},
-		{
-			name: "CreatePrApprovalBranchProtectionError",
-			args: args{
-				repositoryID: "some-repo-id",
-				client:       client,
-			},
-			wantErr:            true,
-			mockHTTPReturnFile: "../testdata/mockBranchProtectionCreateErrorJsonResponse.json",
-			mockHTTPStatusCode: 200,
-		},
-		{
-			name: "CreatePrapprovalBranchProtectionError400",
-			args: args{
-				branchProtectionRuleID: "some-branch-protection-rule-id",
-				client:                 client,
-			},
-			wantErr:            true,
-			mockHTTPStatusCode: 400,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var mockHTTPReturn []byte
-			var err error
-			if tt.mockHTTPReturnFile != "" {
-				mockHTTPReturn, err = ioutil.ReadFile(tt.mockHTTPReturnFile)
-				if err != nil {
-					t.Fatalf("failed to read test data: %v", err)
-				}
-			}
-
-			httpmock.RegisterResponder(
-				"POST",
-				"https://api.github.com/graphql",
-				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
-			)
-
-			err = createPrApprovalBranchProtection(tt.args.repositoryID, tt.args.branchName, tt.args.client)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("createPrApprovalBranchProtection() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

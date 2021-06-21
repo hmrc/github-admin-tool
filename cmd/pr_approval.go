@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"github-admin-tool/graphqlclient"
 	"log"
@@ -87,14 +86,16 @@ OUTER:
 			continue OUTER
 		}
 
+		prApprovalArgs := setApprovalArgs()
+		
 		// Check all nodes for default branch protection rule
 		for _, branchProtectionRule := range repository.BranchProtectionRules.Nodes {
 			if repository.DefaultBranchRef.Name != branchProtectionRule.Pattern {
 				continue
 			}
 
-			updateArgs := setApprovalArgs()
-			if err = prApprovalUpdate(branchProtectionRule.ID, updateArgs, client); err != nil {
+		
+			if err = prApprovalUpdate(branchProtectionRule.ID, prApprovalArgs, client); err != nil {
 				problems = append(problems, err.Error())
 
 				continue OUTER
@@ -104,7 +105,7 @@ OUTER:
 			continue OUTER
 		}
 
-		if err = prApprovalCreate(repository.ID, repository.DefaultBranchRef.Name, client); err != nil {
+		if err = prApprovalCreate(repository.ID, repository.DefaultBranchRef.Name, prApprovalArgs, client); err != nil {
 			problems = append(problems, err.Error())
 
 			continue OUTER
@@ -141,53 +142,6 @@ func setApprovalArgs() (branchProtectionArgs []BranchProtectionArgs) {
 		})
 
 	return branchProtectionArgs
-}
-
-func createPrApprovalBranchProtection(repositoryID, branchName string, client *graphqlclient.Client) error {
-	req := graphqlclient.NewRequest(`
-		mutation CreateBranchProtectionRule(
-			$repositoryId: String!,
-			$clientMutationId: String!,
-			$requiredApprovingReviewCount: Int!,
-			$pattern: String!,
-			$dismissesStaleReviews: Boolean!,
-			$requiresCodeOwnerReviews: Boolean!
-		) {
-			createBranchProtectionRule(
-				input:{
-					clientMutationId: $clientMutationId,
-					repositoryId: $repositoryId,
-					requiresApprovingReviews: true, 
-					requiredApprovingReviewCount: $requiredApprovingReviewCount,
-					pattern: $pattern,
-					dismissesStaleReviews:  $dismissesStaleReviews,
-					requiresCodeOwnerReviews: $requiresCodeOwnerReviews
-				}
-			) {
-				branchProtectionRule {
-					id
-				}
-			}
-		}
-	`)
-
-	req.Var("clientMutationId", fmt.Sprintf("github-tool-%v", repositoryID))
-	req.Var("repositoryId", repositoryID)
-	req.Var("requiredApprovingReviewCount", prApprovalNumber)
-	req.Var("pattern", branchName)
-	req.Var("dismissesStaleReviews", prApprovalDismissStale)
-	req.Var("requiresCodeOwnerReviews", prApprovalCodeOwnerReview)
-
-	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Authorization", fmt.Sprintf("bearer %s", config.Token))
-
-	ctx := context.Background()
-
-	if err := client.Run(ctx, req, nil); err != nil {
-		return fmt.Errorf("from API call: %w", err)
-	}
-
-	return nil
 }
 
 // nolint // needed for cobra

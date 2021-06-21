@@ -23,7 +23,7 @@ var (
 	errInvalidRepo   = errors.New("invalid repo name")
 	signingCreate    = createSigningBranchProtection    // nolint // Like this for testing mock
 	signingUpdate    = updateSigningBranchProtection    // nolint // Like this for testing mock
-	prApprovalCreate = createPrApprovalBranchProtection // nolint // Like this for testing mock
+	prApprovalCreate = createBranchProtection // nolint // Like this for testing mock
 	prApprovalUpdate = updateBranchProtection           // nolint // Like this for testing mock
 	rootCmd          = &cobra.Command{                  // nolint // needed for cobra
 		Use:   "github-admin-tool",
