@@ -314,3 +314,81 @@ func Test_updateBranchProtection(t *testing.T) {
 		})
 	}
 }
+
+func Test_createBranchProtection(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	client := graphqlclient.NewClient("https://api.github.com/graphql")
+
+	type args struct {
+		repositoryID         string
+		branchName           string
+		branchProtectionArgs []BranchProtectionArgs
+		client               *graphqlclient.Client
+	}
+
+	tests := []struct {
+		name               string
+		args               args
+		wantErr            bool
+		mockHTTPReturnFile string
+		mockHTTPStatusCode int
+	}{
+		{
+			name: "createBranchProtectionSuccess",
+			args: args{
+				repositoryID: "some-repo-id",
+				branchName:   "some-branch-name",
+				branchProtectionArgs: []BranchProtectionArgs{{
+					Name:     "requiresApprovingReviews",
+					DataType: "Boolean",
+					Value:    "true",
+				}},
+				client: client,
+			},
+			wantErr:            false,
+			mockHTTPReturnFile: "../testdata/mockBranchProtectionCreateJsonResponse.json",
+			mockHTTPStatusCode: 200,
+		},
+		{
+			name: "createBranchProtectionError",
+			args: args{
+				repositoryID: "some-repo-id",
+				branchName:   "some-branch-name",
+				branchProtectionArgs: []BranchProtectionArgs{{
+					Name:     "requiresApprovingReviews",
+					DataType: "Boolean",
+					Value:    "true",
+				}},
+				client: client,
+			},
+			wantErr:            true,
+			mockHTTPReturnFile: "../testdata/mockBranchProtectionCreateErrorJsonResponse.json",
+			mockHTTPStatusCode: 400,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
+			if err != nil {
+				t.Fatalf("failed to read test data: %v", err)
+			}
+
+			httpmock.RegisterResponder(
+				"POST",
+				"https://api.github.com/graphql",
+				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
+			)
+
+			if err := createBranchProtection(
+				tt.args.repositoryID,
+				tt.args.branchName,
+				tt.args.branchProtectionArgs,
+				tt.args.client,
+			); (err != nil) != tt.wantErr {
+				t.Errorf("updateBranchProtection() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

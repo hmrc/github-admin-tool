@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func mockedUpdatePrApprovalBranchProtection(
+func mockedUpdateBranchProtection(
 	bprid string,
 	args []BranchProtectionArgs,
 	client *graphqlclient.Client,
@@ -22,7 +22,7 @@ func mockedCreatePrApprovalBranchProtection(rid, branchName string, client *grap
 	return nil
 }
 
-func mockedUpdatePrApprovalBranchProtectionError(bprid string, args []BranchProtectionArgs, client *graphqlclient.Client) error {
+func mockedUpdateBranchProtectionError(bprid string, args []BranchProtectionArgs, client *graphqlclient.Client) error {
 	return errors.New("Test update error")
 }
 
@@ -31,7 +31,7 @@ func mockedCreatePrApprovalBranchProtectionError(rid, branchName string, client 
 }
 
 func Test_applyPrApproval(t *testing.T) {
-	prApprovalUpdate = mockedUpdatePrApprovalBranchProtection
+	prApprovalUpdate = mockedUpdateBranchProtection
 	defer func() { prApprovalUpdate = updateBranchProtection }()
 
 	prApprovalCreate = mockedCreatePrApprovalBranchProtection
@@ -140,7 +140,7 @@ func Test_applyPrApproval(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.returnError {
-				prApprovalUpdate = mockedUpdatePrApprovalBranchProtectionError
+				prApprovalUpdate = mockedUpdateBranchProtectionError
 				prApprovalCreate = mockedCreatePrApprovalBranchProtectionError
 			}
 
@@ -156,80 +156,6 @@ func Test_applyPrApproval(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotProblems, tt.wantProblems) {
 				t.Errorf("applyPrApproval() gotProblems = %v, want %v", gotProblems, tt.wantProblems)
-			}
-		})
-	}
-}
-
-func Test_updatePrApprovalBranchProtection(t *testing.T) {
-	type args struct {
-		branchProtectionRuleID string
-		client                 *graphqlclient.Client
-	}
-
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
-
-	tests := []struct {
-		name               string
-		args               args
-		wantErr            bool
-		mockHTTPReturnFile string
-		mockHTTPStatusCode int
-	}{
-		{
-			name: "updatePrApprovalBranchProtectionisSuccessful",
-			args: args{
-				branchProtectionRuleID: "some-branch-protection-rule-id",
-				client:                 client,
-			},
-			wantErr:            false,
-			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateJsonResponse.json",
-			mockHTTPStatusCode: 200,
-		},
-
-		{
-			name: "updatePrApprovalBranchProtectionError",
-			args: args{
-				branchProtectionRuleID: "some-branch-protection-rule-id",
-				client:                 client,
-			},
-			wantErr:            true,
-			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateErrorJsonResponse.json",
-			mockHTTPStatusCode: 200,
-		},
-		{
-			name: "updatePrApprovalBranchProtectionError400",
-			args: args{
-				branchProtectionRuleID: "some-branch-protection-rule-id",
-				client:                 client,
-			},
-			wantErr:            true,
-			mockHTTPStatusCode: 400,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var mockHTTPReturn []byte
-			var err error
-			if tt.mockHTTPReturnFile != "" {
-				mockHTTPReturn, err = ioutil.ReadFile(tt.mockHTTPReturnFile)
-				if err != nil {
-					t.Fatalf("failed to read test data: %v", err)
-				}
-			}
-
-			httpmock.RegisterResponder(
-				"POST",
-				"https://api.github.com/graphql",
-				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
-			)
-			err = updatePrApprovalBranchProtection(tt.args.branchProtectionRuleID, tt.args.client)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("updatePrApprovalBranchProtection() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

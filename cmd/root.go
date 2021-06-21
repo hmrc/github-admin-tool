@@ -176,12 +176,6 @@ func updateBranchProtection(
 	input.WriteString("			clientMutationId: $clientMutationId,")
 	input.WriteString("			branchProtectionRuleId: $branchProtectionRuleId,")
 
-	// [0] = [
-	// 	"name": "requiresApprovingReviews"
-	// 	"datatype": "Boolean"
-	// 	"value": "true"
-	// ]
-
 	mutationBlock, inputBlock, requestVars := createQueryBlocks(branchProtectionArgs)
 
 	mutation.WriteString(mutationBlock.String())
@@ -229,4 +223,58 @@ func createQueryBlocks(branchProtectionArgs []BranchProtectionArgs) (
 	}
 
 	return mutation, input, requestVars
+}
+
+func createBranchProtection(
+	repositoryID,
+	branchName string,
+	branchProtectionArgs []BranchProtectionArgs,
+	client *graphqlclient.Client,
+) error {
+	var mutation, input, output strings.Builder
+
+	mutation.WriteString("mutation CreateBranchProtectionRule(")
+	mutation.WriteString("	$repositoryId: String!,")
+	mutation.WriteString("	$clientMutationId: String!,")
+	mutation.WriteString("	$pattern: String!,")
+
+	input.WriteString("		createBranchProtectionRule(")
+	input.WriteString("			input:{")
+	input.WriteString("				clientMutationId: $clientMutationId,")
+	input.WriteString("				repositoryId: $repositoryId,")
+	input.WriteString("				pattern: $pattern,")
+
+	mutationBlock, inputBlock, requestVars := createQueryBlocks(branchProtectionArgs)
+
+	mutation.WriteString(mutationBlock.String())
+	mutation.WriteString(") {")
+
+	input.WriteString(inputBlock.String())
+	input.WriteString("})")
+
+	output.WriteString("{")
+	output.WriteString("	branchProtectionRule {")
+	output.WriteString("		id")
+	output.WriteString("	}")
+	output.WriteString("}}")
+
+	req := graphqlclient.NewRequest(mutation.String() + input.String() + output.String())
+	req.Var("clientMutationId", fmt.Sprintf("github-tool-%v", repositoryID))
+	req.Var("repositoryId", repositoryID)
+	req.Var("pattern", branchName)
+
+	for key, value := range requestVars {
+		req.Var(key, value)
+	}
+
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Authorization", fmt.Sprintf("bearer %s", config.Token))
+
+	ctx := context.Background()
+
+	if err := client.Run(ctx, req, nil); err != nil {
+		return fmt.Errorf("from API call: %w", err)
+	}
+
+	return nil
 }

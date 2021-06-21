@@ -93,7 +93,7 @@ OUTER:
 				continue
 			}
 
-			updateArgs := setApprovalArgs(branchProtectionRule.ID)
+			updateArgs := setApprovalArgs()
 			if err = prApprovalUpdate(branchProtectionRule.ID, updateArgs, client); err != nil {
 				problems = append(problems, err.Error())
 
@@ -116,30 +116,29 @@ OUTER:
 	return modified, created, info, problems
 }
 
-func setApprovalArgs(branchProtectionRuleID string) (branchProtectionArgs []BranchProtectionArgs) {
-	branchProtectionArgs = append(branchProtectionArgs, BranchProtectionArgs{
-		Name:     "requiresApprovingReviews",
-		DataType: "Boolean",
-		Value:    true,
-	})
-
-	branchProtectionArgs = append(branchProtectionArgs, BranchProtectionArgs{
-		Name:     "requiredApprovingReviewCount",
-		DataType: "Int",
-		Value:    prApprovalNumber,
-	})
-
-	branchProtectionArgs = append(branchProtectionArgs, BranchProtectionArgs{
-		Name:     "dismissesStaleReviews",
-		DataType: "Boolean",
-		Value:    prApprovalDismissStale,
-	})
-
-	branchProtectionArgs = append(branchProtectionArgs, BranchProtectionArgs{
-		Name:     "requiresCodeOwnerReviews",
-		DataType: "Boolean",
-		Value:    prApprovalCodeOwnerReview,
-	})
+func setApprovalArgs() (branchProtectionArgs []BranchProtectionArgs) {
+	branchProtectionArgs = append(
+		branchProtectionArgs,
+		BranchProtectionArgs{
+			Name:     "requiresApprovingReviews",
+			DataType: "Boolean",
+			Value:    true,
+		},
+		BranchProtectionArgs{
+			Name:     "requiredApprovingReviewCount",
+			DataType: "Int",
+			Value:    prApprovalNumber,
+		},
+		BranchProtectionArgs{
+			Name:     "dismissesStaleReviews",
+			DataType: "Boolean",
+			Value:    prApprovalDismissStale,
+		},
+		BranchProtectionArgs{
+			Name:     "requiresCodeOwnerReviews",
+			DataType: "Boolean",
+			Value:    prApprovalCodeOwnerReview,
+		})
 
 	return branchProtectionArgs
 }
