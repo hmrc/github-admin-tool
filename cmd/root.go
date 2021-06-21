@@ -21,11 +21,11 @@ var (
 	config           Config // nolint // using with viper
 	dryRun           bool   // nolint // using for global flag
 	errInvalidRepo   = errors.New("invalid repo name")
-	signingCreate    = createSigningBranchProtection    // nolint // Like this for testing mock
-	signingUpdate    = updateSigningBranchProtection    // nolint // Like this for testing mock
+	signingCreate    = createBranchProtection // nolint // Like this for testing mock
+	signingUpdate    = updateBranchProtection // nolint // Like this for testing mock
 	prApprovalCreate = createBranchProtection // nolint // Like this for testing mock
-	prApprovalUpdate = updateBranchProtection           // nolint // Like this for testing mock
-	rootCmd          = &cobra.Command{                  // nolint // needed for cobra
+	prApprovalUpdate = updateBranchProtection // nolint // Like this for testing mock
+	rootCmd          = &cobra.Command{        // nolint // needed for cobra
 		Use:   "github-admin-tool",
 		Short: "Github admin tool allows you to perform actions on your github repos",
 		Long:  "Using Github version 4 GraphQL API to generate repo reports and administer your organisations repos etc",

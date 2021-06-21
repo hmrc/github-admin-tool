@@ -4,28 +4,39 @@ import (
 	"errors"
 	"fmt"
 	"github-admin-tool/graphqlclient"
-	"io/ioutil"
 	"reflect"
 	"testing"
-
-	"github.com/jarcoal/httpmock"
 )
 
 var errMockTest = errors.New("test")
 
-func mockedUpdateSigningBranchProtection(branchProtectionID string, client *graphqlclient.Client) error {
+func mockedUpdateSigningBranchProtection(bpID string, args []BranchProtectionArgs, client *graphqlclient.Client) error {
 	return nil
 }
 
-func mockedCreateSigningBranchProtection(repositoryID, branchName string, client *graphqlclient.Client) error {
+func mockedCreateSigningBranchProtection(
+	repositoryID,
+	branchName string,
+	args []BranchProtectionArgs,
+	client *graphqlclient.Client,
+) error {
 	return nil
 }
 
-func mockedUpdateSigningBranchProtectionError(branchProtectionID string, client *graphqlclient.Client) error {
+func mockedUpdateSigningBranchProtectionError(
+	branchProtectionID string,
+	args []BranchProtectionArgs,
+	client *graphqlclient.Client,
+) error {
 	return fmt.Errorf("update: %w", errMockTest)
 }
 
-func mockedCreateSigningBranchProtectionError(repositoryID, branchName string, client *graphqlclient.Client) error {
+func mockedCreateSigningBranchProtectionError(
+	repositoryID,
+	branchName string,
+	args []BranchProtectionArgs,
+	client *graphqlclient.Client,
+) error {
 	return fmt.Errorf("create: %w", errMockTest)
 }
 
@@ -36,10 +47,10 @@ func Test_applySigning(t *testing.T) {
 	}
 
 	signingUpdate = mockedUpdateSigningBranchProtection
-	defer func() { signingUpdate = updateSigningBranchProtection }()
+	defer func() { signingUpdate = updateBranchProtection }()
 
 	signingCreate = mockedCreateSigningBranchProtection
-	defer func() { signingCreate = createSigningBranchProtection }()
+	defer func() { signingCreate = createBranchProtection }()
 
 	tests := []struct {
 		name               string
@@ -175,10 +186,10 @@ func Test_applySigning(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.mockErrorFunctions {
 				signingUpdate = mockedUpdateSigningBranchProtectionError
-				defer func() { signingUpdate = updateSigningBranchProtection }()
+				defer func() { signingUpdate = updateBranchProtection }()
 
 				signingCreate = mockedCreateSigningBranchProtectionError
-				defer func() { signingCreate = createSigningBranchProtection }()
+				defer func() { signingCreate = createBranchProtection }()
 			}
 
 			gotModified, gotCreated, gotInfo, gotErrors := applySigning(tt.args.repoSearchResult, tt.args.client)
@@ -193,132 +204,6 @@ func Test_applySigning(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotErrors, tt.wantErrors) {
 				t.Errorf("applySigning() gotErrors = %v, want %v", gotErrors, tt.wantErrors)
-			}
-		})
-	}
-}
-
-func Test_updateSigningBranchProtection(t *testing.T) {
-	type args struct {
-		branchProtectionID string
-		client             *graphqlclient.Client
-	}
-
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
-
-	tests := []struct {
-		name               string
-		args               args
-		wantErr            bool
-		mockHTTPReturnFile string
-		mockHTTPStatusCode int
-	}{
-		{
-			name: "UpdateSigningBranchProtectionSuccess",
-			args: args{
-				branchProtectionID: "some-random-bpr-id",
-				client:             client,
-			},
-			wantErr:            false,
-			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateJsonResponse.json",
-			mockHTTPStatusCode: 200,
-		},
-		{
-			name: "UpdateSigningBranchProtectionFailure",
-			args: args{
-				branchProtectionID: "some-random-bpr-id",
-				client:             client,
-			},
-			wantErr:            true,
-			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateErrorJsonResponse.json",
-			mockHTTPStatusCode: 200,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
-			if err != nil {
-				t.Fatalf("failed to read test data: %v", err)
-			}
-
-			httpmock.RegisterResponder(
-				"POST",
-				"https://api.github.com/graphql",
-				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
-			)
-
-			if err := updateSigningBranchProtection(
-				tt.args.branchProtectionID,
-				tt.args.client,
-			); (err != nil) != tt.wantErr {
-				t.Errorf("updateSigningBranchProtection() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_createSigningBranchProtection(t *testing.T) {
-	type args struct {
-		repositoryID string
-		branchName   string
-		client       *graphqlclient.Client
-	}
-
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
-
-	tests := []struct {
-		name               string
-		args               args
-		wantErr            bool
-		mockHTTPReturnFile string
-		mockHTTPStatusCode int
-	}{
-		{
-			name: "CreateSigningBranchProtectionSuccess",
-			args: args{
-				repositoryID: "some-repo-id",
-				client:       client,
-			},
-			wantErr:            false,
-			mockHTTPReturnFile: "../testdata/mockBranchProtectionCreateJsonResponse.json",
-			mockHTTPStatusCode: 200,
-		},
-		{
-			name: "CreateSigningBranchProtectionError",
-			args: args{
-				repositoryID: "some-repo-id",
-				client:       client,
-			},
-			wantErr:            true,
-			mockHTTPReturnFile: "../testdata/mockBranchProtectionCreateErrorJsonResponse.json",
-			mockHTTPStatusCode: 200,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
-			if err != nil {
-				t.Fatalf("failed to read test data: %v", err)
-			}
-
-			httpmock.RegisterResponder(
-				"POST",
-				"https://api.github.com/graphql",
-				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
-			)
-
-			if err := createSigningBranchProtection(
-				tt.args.repositoryID,
-				tt.args.branchName,
-				tt.args.client,
-			); (err != nil) != tt.wantErr {
-				t.Errorf("createSigningBranchProtection() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

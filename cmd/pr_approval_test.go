@@ -1,9 +1,15 @@
 package cmd
 
 import (
+	"errors"
 	"github-admin-tool/graphqlclient"
 	"reflect"
 	"testing"
+)
+
+var (
+	errMockCreateTest = errors.New("test create error")
+	errMockUpdateTest = errors.New("test update error")
 )
 
 func mockedUpdateBranchProtection(
@@ -28,7 +34,7 @@ func mockedUpdateBranchProtectionError(
 	args []BranchProtectionArgs,
 	client *graphqlclient.Client,
 ) error {
-	return errors.New("Test update error")
+	return errMockUpdateTest
 }
 
 func mockedCreateBranchProtectionError(
@@ -37,7 +43,7 @@ func mockedCreateBranchProtectionError(
 	args []BranchProtectionArgs,
 	client *graphqlclient.Client,
 ) error {
-	return errors.New("Test create error")
+	return errMockCreateTest
 }
 
 func Test_applyPrApproval(t *testing.T) {
@@ -126,7 +132,7 @@ func Test_applyPrApproval(t *testing.T) {
 					},
 				},
 			},
-			wantProblems: []string{"Test update error"},
+			wantProblems: []string{"test update error"},
 			returnError:  true,
 		},
 		{
@@ -142,7 +148,7 @@ func Test_applyPrApproval(t *testing.T) {
 					},
 				},
 			},
-			wantProblems: []string{"Test create error"},
+			wantProblems: []string{"test create error"},
 			returnError:  true,
 		},
 	}
