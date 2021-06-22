@@ -228,11 +228,11 @@ func Test_createQueryBlocks(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotMutation, gotInput, gotRequestVars := createQueryBlocks(tt.args.args)
-			if !reflect.DeepEqual(gotMutation.String(), tt.wantMutation) {
-				t.Errorf("createQueryBlocks() gotMutation = %v, want %v", gotMutation.String(), tt.wantMutation)
+			if !reflect.DeepEqual(gotMutation, tt.wantMutation) {
+				t.Errorf("createQueryBlocks() gotMutation = %v, want %v", gotMutation, tt.wantMutation)
 			}
-			if !reflect.DeepEqual(gotInput.String(), tt.wantInput) {
-				t.Errorf("createQueryBlocks() gotInput = %v, want = %v", gotInput.String(), tt.wantInput)
+			if !reflect.DeepEqual(gotInput, tt.wantInput) {
+				t.Errorf("createQueryBlocks() gotInput = %v, want = %v", gotInput, tt.wantInput)
 			}
 			if !reflect.DeepEqual(gotRequestVars, tt.wantRequestVars) {
 				t.Errorf("createQueryBlocks() gotRequestVars = %v, want %v", gotRequestVars, tt.wantRequestVars)
