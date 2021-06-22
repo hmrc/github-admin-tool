@@ -130,8 +130,8 @@ func generateRepoQuery(repos []string) string {
 	signingQueryStr.WriteString("}")
 	signingQueryStr.WriteString("query ($org: String!) {")
 
-	for i := 0; i < len(repos); i++ {
-		signingQueryStr.WriteString(fmt.Sprintf("repo%d: repository(owner: $org, name: \"%s\") {", i, repos[i]))
+	for i, repo := range repos {
+		signingQueryStr.WriteString(fmt.Sprintf("repo%d: repository(owner: $org, name: \"%s\") {", i, repo))
 		signingQueryStr.WriteString("	...repoProperties")
 		signingQueryStr.WriteString("}")
 	}
@@ -178,10 +178,10 @@ func updateBranchProtection(
 
 	mutationBlock, inputBlock, requestVars := createQueryBlocks(branchProtectionArgs)
 
-	mutation.WriteString(mutationBlock.String())
+	mutation.WriteString(mutationBlock)
 	mutation.WriteString("){")
 
-	input.WriteString(inputBlock.String())
+	input.WriteString(inputBlock)
 	input.WriteString("})")
 
 	output.WriteString("{")
@@ -211,18 +211,20 @@ func updateBranchProtection(
 }
 
 func createQueryBlocks(branchProtectionArgs []BranchProtectionArgs) (
-	mutation, input strings.Builder,
+	mutation, input string,
 	requestVars map[string]interface{},
 ) {
 	requestVars = make(map[string]interface{})
 
+	var mutationBuilder, inputBuilder strings.Builder
+
 	for _, bprs := range branchProtectionArgs {
-		mutation.WriteString(fmt.Sprintf("$%s: %s!,", bprs.Name, bprs.DataType))
-		input.WriteString(fmt.Sprintf("%s: $%s,", bprs.Name, bprs.Name))
+		mutationBuilder.WriteString(fmt.Sprintf("$%s: %s!,", bprs.Name, bprs.DataType))
+		inputBuilder.WriteString(fmt.Sprintf("%s: $%s,", bprs.Name, bprs.Name))
 		requestVars[bprs.Name] = bprs.Value
 	}
 
-	return mutation, input, requestVars
+	return mutationBuilder.String(), inputBuilder.String(), requestVars
 }
 
 func createBranchProtection(
@@ -246,10 +248,10 @@ func createBranchProtection(
 
 	mutationBlock, inputBlock, requestVars := createQueryBlocks(branchProtectionArgs)
 
-	mutation.WriteString(mutationBlock.String())
+	mutation.WriteString(mutationBlock)
 	mutation.WriteString(") {")
 
-	input.WriteString(inputBlock.String())
+	input.WriteString(inputBlock)
 	input.WriteString("})")
 
 	output.WriteString("{")

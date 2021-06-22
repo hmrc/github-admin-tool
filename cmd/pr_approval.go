@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github-admin-tool/graphqlclient"
 	"log"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -39,7 +38,8 @@ var (
 
 			if dryRun {
 				log.Printf("This is a dry run, the run would process %d repositories", numberOfRepos)
-				os.Exit(0)
+
+				return
 			}
 
 			queryString := generateRepoQuery(repoList)
@@ -116,31 +116,29 @@ OUTER:
 	return modified, created, info, problems
 }
 
-func setApprovalArgs() (branchProtectionArgs []BranchProtectionArgs) {
-	branchProtectionArgs = append(
-		branchProtectionArgs,
-		BranchProtectionArgs{
+func setApprovalArgs() []BranchProtectionArgs {
+	return []BranchProtectionArgs{
+		{
 			Name:     "requiresApprovingReviews",
 			DataType: "Boolean",
 			Value:    true,
 		},
-		BranchProtectionArgs{
+		{
 			Name:     "requiredApprovingReviewCount",
 			DataType: "Int",
 			Value:    prApprovalNumber,
 		},
-		BranchProtectionArgs{
+		{
 			Name:     "dismissesStaleReviews",
 			DataType: "Boolean",
 			Value:    prApprovalDismissStale,
 		},
-		BranchProtectionArgs{
+		{
 			Name:     "requiresCodeOwnerReviews",
 			DataType: "Boolean",
 			Value:    prApprovalCodeOwnerReview,
-		})
-
-	return branchProtectionArgs
+		},
+	}
 }
 
 // nolint // needed for cobra
