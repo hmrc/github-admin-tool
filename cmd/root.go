@@ -25,8 +25,6 @@ var (
 	errInvalidRepo             = errors.New("invalid repo name")
 	createBranchProtectionRule = createBranchProtection // nolint // Like this for testing mock
 	updateBranchProtectionRule = updateBranchProtection // nolint // Like this for testing mock
-	prApprovalCreate           = createBranchProtection // nolint // Like this for testing mock
-	prApprovalUpdate           = updateBranchProtection // nolint // Like this for testing mock
 	rootCmd                    = &cobra.Command{        // nolint // needed for cobra
 		Use:   "github-admin-tool",
 		Short: "Github admin tool allows you to perform actions on your github repos",
@@ -310,7 +308,7 @@ OUTER:
 			}
 
 			// If default branch has already got signing turned on, no need to update
-			if branchProtection.RequiresCommitSignatures {
+			if action == "Signing" && branchProtection.RequiresCommitSignatures {
 				info = append(info, fmt.Sprintf("%s already turned on for %v", action, repository.NameWithOwner))
 
 				continue OUTER

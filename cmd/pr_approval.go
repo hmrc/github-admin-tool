@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	prApprovalFlag            bool              // nolint // needed for cobra
 	prApprovalNumber          int               // nolint // needed for cobra
 	prApprovalDismissStale    bool              // nolint // needed for cobra
 	prApprovalCodeOwnerReview bool              // nolint // needed for cobra
@@ -49,7 +50,7 @@ var (
 			}
 			approvalArgs := setApprovalArgs()
 			updated, created, info, problems := applyBranchProtection(
-				repoSearchResult, 
+				repoSearchResult,
 				"Pr-approval",
 				approvalArgs,
 				client,
@@ -80,7 +81,7 @@ func setApprovalArgs() (branchProtectionArgs []BranchProtectionArgs) {
 		BranchProtectionArgs{
 			Name:     "requiresApprovingReviews",
 			DataType: "Boolean",
-			Value:    true,
+			Value:    prApprovalFlag,
 		},
 		BranchProtectionArgs{
 			Name:     "requiredApprovingReviewCount",
@@ -104,9 +105,11 @@ func setApprovalArgs() (branchProtectionArgs []BranchProtectionArgs) {
 // nolint // needed for cobra
 func init() {
 	prApprovalCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "file containing repositories on new line without org/ prefix. Max 100 repos")
-	prApprovalCmd.Flags().BoolVarP(&prApprovalCodeOwnerReview, "code-owner", "o", false, "boolean indicating whether code owner should review")
+	prApprovalCmd.Flags().BoolVarP(&prApprovalFlag, "pr-approval", "p", true, "boolean indicating pr reviews before merging, if this is false ignore all other flags")
 	prApprovalCmd.Flags().IntVarP(&prApprovalNumber, "number", "n", 1, "number of required approving reviews before PR can be merged")
 	prApprovalCmd.Flags().BoolVarP(&prApprovalDismissStale, "dismiss-stale", "d", true, "boolean indicating dismissal of PR review approvals with every new push to branch")
+	prApprovalCmd.Flags().BoolVarP(&prApprovalCodeOwnerReview, "code-owner", "o", false, "boolean indicating whether code owner should review")
 	prApprovalCmd.MarkFlagRequired("repos")
+	prApprovalCmd.Flags().SortFlags = false
 	rootCmd.AddCommand(prApprovalCmd)
 }

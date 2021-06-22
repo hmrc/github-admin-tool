@@ -524,6 +524,7 @@ func Test_applyBranchProtection(t *testing.T) {
 						}},
 					},
 				}},
+				action: "Signing",
 			},
 			wantModified: []string{"org/signing-off"},
 			wantCreated:  nil,
@@ -531,7 +532,7 @@ func Test_applyBranchProtection(t *testing.T) {
 			wantErrors:   nil,
 		},
 		{
-			name: "ApplySigningCreatingFailure",
+			name: "ApplyCreatingFailure",
 			args: args{
 				repoSearchResult: map[string]RepositoriesNodeList{"repo0": {
 					ID:            "repoIdTEST",
@@ -548,7 +549,7 @@ func Test_applyBranchProtection(t *testing.T) {
 			mockErrorFunctions: true,
 		},
 		{
-			name: "ApplySigningUpdatingFailure",
+			name: "ApplyUpdatingFailure",
 			args: args{
 				repoSearchResult: map[string]RepositoriesNodeList{"repo0": {
 					ID:            "repoIdTEST",
@@ -564,10 +565,43 @@ func Test_applyBranchProtection(t *testing.T) {
 					},
 				}},
 			},
-			wantModified:       nil,
-			wantCreated:        nil,
-			wantInfo:           nil,
 			wantErrors:         []string{"update: test"},
+			mockErrorFunctions: true,
+		},
+		{
+			name: "ApplyPrApprovalUpdatingFailure",
+			args: args{
+				repoSearchResult: map[string]RepositoriesNodeList{"repo0": {
+					ID:            "repoIdTEST",
+					NameWithOwner: "org/pr-approval-test",
+					DefaultBranchRef: DefaultBranchRef{
+						Name: "default-branch-name",
+					},
+					BranchProtectionRules: BranchProtectionRules{
+						Nodes: []BranchProtectionRulesNodesList{{
+							RequiresCommitSignatures: true,
+							Pattern:                  "default-branch-name",
+						}},
+					},
+				}},
+				action: "Pr-approval",
+			},
+			wantErrors:         []string{"update: test"},
+			mockErrorFunctions: true,
+		},
+		{
+			name: "ApplyPrApprovalCreatingFailure",
+			args: args{
+				repoSearchResult: map[string]RepositoriesNodeList{"repo0": {
+					ID:            "repoIdTEST",
+					NameWithOwner: "org/pr-approval-test",
+					DefaultBranchRef: DefaultBranchRef{
+						Name: "default-branch-name",
+					},
+				}},
+				action: "Pr-approval",
+			},
+			wantErrors:         []string{"create: test"},
 			mockErrorFunctions: true,
 		},
 	}
