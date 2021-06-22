@@ -15,17 +15,19 @@ import (
 	"github.com/spf13/viper"
 )
 
+const maxRepositories = 100
+
 var (
-	configFile       string // nolint // needed for cobra
-	reposFile        string // nolint // needed for cobra
-	config           Config // nolint // using with viper
-	dryRun           bool   // nolint // using for global flag
-	errInvalidRepo   = errors.New("invalid repo name")
-	signingCreate    = createBranchProtection // nolint // Like this for testing mock
-	signingUpdate    = updateBranchProtection // nolint // Like this for testing mock
-	prApprovalCreate = createBranchProtection // nolint // Like this for testing mock
-	prApprovalUpdate = updateBranchProtection // nolint // Like this for testing mock
-	rootCmd          = &cobra.Command{        // nolint // needed for cobra
+	configFile                 string // nolint // needed for cobra
+	reposFile                  string // nolint // needed for cobra
+	config                     Config // nolint // using with viper
+	dryRun                     bool   // nolint // using for global flag
+	errInvalidRepo             = errors.New("invalid repo name")
+	createBranchProtectionRule = createBranchProtection // nolint // Like this for testing mock
+	updateBranchProtectionRule = updateBranchProtection // nolint // Like this for testing mock
+	prApprovalCreate           = createBranchProtection // nolint // Like this for testing mock
+	prApprovalUpdate           = updateBranchProtection // nolint // Like this for testing mock
+	rootCmd                    = &cobra.Command{        // nolint // needed for cobra
 		Use:   "github-admin-tool",
 		Short: "Github admin tool allows you to perform actions on your github repos",
 		Long:  "Using Github version 4 GraphQL API to generate repo reports and administer your organisations repos etc",
@@ -277,4 +279,66 @@ func createBranchProtection(
 	}
 
 	return nil
+}
+
+func applyBranchProtection(
+	repoSearchResult map[string]RepositoriesNodeList,
+	action string,
+	branchProtectionArgs []BranchProtectionArgs,
+	client *graphqlclient.Client,
+) (
+	modified,
+	created,
+	info,
+	problems []string,
+) {
+	var err error
+
+OUTER:
+
+	for _, repository := range repoSearchResult { // nolint
+		if repository.DefaultBranchRef.Name == "" {
+			info = append(info, fmt.Sprintf("No default branch for %v", repository.NameWithOwner))
+
+			continue OUTER
+		}
+
+		// Check all nodes for default branch protection rule
+		for _, branchProtection := range repository.BranchProtectionRules.Nodes {
+			if repository.DefaultBranchRef.Name != branchProtection.Pattern {
+				continue
+			}
+
+			// If default branch has already got signing turned on, no need to update
+			if branchProtection.RequiresCommitSignatures {
+				info = append(info, fmt.Sprintf("%s already turned on for %v", action, repository.NameWithOwner))
+
+				continue OUTER
+			}
+
+			if err = updateBranchProtectionRule(branchProtection.ID, branchProtectionArgs, client); err != nil {
+				problems = append(problems, err.Error())
+
+				continue OUTER
+			}
+			modified = append(modified, repository.NameWithOwner)
+
+			continue OUTER
+		}
+
+		if err = createBranchProtectionRule(
+			repository.ID,
+			repository.DefaultBranchRef.Name,
+			branchProtectionArgs,
+			client,
+		); err != nil {
+			problems = append(problems, err.Error())
+
+			continue OUTER
+		}
+
+		created = append(created, repository.NameWithOwner)
+	}
+
+	return modified, created, info, problems
 }

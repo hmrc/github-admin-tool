@@ -1,15 +1,12 @@
 package cmd
 
 import (
-	"fmt"
 	"github-admin-tool/graphqlclient"
 	"log"
 	"os"
 
 	"github.com/spf13/cobra"
 )
-
-const maxRepositories = 100
 
 var signingCmd = &cobra.Command{ // nolint // needed for cobra
 	Use:   "signing",
@@ -47,7 +44,9 @@ var signingCmd = &cobra.Command{ // nolint // needed for cobra
 			os.Exit(0)
 		}
 
-		updated, created, info, problems := applySigning(repoSearchResult, client)
+		signingArgs := setSigningArgs()
+
+		updated, created, info, problems := applyBranchProtection(repoSearchResult, "Signing", signingArgs, client)
 
 		for key, repo := range updated {
 			log.Printf("Modified (%d): %v", key, repo)
@@ -65,60 +64,6 @@ var signingCmd = &cobra.Command{ // nolint // needed for cobra
 			log.Printf("Info (%d): %v", key, i)
 		}
 	},
-}
-
-func applySigning(repoSearchResult map[string]RepositoriesNodeList, client *graphqlclient.Client) (
-	modified,
-	created,
-	info,
-	problems []string,
-) {
-	var err error
-
-OUTER:
-
-	for _, repository := range repoSearchResult { // nolint
-		if repository.DefaultBranchRef.Name == "" {
-			info = append(info, fmt.Sprintf("No default branch for %v", repository.NameWithOwner))
-
-			continue OUTER
-		}
-
-		signingArgs := setSigningArgs()
-
-		// Check all nodes for default branch protection rule
-		for _, branchProtection := range repository.BranchProtectionRules.Nodes {
-			if repository.DefaultBranchRef.Name != branchProtection.Pattern {
-				continue
-			}
-
-			// If default branch has already got signing turned on, no need to update
-			if branchProtection.RequiresCommitSignatures {
-				info = append(info, fmt.Sprintf("Signing already turned on for %v", repository.NameWithOwner))
-
-				continue OUTER
-			}
-
-			if err = signingUpdate(branchProtection.ID, signingArgs, client); err != nil {
-				problems = append(problems, err.Error())
-
-				continue OUTER
-			}
-			modified = append(modified, repository.NameWithOwner)
-
-			continue OUTER
-		}
-
-		if err = signingCreate(repository.ID, repository.DefaultBranchRef.Name, signingArgs, client); err != nil {
-			problems = append(problems, err.Error())
-
-			continue OUTER
-		}
-
-		created = append(created, repository.NameWithOwner)
-	}
-
-	return modified, created, info, problems
 }
 
 // nolint // needed for cobra
