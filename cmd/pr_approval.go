@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"github-admin-tool/graphqlclient"
 	"log"
 	"os"
@@ -48,7 +47,13 @@ var (
 			if err != nil {
 				log.Fatal(err)
 			}
-			updated, created, info, problems := applyPrApproval(repoSearchResult, client)
+			approvalArgs := setApprovalArgs()
+			updated, created, info, problems := applyBranchProtection(
+				repoSearchResult, 
+				"Pr-approval",
+				approvalArgs,
+				client,
+			)
 
 			for key, repo := range updated {
 				log.Printf("Modified (%d): %v", key, repo)
@@ -68,53 +73,6 @@ var (
 		},
 	}
 )
-
-func applyPrApproval(repoSearchResult map[string]RepositoriesNodeList, client *graphqlclient.Client) (
-	modified,
-	created,
-	info,
-	problems []string,
-) {
-	var err error
-
-OUTER:
-
-	for _, repository := range repoSearchResult { // nolint
-		if repository.DefaultBranchRef.Name == "" {
-			info = append(info, fmt.Sprintf("No default branch for %v", repository.NameWithOwner))
-
-			continue OUTER
-		}
-
-		prApprovalArgs := setApprovalArgs()
-
-		// Check all nodes for default branch protection rule
-		for _, branchProtectionRule := range repository.BranchProtectionRules.Nodes {
-			if repository.DefaultBranchRef.Name != branchProtectionRule.Pattern {
-				continue
-			}
-
-			if err = prApprovalUpdate(branchProtectionRule.ID, prApprovalArgs, client); err != nil {
-				problems = append(problems, err.Error())
-
-				continue OUTER
-			}
-			modified = append(modified, repository.NameWithOwner)
-
-			continue OUTER
-		}
-
-		if err = prApprovalCreate(repository.ID, repository.DefaultBranchRef.Name, prApprovalArgs, client); err != nil {
-			problems = append(problems, err.Error())
-
-			continue OUTER
-		}
-
-		created = append(created, repository.NameWithOwner)
-	}
-
-	return modified, created, info, problems
-}
 
 func setApprovalArgs() (branchProtectionArgs []BranchProtectionArgs) {
 	branchProtectionArgs = append(
