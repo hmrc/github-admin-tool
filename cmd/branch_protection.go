@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+var (
+	doBranchProtectionSend   = branchProtectionSend   // nolint // Like this for testing mock
+	doBranchProtectionUpdate = branchProtectionUpdate // nolint // Like this for testing mock
+	doBranchProtectionCreate = branchProtectionCreate // nolint // Like this for testing mock
+)
+
 type BranchProtectionArgs struct {
 	Name     string
 	DataType string
@@ -128,7 +134,7 @@ OUTER:
 				continue OUTER
 			}
 
-			if err = branchProtectionUpdate(branchProtectionArgs, branchProtection.ID); err != nil {
+			if err = doBranchProtectionUpdate(branchProtectionArgs, branchProtection.ID); err != nil {
 				problems = append(problems, err.Error())
 
 				continue OUTER
@@ -138,7 +144,7 @@ OUTER:
 			continue OUTER
 		}
 
-		if err = branchProtectionCreate(
+		if err = doBranchProtectionCreate(
 			branchProtectionArgs,
 			repository.ID,
 			repository.DefaultBranchRef.Name,
@@ -171,13 +177,13 @@ func branchProtectionUpdate(branchProtectionArgs []BranchProtectionArgs, branchP
 	return err
 }
 
-func branchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, repoID, pattern string) error {
+func branchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, repositoryID, pattern string) error {
 	branchProtectionArgs = append(
 		branchProtectionArgs,
 		BranchProtectionArgs{
 			Name:     "repositoryId",
 			DataType: "String",
-			Value:    repoID,
+			Value:    repositoryID,
 		},
 		BranchProtectionArgs{
 			Name:     "pattern",
