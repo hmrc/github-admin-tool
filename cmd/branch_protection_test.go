@@ -73,24 +73,29 @@ func Test_branchProtectionQueryBlocks(t *testing.T) {
 	}
 }
 
-var mockSendError = errors.New("from API call: something went wrong")
-var mockCreateError = errors.New("create: test")
-var mockUpdateError = errors.New("update: test")
+var (
+	errMockSend   = errors.New("from API call: something went wrong")
+	errMockCreate = errors.New("create: test")
+	errMockUpdate = errors.New("update: test")
+)
 
 func mockDoBranchProtectionSend(req *graphqlclient.Request, client *graphqlclient.Client) error {
 	return nil
 }
 
 func mockDoBranchProtectionSendError(req *graphqlclient.Request, client *graphqlclient.Client) error {
-	return mockSendError
+	return errMockSend
 }
 
 func mockDoBranchProtectionUpdate(branchProtectionArgs []BranchProtectionArgs, branchProtectionRuleID string) error {
 	return nil
 }
 
-func mockDoBranchProtectionUpdateError(branchProtectionArgs []BranchProtectionArgs, branchProtectionRuleID string) error {
-	return mockUpdateError
+func mockDoBranchProtectionUpdateError(
+	branchProtectionArgs []BranchProtectionArgs,
+	branchProtectionRuleID string,
+) error {
+	return errMockUpdate
 }
 
 func mockDoBranchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, repoID, pattern string) error {
@@ -98,7 +103,7 @@ func mockDoBranchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, r
 }
 
 func mockDoBranchProtectionCreateError(branchProtectionArgs []BranchProtectionArgs, repoID, pattern string) error {
-	return mockCreateError
+	return errMockCreate
 }
 
 func Test_branchProtectionApply(t *testing.T) {
