@@ -3,7 +3,6 @@ package cmd
 import (
 	"github-admin-tool/graphqlclient"
 	"log"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -76,9 +75,8 @@ var (
 )
 
 func setApprovalArgs() (branchProtectionArgs []BranchProtectionArgs) {
-	branchProtectionArgs = append(
-		branchProtectionArgs,
-		BranchProtectionArgs{
+	return []BranchProtectionArgs{
+		{
 			Name:     "requiresApprovingReviews",
 			DataType: "Boolean",
 			Value:    prApprovalFlag,
