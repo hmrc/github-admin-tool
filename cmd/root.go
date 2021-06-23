@@ -1,31 +1,23 @@
 package cmd
 
 import (
-	"bufio"
-	"context"
 	"fmt"
-	"github-admin-tool/graphqlclient"
 	"log"
-	"os"
-	"regexp"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+const maxRepositories = 100
+
 var (
-	configFile       string // nolint // needed for cobra
-	reposFile        string // nolint // needed for cobra
-	config           Config // nolint // using with viper
-	dryRun           bool   // nolint // using for global flag
-	errInvalidRepo   = errors.New("invalid repo name")
-	signingCreate    = createBranchProtection // nolint // Like this for testing mock
-	signingUpdate    = updateBranchProtection // nolint // Like this for testing mock
-	prApprovalCreate = createBranchProtection // nolint // Like this for testing mock
-	prApprovalUpdate = updateBranchProtection // nolint // Like this for testing mock
-	rootCmd          = &cobra.Command{        // nolint // needed for cobra
+	configFile     string // nolint // needed for cobra
+	reposFile      string // nolint // needed for cobra
+	config         Config // nolint // using with viper
+	dryRun         bool   // nolint // using for global flag
+	errInvalidRepo = errors.New("invalid repo name")
+	rootCmd        = &cobra.Command{ // nolint // needed for cobra
 		Use:   "github-admin-tool",
 		Short: "Github admin tool allows you to perform actions on your github repos",
 		Long:  "Using Github version 4 GraphQL API to generate repo reports and administer your organisations repos etc",
@@ -35,12 +27,6 @@ var (
 type Config struct {
 	Token string `mapstructure:"token"`
 	Org   string `mapstructure:"org"`
-}
-
-type BranchProtectionArgs struct {
-	Name     string
-	DataType string
-	Value    interface{}
 }
 
 func Execute() error {
@@ -81,202 +67,4 @@ func initConfig() {
 	if err = viper.Unmarshal(&config); err != nil {
 		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
-}
-
-func readRepoList(reposFile string) ([]string, error) {
-	var repos []string
-
-	validRepoName := regexp.MustCompile("^[A-Za-z0-9_.-]+$")
-
-	file, err := os.Open(reposFile)
-	if err != nil {
-		return repos, fmt.Errorf("could not open repo file: %w", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		repoName := scanner.Text()
-		if !validRepoName.MatchString(repoName) {
-			return repos, fmt.Errorf("%w: %s", errInvalidRepo, repoName)
-		}
-
-		repos = append(repos, repoName)
-	}
-
-	return repos, nil
-}
-
-func generateRepoQuery(repos []string) string {
-	var signingQueryStr strings.Builder
-
-	signingQueryStr.WriteString("fragment repoProperties on Repository {")
-	signingQueryStr.WriteString("	id")
-	signingQueryStr.WriteString("	nameWithOwner")
-	signingQueryStr.WriteString("	description")
-	signingQueryStr.WriteString("	defaultBranchRef {")
-	signingQueryStr.WriteString("		name")
-	signingQueryStr.WriteString("	}")
-	signingQueryStr.WriteString("	branchProtectionRules(first: 100) {")
-	signingQueryStr.WriteString("		nodes {")
-	signingQueryStr.WriteString("			id")
-	signingQueryStr.WriteString("			requiresCommitSignatures")
-	signingQueryStr.WriteString("			pattern")
-	signingQueryStr.WriteString("			requiresApprovingReviews")
-	signingQueryStr.WriteString("			requiresCodeOwnerReviews")
-	signingQueryStr.WriteString("			requiredApprovingReviewCount")
-	signingQueryStr.WriteString("		}")
-	signingQueryStr.WriteString("	}")
-	signingQueryStr.WriteString("}")
-	signingQueryStr.WriteString("query ($org: String!) {")
-
-	for i, repo := range repos {
-		signingQueryStr.WriteString(fmt.Sprintf("repo%d: repository(owner: $org, name: \"%s\") {", i, repo))
-		signingQueryStr.WriteString("	...repoProperties")
-		signingQueryStr.WriteString("}")
-	}
-
-	signingQueryStr.WriteString("}")
-
-	return signingQueryStr.String()
-}
-
-func repoRequest(queryString string, client *graphqlclient.Client) (map[string]RepositoriesNodeList, error) {
-	authStr := fmt.Sprintf("bearer %s", config.Token)
-
-	req := graphqlclient.NewRequest(queryString)
-	req.Var("org", config.Org)
-	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Authorization", authStr)
-
-	ctx := context.Background()
-
-	var respData map[string]RepositoriesNodeList
-
-	if err := client.Run(ctx, req, &respData); err != nil {
-		return respData, fmt.Errorf("graphql call: %w", err)
-	}
-
-	return respData, nil
-}
-
-func updateBranchProtection(
-	branchProtectionRuleID string,
-	branchProtectionArgs []BranchProtectionArgs,
-	client *graphqlclient.Client,
-) error {
-	var mutation, input, output strings.Builder
-
-	mutation.WriteString("	mutation UpdateBranchProtectionRule(")
-	mutation.WriteString("		$branchProtectionRuleId: String!,")
-	mutation.WriteString("		$clientMutationId: String!,")
-
-	input.WriteString("	updateBranchProtectionRule(")
-	input.WriteString("		input:{")
-	input.WriteString("			clientMutationId: $clientMutationId,")
-	input.WriteString("			branchProtectionRuleId: $branchProtectionRuleId,")
-
-	mutationBlock, inputBlock, requestVars := createQueryBlocks(branchProtectionArgs)
-
-	mutation.WriteString(mutationBlock)
-	mutation.WriteString("){")
-
-	input.WriteString(inputBlock)
-	input.WriteString("})")
-
-	output.WriteString("{")
-	output.WriteString("	branchProtectionRule {")
-	output.WriteString("		id")
-	output.WriteString("	}")
-	output.WriteString("}}")
-
-	req := graphqlclient.NewRequest(mutation.String() + input.String() + output.String())
-	req.Var("clientMutationId", fmt.Sprintf("github-tool-%v", branchProtectionRuleID))
-	req.Var("branchProtectionRuleId", branchProtectionRuleID)
-
-	for key, value := range requestVars {
-		req.Var(key, value)
-	}
-
-	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Authorization", fmt.Sprintf("bearer %s", config.Token))
-
-	ctx := context.Background()
-
-	if err := client.Run(ctx, req, nil); err != nil {
-		return fmt.Errorf("from API call: %w", err)
-	}
-
-	return nil
-}
-
-func createQueryBlocks(branchProtectionArgs []BranchProtectionArgs) (
-	mutation, input string,
-	requestVars map[string]interface{},
-) {
-	requestVars = make(map[string]interface{})
-
-	var mutationBuilder, inputBuilder strings.Builder
-
-	for _, bprs := range branchProtectionArgs {
-		mutationBuilder.WriteString(fmt.Sprintf("$%s: %s!,", bprs.Name, bprs.DataType))
-		inputBuilder.WriteString(fmt.Sprintf("%s: $%s,", bprs.Name, bprs.Name))
-		requestVars[bprs.Name] = bprs.Value
-	}
-
-	return mutationBuilder.String(), inputBuilder.String(), requestVars
-}
-
-func createBranchProtection(
-	repositoryID,
-	branchName string,
-	branchProtectionArgs []BranchProtectionArgs,
-	client *graphqlclient.Client,
-) error {
-	var mutation, input, output strings.Builder
-
-	mutation.WriteString("mutation CreateBranchProtectionRule(")
-	mutation.WriteString("	$repositoryId: String!,")
-	mutation.WriteString("	$clientMutationId: String!,")
-	mutation.WriteString("	$pattern: String!,")
-
-	input.WriteString("		createBranchProtectionRule(")
-	input.WriteString("			input:{")
-	input.WriteString("				clientMutationId: $clientMutationId,")
-	input.WriteString("				repositoryId: $repositoryId,")
-	input.WriteString("				pattern: $pattern,")
-
-	mutationBlock, inputBlock, requestVars := createQueryBlocks(branchProtectionArgs)
-
-	mutation.WriteString(mutationBlock)
-	mutation.WriteString(") {")
-
-	input.WriteString(inputBlock)
-	input.WriteString("})")
-
-	output.WriteString("{")
-	output.WriteString("	branchProtectionRule {")
-	output.WriteString("		id")
-	output.WriteString("	}")
-	output.WriteString("}}")
-
-	req := graphqlclient.NewRequest(mutation.String() + input.String() + output.String())
-	req.Var("clientMutationId", fmt.Sprintf("github-tool-%v", repositoryID))
-	req.Var("repositoryId", repositoryID)
-	req.Var("pattern", branchName)
-
-	for key, value := range requestVars {
-		req.Var(key, value)
-	}
-
-	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Authorization", fmt.Sprintf("bearer %s", config.Token))
-
-	ctx := context.Background()
-
-	if err := client.Run(ctx, req, nil); err != nil {
-		return fmt.Errorf("from API call: %w", err)
-	}
-
-	return nil
 }

@@ -21,16 +21,16 @@ func Test_reportRequest(t *testing.T) {
 		want               []ReportResponse
 	}{
 		{
-			name:               "reportRequestReturnsEmpty",
+			name:               "reportRequest returns empty",
 			mockHTTPReturnFile: "../testdata/mockEmptyResponse.json",
 			want:               nil,
 		},
 		{
-			name:               "reportRequestReturnsOne",
+			name:               "reportRequest returns one",
 			mockHTTPReturnFile: "../testdata/mockRepoNodesJsonResponse.json",
 			want: []ReportResponse{{Organization{Repositories{
 				TotalCount: 1,
-				Nodes: []RepositoriesNodeList{{
+				Nodes: []RepositoriesNode{{
 					Name:               "repo-name",
 					NameWithOwner:      "org-name/repo-name",
 					DefaultBranchRef:   DefaultBranchRef{"main"},

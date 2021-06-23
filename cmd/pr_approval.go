@@ -1,14 +1,15 @@
 package cmd
 
 import (
-	"fmt"
 	"github-admin-tool/graphqlclient"
 	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 )
 
 var (
+	prApprovalFlag            bool              // nolint // needed for cobra
 	prApprovalNumber          int               // nolint // needed for cobra
 	prApprovalDismissStale    bool              // nolint // needed for cobra
 	prApprovalCodeOwnerReview bool              // nolint // needed for cobra
@@ -26,7 +27,7 @@ var (
 				log.Fatal(err)
 			}
 
-			repoList, err := readRepoList(reposFilePath)
+			repoList, err := repoList(reposFilePath)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -42,13 +43,18 @@ var (
 				return
 			}
 
-			queryString := generateRepoQuery(repoList)
+			queryString := repoQuery(repoList)
 			client := graphqlclient.NewClient("https://api.github.com/graphql")
 			repoSearchResult, err := repoRequest(queryString, client)
 			if err != nil {
 				log.Fatal(err)
 			}
-			updated, created, info, problems := applyPrApproval(repoSearchResult, client)
+			approvalArgs := setApprovalArgs()
+			updated, created, info, problems := branchProtectionApply(
+				repoSearchResult,
+				"Pr-approval",
+				approvalArgs,
+			)
 
 			for key, repo := range updated {
 				log.Printf("Modified (%d): %v", key, repo)
@@ -69,59 +75,13 @@ var (
 	}
 )
 
-func applyPrApproval(repoSearchResult map[string]RepositoriesNodeList, client *graphqlclient.Client) (
-	modified,
-	created,
-	info,
-	problems []string,
-) {
-	var err error
-
-OUTER:
-
-	for _, repository := range repoSearchResult { // nolint
-		if repository.DefaultBranchRef.Name == "" {
-			info = append(info, fmt.Sprintf("No default branch for %v", repository.NameWithOwner))
-
-			continue OUTER
-		}
-
-		prApprovalArgs := setApprovalArgs()
-
-		// Check all nodes for default branch protection rule
-		for _, branchProtectionRule := range repository.BranchProtectionRules.Nodes {
-			if repository.DefaultBranchRef.Name != branchProtectionRule.Pattern {
-				continue
-			}
-
-			if err = prApprovalUpdate(branchProtectionRule.ID, prApprovalArgs, client); err != nil {
-				problems = append(problems, err.Error())
-
-				continue OUTER
-			}
-			modified = append(modified, repository.NameWithOwner)
-
-			continue OUTER
-		}
-
-		if err = prApprovalCreate(repository.ID, repository.DefaultBranchRef.Name, prApprovalArgs, client); err != nil {
-			problems = append(problems, err.Error())
-
-			continue OUTER
-		}
-
-		created = append(created, repository.NameWithOwner)
-	}
-
-	return modified, created, info, problems
-}
-
-func setApprovalArgs() []BranchProtectionArgs {
-	return []BranchProtectionArgs{
-		{
+func setApprovalArgs() (branchProtectionArgs []BranchProtectionArgs) {
+	branchProtectionArgs = append(
+		branchProtectionArgs,
+		BranchProtectionArgs{
 			Name:     "requiresApprovingReviews",
 			DataType: "Boolean",
-			Value:    true,
+			Value:    prApprovalFlag,
 		},
 		{
 			Name:     "requiredApprovingReviewCount",
@@ -144,9 +104,11 @@ func setApprovalArgs() []BranchProtectionArgs {
 // nolint // needed for cobra
 func init() {
 	prApprovalCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "file containing repositories on new line without org/ prefix. Max 100 repos")
-	prApprovalCmd.Flags().BoolVarP(&prApprovalCodeOwnerReview, "code-owner", "o", false, "boolean indicating whether code owner should review")
+	prApprovalCmd.Flags().BoolVarP(&prApprovalFlag, "pr-approval", "p", true, "boolean indicating pr reviews before merging, if this is false ignore all other flags")
 	prApprovalCmd.Flags().IntVarP(&prApprovalNumber, "number", "n", 1, "number of required approving reviews before PR can be merged")
 	prApprovalCmd.Flags().BoolVarP(&prApprovalDismissStale, "dismiss-stale", "d", true, "boolean indicating dismissal of PR review approvals with every new push to branch")
+	prApprovalCmd.Flags().BoolVarP(&prApprovalCodeOwnerReview, "code-owner", "o", false, "boolean indicating whether code owner should review")
 	prApprovalCmd.MarkFlagRequired("repos")
+	prApprovalCmd.Flags().SortFlags = false
 	rootCmd.AddCommand(prApprovalCmd)
 }
