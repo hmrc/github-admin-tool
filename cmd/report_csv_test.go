@@ -61,34 +61,34 @@ func Test_parse(t *testing.T) {
 		want [][]string
 	}{
 		{
-			name: "ParseEmptyListReturnEmpty",
+			name: "Parse empty list return empty",
 			args: args{ignoreArchived: false, allResults: emptyAllResults},
 			want: TestEmptyList,
 		},
 		{
-			name: "ParseArchivedResultSet",
+			name: "Parse archived result set",
 			args: args{ignoreArchived: true, allResults: []ReportResponse{{
-				Organization{Repositories{Nodes: []RepositoriesNodeList{{IsArchived: true}}}},
+				Organization{Repositories{Nodes: []RepositoriesNode{{IsArchived: true}}}},
 			}}},
 			want: TestEmptyList,
 		},
 		{
-			name: "ParseUnarchivedResultSet",
+			name: "Parse unarchived result set",
 			args: args{ignoreArchived: true, allResults: []ReportResponse{{
-				Organization{Repositories{Nodes: []RepositoriesNodeList{{IsArchived: false, NameWithOwner: "REPONAME1"}}}},
+				Organization{Repositories{Nodes: []RepositoriesNode{{IsArchived: false, NameWithOwner: "REPONAME1"}}}},
 			}}},
 			want: [][]string{{"REPONAME1", "", "false", "false", "false", "false", "", "false", "false", "false"}},
 		},
 		{
-			name: "ParseBranchProtectionResultSet",
+			name: "Parse branch protection result set",
 			args: args{
 				ignoreArchived: true,
 				allResults: []ReportResponse{{
 					Organization{
 						Repositories{
-							Nodes: []RepositoriesNodeList{{
+							Nodes: []RepositoriesNode{{
 								BranchProtectionRules: BranchProtectionRules{
-									Nodes: []BranchProtectionRulesNodesList{{
+									Nodes: []BranchProtectionRulesNode{{
 										Pattern: "SOMEREGEXP",
 									}},
 								},
@@ -137,12 +137,12 @@ func Test_writeCSV(t *testing.T) {
 		want [][]string
 	}{
 		{
-			name: "WriteCSVReturnsNoExtraRows",
+			name: "WriteCSV returns no extra rows",
 			args: args{parsed: TestEmptyList},
 			want: TestEmptyCSVRows,
 		},
 		{
-			name: "WriteCSVReturnsSomeRows",
+			name: "WriteCSV returns some rows",
 			args: args{parsed: wantWithBP},
 			want: twoCSVRows,
 		},

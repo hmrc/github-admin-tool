@@ -27,7 +27,7 @@ var (
 				log.Fatal(err)
 			}
 
-			repoList, err := readRepoList(reposFilePath)
+			repoList, err := repoList(reposFilePath)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -42,14 +42,14 @@ var (
 				os.Exit(0)
 			}
 
-			queryString := generateRepoQuery(repoList)
+			queryString := repoQuery(repoList)
 			client := graphqlclient.NewClient("https://api.github.com/graphql")
 			repoSearchResult, err := repoRequest(queryString, client)
 			if err != nil {
 				log.Fatal(err)
 			}
 			approvalArgs := setApprovalArgs()
-			updated, created, info, problems := applyBranchProtection(
+			updated, created, info, problems := branchProtectionApply(
 				repoSearchResult,
 				"Pr-approval",
 				approvalArgs,

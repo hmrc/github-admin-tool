@@ -22,7 +22,7 @@ var signingCmd = &cobra.Command{ // nolint // needed for cobra
 			log.Fatal(err)
 		}
 
-		repoMap, err := readRepoList(reposFilePath)
+		repoMap, err := repoList(reposFilePath)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -32,7 +32,7 @@ var signingCmd = &cobra.Command{ // nolint // needed for cobra
 			log.Fatal("Number of repos passed in must be more than 1 and less than 100")
 		}
 
-		queryString := generateRepoQuery(repoMap)
+		queryString := repoQuery(repoMap)
 		client := graphqlclient.NewClient("https://api.github.com/graphql")
 		repoSearchResult, err := repoRequest(queryString, client)
 		if err != nil {
@@ -46,7 +46,7 @@ var signingCmd = &cobra.Command{ // nolint // needed for cobra
 
 		signingArgs := setSigningArgs()
 
-		updated, created, info, problems := applyBranchProtection(repoSearchResult, "Signing", signingArgs, client)
+		updated, created, info, problems := branchProtectionApply(repoSearchResult, "Signing", signingArgs, client)
 
 		for key, repo := range updated {
 			log.Printf("Modified (%d): %v", key, repo)
