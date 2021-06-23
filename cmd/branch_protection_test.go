@@ -3,6 +3,7 @@ package cmd
 import (
 	"reflect"
 	"testing"
+	"io/ioutil"
 )
 
 func Test_branchProtectionQueryBlocks(t *testing.T) {
@@ -483,3 +484,84 @@ func Test_branchProtectionQueryBlocks(t *testing.T) {
 // 		})
 // 	}
 // }
+
+func Test_branchProtectionQuery(t *testing.T) {
+	type args struct {
+		branchProtectionArgs []BranchProtectionArgs
+		action               string
+	}
+
+	tests := []struct {
+		name            string
+		args            args
+		filePath       string
+		wantRequestVars map[string]interface{}
+	}{
+		{
+			name: "branchProtectionQuery returns update query",
+			args: args{
+				branchProtectionArgs: []BranchProtectionArgs{
+					{
+						Name:     "requiresApprovingReviews",
+						DataType: "Boolean",
+						Value:    true,
+					},
+					{
+						Name:     "branchProtectionRuleId",
+						DataType: "String",
+						Value:    "some-rule-id",
+					},
+				},
+				action: "update",
+			},
+			filePath: "../testdata/mockUpdateBranchProtectionQuery.txt",
+			wantRequestVars: map[string]interface{}{
+				"branchProtectionRuleId": "some-rule-id",
+				"requiresApprovingReviews": true,
+			},
+		},
+		{
+			name: "branchProtectionQuery returns create query",
+			args: args{
+				branchProtectionArgs: []BranchProtectionArgs{
+					{
+						Name:     "requiresApprovingReviews",
+						DataType: "Boolean",
+						Value:    true,
+					},
+					{
+						Name:     "repositoryId",
+						DataType: "String",
+						Value:    "some-repo-id",
+					},
+				},
+				action: "create",
+			},
+			filePath: "../testdata/mockCreateBranchProtectionQuery.txt",
+			wantRequestVars: map[string]interface{}{
+				"repositoryId": "some-repo-id",
+				"requiresApprovingReviews": true,
+			},
+
+		
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockReturn, err := ioutil.ReadFile(tt.filePath)
+			if err != nil {
+				t.Fatalf("failed to read test data: %v", err)
+			}
+			want := string(mockReturn)
+
+			gotQuery, gotRequestVars := branchProtectionQuery(tt.args.branchProtectionArgs, tt.args.action)
+			if gotQuery != want {
+				t.Errorf("branchProtectionQuery() gotQuery = \n\n%v, want \n\n%v", gotQuery, want)
+			}
+			if !reflect.DeepEqual(gotRequestVars, tt.wantRequestVars) {
+				t.Errorf("branchProtectionQuery() gotRequestVars = %v, want %v", gotRequestVars, tt.wantRequestVars)
+			}
+		})
+	}
+}

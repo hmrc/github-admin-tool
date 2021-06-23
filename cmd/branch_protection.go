@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+type BranchProtectionArgs struct {
+	Name     string
+	DataType string
+	Value    interface{}
+}
+
 func branchProtectionQuery(
 	branchProtectionArgs []BranchProtectionArgs,
 	action string,
@@ -23,12 +29,12 @@ func branchProtectionQuery(
 		mutationName = "updateBranchProtectionRule"
 	}
 
-	mutation.WriteString(fmt.Sprintf("	mutation %s(", mutationName))
-	mutation.WriteString("		$clientMutationId: String!,")
+	mutation.WriteString(fmt.Sprintf("mutation %s(", mutationName))
+	mutation.WriteString("$clientMutationId: String!,")
 
-	input.WriteString(fmt.Sprintf("	%s(", mutationName))
-	input.WriteString("		input:{")
-	input.WriteString("			clientMutationId: $clientMutationId,")
+	input.WriteString(fmt.Sprintf("%s(", mutationName))
+	input.WriteString("input:{")
+	input.WriteString("clientMutationId: $clientMutationId,")
 
 	mutation.WriteString(mutationBlock)
 	mutation.WriteString("){")
@@ -37,9 +43,9 @@ func branchProtectionQuery(
 	input.WriteString("})")
 
 	output.WriteString("{")
-	output.WriteString("	branchProtectionRule {")
-	output.WriteString("		id")
-	output.WriteString("	}")
+	output.WriteString("branchProtectionRule {")
+	output.WriteString("id")
+	output.WriteString("}")
 	output.WriteString("}}")
 
 	query = mutation.String() + input.String() + output.String()

@@ -30,11 +30,7 @@ type Config struct {
 	Org   string `mapstructure:"org"`
 }
 
-type BranchProtectionArgs struct {
-	Name     string
-	DataType string
-	Value    interface{}
-}
+
 
 func Execute() error {
 	return errors.Wrap(rootCmd.Execute(), "root execute")
