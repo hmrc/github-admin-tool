@@ -46,7 +46,7 @@ var signingCmd = &cobra.Command{ // nolint // needed for cobra
 
 		signingArgs := setSigningArgs()
 
-		updated, created, info, problems := branchProtectionApply(repoSearchResult, "Signing", signingArgs, client)
+		updated, created, info, problems := branchProtectionApply(repoSearchResult, "Signing", signingArgs)
 
 		for key, repo := range updated {
 			log.Printf("Modified (%d): %v", key, repo)

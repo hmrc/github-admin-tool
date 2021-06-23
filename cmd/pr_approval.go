@@ -53,7 +53,6 @@ var (
 				repoSearchResult,
 				"Pr-approval",
 				approvalArgs,
-				client,
 			)
 
 			for key, repo := range updated {

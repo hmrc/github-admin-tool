@@ -7,7 +7,13 @@ import (
 	"strings"
 )
 
-func branchProtectionQuery(branchProtectionArgs []BranchProtectionArgs, action string) (string, map[string]interface{}) {
+func branchProtectionQuery(
+	branchProtectionArgs []BranchProtectionArgs,
+	action string,
+) (
+	query string,
+	requestVars map[string]interface{},
+) {
 	mutationBlock, inputBlock, requestVars := branchProtectionQueryBlocks(branchProtectionArgs)
 
 	var mutation, input, output strings.Builder
@@ -36,7 +42,9 @@ func branchProtectionQuery(branchProtectionArgs []BranchProtectionArgs, action s
 	output.WriteString("	}")
 	output.WriteString("}}")
 
-	return mutation.String() + input.String() + output.String(), requestVars
+	query = mutation.String() + input.String() + output.String()
+
+	return query, requestVars
 }
 
 func branchProtectionRequest(query string, requestVars map[string]interface{}) *graphqlclient.Request {
@@ -84,7 +92,6 @@ func branchProtectionApply(
 	repoSearchResult map[string]RepositoriesNode,
 	action string,
 	branchProtectionArgs []BranchProtectionArgs,
-	client *graphqlclient.Client,
 ) (
 	modified,
 	created,
@@ -141,32 +148,30 @@ OUTER:
 	return modified, created, info, problems
 }
 
-func branchProtectionUpdate(branchProtectionArgs []BranchProtectionArgs, branchProtectionRuleId string) error {
+func branchProtectionUpdate(branchProtectionArgs []BranchProtectionArgs, branchProtectionRuleID string) error {
 	branchProtectionArgs = append(
 		branchProtectionArgs,
 		BranchProtectionArgs{
 			Name:     "branchProtectionRuleId",
 			DataType: "String",
-			Value:    branchProtectionRuleId,
+			Value:    branchProtectionRuleID,
 		},
 	)
 	query, requestVars := branchProtectionQuery(branchProtectionArgs, "update")
 	req := branchProtectionRequest(query, requestVars)
 	client := graphqlclient.NewClient("https://api.github.com/graphql")
-	if err := doBranchProtectionSend(req, client); err != nil {
-		return err
-	}
+	err := doBranchProtectionSend(req, client)
 
-	return nil
+	return err
 }
 
-func branchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, repoId string, pattern string) error {
+func branchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, repoID, pattern string) error {
 	branchProtectionArgs = append(
 		branchProtectionArgs,
 		BranchProtectionArgs{
 			Name:     "repositoryId",
 			DataType: "String",
-			Value:    repoId,
+			Value:    repoID,
 		},
 		BranchProtectionArgs{
 			Name:     "pattern",
@@ -177,9 +182,7 @@ func branchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, repoId 
 	query, requestVars := branchProtectionQuery(branchProtectionArgs, "create")
 	req := branchProtectionRequest(query, requestVars)
 	client := graphqlclient.NewClient("https://api.github.com/graphql")
-	if err := doBranchProtectionSend(req, client); err != nil {
-		return err
-	}
+	err := doBranchProtectionSend(req, client)
 
-	return nil
+	return err
 }
