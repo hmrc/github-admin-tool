@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/jarcoal/httpmock"
 	"github.com/pkg/errors"
 )
 
@@ -553,6 +554,64 @@ func Test_branchProtectionCreate(t *testing.T) {
 				tt.args.pattern,
 			); (err != nil) != tt.wantErr {
 				t.Errorf("branchProtectionCreate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_branchProtectionSend(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	type args struct {
+		req    *graphqlclient.Request
+		client *graphqlclient.Client
+	}
+
+	tests := []struct {
+		name               string
+		args               args
+		wantErr            bool
+		mockHTTPReturnFile string
+		mockHTTPStatusCode int
+	}{
+		{
+			name: "branchProtectionSend success",
+			args: args{
+				req:    graphqlclient.NewRequest("query"),
+				client: graphqlclient.NewClient("https://api.github.com/graphql"),
+			},
+			wantErr:            false,
+			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateJsonResponse.json",
+			mockHTTPStatusCode: 200,
+		},
+		{
+			name: "branchProtectionSend success",
+			args: args{
+				req:    graphqlclient.NewRequest("query"),
+				client: graphqlclient.NewClient("https://api.github.com/graphql"),
+			},
+			wantErr:            true,
+			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateErrorJsonResponse.json",
+			mockHTTPStatusCode: 400,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
+			if err != nil {
+				t.Fatalf("failed to read test data: %v", err)
+			}
+
+			httpmock.RegisterResponder(
+				"POST",
+				"https://api.github.com/graphql",
+				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
+			)
+
+			if err := branchProtectionSend(tt.args.req, tt.args.client); (err != nil) != tt.wantErr {
+				t.Errorf("branchProtectionSend() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
