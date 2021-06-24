@@ -52,6 +52,7 @@ func repoQuery(repos []string) string {
 	signingQueryStr.WriteString("			requiresApprovingReviews")
 	signingQueryStr.WriteString("			requiresCodeOwnerReviews")
 	signingQueryStr.WriteString("			requiredApprovingReviewCount")
+	signingQueryStr.WriteString("			dismissesStaleReviews")
 	signingQueryStr.WriteString("		}")
 	signingQueryStr.WriteString("	}")
 	signingQueryStr.WriteString("}")

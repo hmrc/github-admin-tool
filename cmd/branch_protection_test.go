@@ -227,24 +227,30 @@ func Test_branchProtectionApply(t *testing.T) {
 			mockErrorFunctions: true,
 		},
 		{
-			name: "branchProtectionApply updating failure",
+			name: "branchProtectionApply with default branch protection rule pr approval settings the same",
 			args: args{
 				repoSearchResult: map[string]RepositoriesNode{"repo0": {
 					ID:            "repoIdTEST",
-					NameWithOwner: "org/signing-off",
+					NameWithOwner: "org/pr-approval-duplicate",
 					DefaultBranchRef: DefaultBranchRef{
 						Name: "default-branch-name",
 					},
 					BranchProtectionRules: BranchProtectionRules{
 						Nodes: []BranchProtectionRulesNode{{
-							RequiresCommitSignatures: false,
-							Pattern:                  "default-branch-name",
+							RequiresApprovingReviews:     true,
+							RequiredApprovingReviewCount: 1,
+							DismissesStaleReviews:        true,
+							RequiresCodeOwnerReviews:     false,
+							Pattern:                      "default-branch-name",
 						}},
 					},
 				}},
+				action: "Pr-approval",
 			},
-			wantErrors:         []string{"update: test"},
-			mockErrorFunctions: true,
+			wantModified: nil,
+			wantCreated:  nil,
+			wantInfo:     []string{"Pr-approval settings already set for org/pr-approval-duplicate"},
+			wantErrors:   nil,
 		},
 		{
 			name: "branchProtectionApply pr approval update failure",

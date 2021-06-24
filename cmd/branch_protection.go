@@ -134,6 +134,17 @@ OUTER:
 				continue OUTER
 			}
 
+			// If default branch has already got pr-approval turned on, no need to update
+			if action == "Pr-approval" &&
+				branchProtection.RequiresApprovingReviews == prApprovalFlag &&
+				branchProtection.RequiredApprovingReviewCount == prApprovalNumber &&
+				branchProtection.DismissesStaleReviews == prApprovalDismissStale &&
+				branchProtection.RequiresCodeOwnerReviews == prApprovalCodeOwnerReview {
+				info = append(info, fmt.Sprintf("%s settings already set for %v", action, repository.NameWithOwner))
+
+				continue OUTER
+			}
+
 			if err = doBranchProtectionUpdate(branchProtectionArgs, branchProtection.ID); err != nil {
 				problems = append(problems, err.Error())
 
