@@ -27,6 +27,11 @@ fmt-check: gofmt
 test: go
 	@$(DOCKER) go test -cover ./...
 
+.PHONY: test-coverage
+test-coverage:
+	go test -coverprofile cover.out ./...
+	go tool cover -func=cover.out
+
 .PHONY: lint
 lint: golangci-lint
 	@$(DOCKER) golangci-lint run --fix --issues-exit-code 0

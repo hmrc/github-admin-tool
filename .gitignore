@@ -3,3 +3,4 @@ github-admin-tool
 *.csv
 cmd/*.csv
 /*.txt
+cover.out
