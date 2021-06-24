@@ -9,18 +9,20 @@ import (
 	"strings"
 )
 
-func GenerateCSV(ignoreArchived bool, allResults []ReportResponse) error {
-	parsed := parse(ignoreArchived, allResults)
-	lines := writeCSV(parsed)
+var doReportCSVFileWrite = reportCSVFile // nolint // Like this for testing mock
 
-	if err := writeToFile(lines); err != nil {
+func reportCSVGenerate(ignoreArchived bool, allResults []ReportResponse) error {
+	parsed := reportCSVParse(ignoreArchived, allResults)
+	lines := reportCSVLines(parsed)
+
+	if err := doReportCSVFileWrite("report.csv", lines); err != nil {
 		return fmt.Errorf("GenerateCSV failed: %w", err)
 	}
 
 	return nil
 }
 
-func parse(ignoreArchived bool, allResults []ReportResponse) [][]string {
+func reportCSVParse(ignoreArchived bool, allResults []ReportResponse) [][]string {
 	var parsed [][]string
 
 	for _, allData := range allResults {
@@ -66,7 +68,7 @@ func parse(ignoreArchived bool, allResults []ReportResponse) [][]string {
 	return parsed
 }
 
-func writeCSV(parsed [][]string) [][]string {
+func reportCSVLines(parsed [][]string) [][]string {
 	lines := [][]string{
 		{
 			"Repo Name",
@@ -110,8 +112,8 @@ func writeCSV(parsed [][]string) [][]string {
 	return lines
 }
 
-func writeToFile(lines [][]string) error {
-	file, err := os.Create("report.csv")
+func reportCSVFile(filePath string, lines [][]string) error {
+	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}

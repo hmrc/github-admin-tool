@@ -37,7 +37,7 @@ var (
 				log.Fatal(err)
 			}
 			if !dryRun {
-				if err = GenerateCSV(ignoreArchived, allResults); err != nil {
+				if err = reportCSVGenerate(ignoreArchived, allResults); err != nil {
 					log.Fatal(err)
 				}
 			}
