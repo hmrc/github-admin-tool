@@ -100,7 +100,7 @@ func branchProtectionQueryBlocks(branchProtectionArgs []BranchProtectionArgs) (
 	return mutationBlock.String(), inputBlock.String(), requestVars
 }
 
-func branchProtectionApply(
+func branchProtectionApply( //nolint
 	repoSearchResult map[string]RepositoriesNode,
 	action string,
 	branchProtectionArgs []BranchProtectionArgs,
