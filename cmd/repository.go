@@ -11,7 +11,6 @@ import (
 )
 
 var (
-	doReportRequest     = reportRequest     // nolint // Like this for testing mock
 	doReportCSVGenerate = reportCSVGenerate // nolint // Like this for testing mock
 	doRepositorySend    = repositorySend    // nolint // Like this for testing mock
 	doRepositoryGet     = repositoryGet     // nolint // Like this for testing mock
@@ -42,38 +41,38 @@ func repositoryList(reposFile string) ([]string, error) {
 }
 
 func repositoryQuery(repos []string) string {
-	var signingQueryStr strings.Builder
+	var query strings.Builder
 
-	signingQueryStr.WriteString("fragment repoProperties on Repository {")
-	signingQueryStr.WriteString("	id")
-	signingQueryStr.WriteString("	nameWithOwner")
-	signingQueryStr.WriteString("	description")
-	signingQueryStr.WriteString("	defaultBranchRef {")
-	signingQueryStr.WriteString("		name")
-	signingQueryStr.WriteString("	}")
-	signingQueryStr.WriteString("	branchProtectionRules(first: 100) {")
-	signingQueryStr.WriteString("		nodes {")
-	signingQueryStr.WriteString("			id")
-	signingQueryStr.WriteString("			requiresCommitSignatures")
-	signingQueryStr.WriteString("			pattern")
-	signingQueryStr.WriteString("			requiresApprovingReviews")
-	signingQueryStr.WriteString("			requiresCodeOwnerReviews")
-	signingQueryStr.WriteString("			requiredApprovingReviewCount")
-	signingQueryStr.WriteString("			dismissesStaleReviews")
-	signingQueryStr.WriteString("		}")
-	signingQueryStr.WriteString("	}")
-	signingQueryStr.WriteString("}")
-	signingQueryStr.WriteString("query ($org: String!) {")
+	query.WriteString("fragment repoProperties on Repository {")
+	query.WriteString("	id")
+	query.WriteString("	nameWithOwner")
+	query.WriteString("	description")
+	query.WriteString("	defaultBranchRef {")
+	query.WriteString("		name")
+	query.WriteString("	}")
+	query.WriteString("	branchProtectionRules(first: 100) {")
+	query.WriteString("		nodes {")
+	query.WriteString("			id")
+	query.WriteString("			requiresCommitSignatures")
+	query.WriteString("			pattern")
+	query.WriteString("			requiresApprovingReviews")
+	query.WriteString("			requiresCodeOwnerReviews")
+	query.WriteString("			requiredApprovingReviewCount")
+	query.WriteString("			dismissesStaleReviews")
+	query.WriteString("		}")
+	query.WriteString("	}")
+	query.WriteString("}")
+	query.WriteString("query ($org: String!) {")
 
 	for i := 0; i < len(repos); i++ {
-		signingQueryStr.WriteString(fmt.Sprintf("repo%d: repository(owner: $org, name: \"%s\") {", i, repos[i]))
-		signingQueryStr.WriteString("	...repoProperties")
-		signingQueryStr.WriteString("}")
+		query.WriteString(fmt.Sprintf("repo%d: repository(owner: $org, name: \"%s\") {", i, repos[i]))
+		query.WriteString("	...repoProperties")
+		query.WriteString("}")
 	}
 
-	signingQueryStr.WriteString("}")
+	query.WriteString("}")
 
-	return signingQueryStr.String()
+	return query.String()
 }
 
 func repositoryRequest(queryString string) *graphqlclient.Request {

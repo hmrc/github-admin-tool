@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Test_reportRequest(t *testing.T) {
+func Test_reportGet(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
@@ -20,12 +20,12 @@ func Test_reportRequest(t *testing.T) {
 		want               []ReportResponse
 	}{
 		{
-			name:               "reportRequest returns empty",
+			name:               "reportGet returns empty",
 			mockHTTPReturnFile: "../testdata/mockEmptyResponse.json",
 			want:               nil,
 		},
 		{
-			name:               "reportRequest returns one",
+			name:               "reportGet returns one",
 			mockHTTPReturnFile: "../testdata/mockRepoNodesJsonResponse.json",
 			want: []ReportResponse{{Organization{Repositories{
 				TotalCount: 1,
@@ -51,11 +51,11 @@ func Test_reportRequest(t *testing.T) {
 				httpmock.NewStringResponder(200, string(mockHTTPReturn)),
 			)
 
-			if got, err := reportRequest(); !reflect.DeepEqual(got, tt.want) {
+			if got, err := reportGet(); !reflect.DeepEqual(got, tt.want) {
 				if err != nil {
-					t.Fatalf("failed to run reportRequest %v", err)
+					t.Fatalf("failed to run reportGet %v", err)
 				}
-				t.Errorf("reportRequest() = %v, want %v", got, tt.want)
+				t.Errorf("reportGet() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -66,11 +66,11 @@ var (
 	errMockReportCSVGenerate = errors.New("report csv generate failure")
 )
 
-func mockReportRequest() (results []ReportResponse, err error) {
+func mockDoReportGet() (results []ReportResponse, err error) {
 	return results, nil
 }
 
-func mockReportRequestError() (results []ReportResponse, err error) {
+func mockDoReportGetError() (results []ReportResponse, err error) {
 	return results, errMockReportRequest
 }
 
@@ -166,16 +166,16 @@ func Test_reportRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			doReportRequest = mockReportRequest
+			doReportGet = mockDoReportGet
 			doReportCSVGenerate = mockDoReportCSVGenerate
 			if tt.mockRequestErrorFunction {
-				doReportRequest = mockReportRequestError
+				doReportGet = mockDoReportGetError
 			}
 			if tt.mockCSVGenerateErrorFunction {
 				doReportCSVGenerate = mockDoReportCSVGenerateError
 			}
 			defer func() {
-				doReportRequest = reportRequest
+				doReportGet = reportGet
 				doReportCSVGenerate = reportCSVGenerate
 			}()
 
