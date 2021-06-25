@@ -11,6 +11,7 @@ var (
 	doBranchProtectionSend   = branchProtectionSend   // nolint // Like this for testing mock
 	doBranchProtectionUpdate = branchProtectionUpdate // nolint // Like this for testing mock
 	doBranchProtectionCreate = branchProtectionCreate // nolint // Like this for testing mock
+	doBranchProtectionApply  = branchProtectionApply  // nolint // Like this for testing mock
 )
 
 type BranchProtectionArgs struct {

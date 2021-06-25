@@ -1,9 +1,14 @@
 package cmd
 
 import (
+	"bytes"
+	"log"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -51,7 +56,39 @@ func Test_setApprovalArgs(t *testing.T) {
 	}
 }
 
+var errRepositoryGet = errors.New("repo failure")
+
+func mockRepositoryGet([]string) (repoNode map[string]*RepositoriesNode, err error) {
+	return repoNode, nil
+}
+
+func mockRepositoryGetError([]string) (repoNode map[string]*RepositoriesNode, err error) {
+	return repoNode, errRepositoryGet
+}
+
+func mockBranchProtectionApply(
+	repositories map[string]*RepositoriesNode,
+	action string,
+	branchProtectionArgs []BranchProtectionArgs,
+) (
+	modified,
+	created,
+	info,
+	problems []string,
+) {
+	return []string{"modified branch"},
+		[]string{"created branch"},
+		[]string{"info branch"},
+		[]string{"problems branch"}
+}
+
 func Test_prApprovalRun(t *testing.T) {
+	doRepositoryGet = mockRepositoryGet
+	defer func() { doRepositoryGet = repositoryGet }()
+
+	doBranchProtectionApply = mockBranchProtectionApply
+	defer func() { doBranchProtectionApply = branchProtectionApply }()
+
 	mockCmd := &cobra.Command{
 		Use: "pr-approval",
 	}
@@ -62,6 +99,7 @@ func Test_prApprovalRun(t *testing.T) {
 
 	var (
 		mockDryRun           bool
+		mockDryRunFalse      bool
 		mockReposFile        string
 		mockReposOver100File string
 		mockRepos2File       string
@@ -90,8 +128,20 @@ func Test_prApprovalRun(t *testing.T) {
 	mockCmdWithDryRunOn := &cobra.Command{
 		Use: "pr-approval",
 	}
-	mockCmdWithDryRunOn.Flags().BoolVarP(&mockDryRun, "dry-run", "d", false, "dry run flag")
+	mockCmdWithDryRunOn.Flags().BoolVarP(&mockDryRun, "dry-run", "d", true, "dry run flag")
 	mockCmdWithDryRunOn.Flags().StringVarP(
+		&mockRepos2File,
+		"repos",
+		"r",
+		"../testdata/two_repo_list.txt",
+		"repos file",
+	)
+
+	mockCmdWithDryRunOff := &cobra.Command{
+		Use: "pr-approval",
+	}
+	mockCmdWithDryRunOff.Flags().BoolVarP(&mockDryRunFalse, "dry-run", "d", false, "dry run flag")
+	mockCmdWithDryRunOff.Flags().StringVarP(
 		&mockRepos2File,
 		"repos",
 		"r",
@@ -105,10 +155,12 @@ func Test_prApprovalRun(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		args       args
-		wantErr    bool
-		wantErrMsg string
+		name              string
+		args              args
+		wantErr           bool
+		wantErrMsg        string
+		mockErrorFunction bool
+		wantLogOutput     string
 	}{
 		{
 			name: "prApprovalRun fails dry run",
@@ -147,19 +199,56 @@ func Test_prApprovalRun(t *testing.T) {
 			args: args{
 				cmd: mockCmdWithDryRunOn,
 			},
+			wantErr:       false,
+			wantLogOutput: "This is a dry run, the run would process 2 repositories",
+		},
+		{
+			name: "prApprovalRun repo get fails",
+			args: args{
+				cmd: mockCmdWithDryRunOff,
+			},
+			wantErr:           true,
+			wantErrMsg:        "repo failure",
+			mockErrorFunction: true,
+		},
+
+		{
+			name: "prApprovalRun check log output",
+			args: args{
+				cmd: mockCmdWithDryRunOff,
+			},
 			wantErr: false,
+			wantLogOutput: `Modified (0): modified branch
+Created (0): created branch
+Error (0): problems branch
+Info (0): info branch`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.mockErrorFunction {
+				doRepositoryGet = mockRepositoryGetError
+				defer func() { doRepositoryGet = mockRepositoryGet }()
+			}
+
+			var buf bytes.Buffer
+
+			log.SetOutput(&buf)
+
+			defer func() { log.SetOutput(os.Stderr) }()
+
 			err := prApprovalRun(tt.args.cmd, tt.args.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("prApprovalRun() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if tt.wantErr && err.Error() != tt.wantErrMsg {
+			if err != nil && tt.wantErr && err.Error() != tt.wantErrMsg {
 				t.Errorf("prApprovalRun() error = %v, wantErrMsg %v", err.Error(), tt.wantErrMsg)
+			}
+
+			if tt.wantLogOutput != strings.TrimSpace(buf.String()) {
+				t.Errorf("prApprovalRun() log = \n\n%v, wantLogOutput \n\n%v", buf.String(), tt.wantLogOutput)
 			}
 		})
 	}

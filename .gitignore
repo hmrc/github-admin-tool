@@ -4,3 +4,4 @@ github-admin-tool
 cmd/*.csv
 /*.txt
 cover.out
+run.sh

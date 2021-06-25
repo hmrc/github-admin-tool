@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github-admin-tool/graphqlclient"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -43,22 +42,21 @@ func prApprovalRun(cmd *cobra.Command, args []string) error { // nolint // neede
 		return errTooManyRepos
 	}
 
+	log.SetFlags(0)
+
 	if dryRun {
 		log.Printf("This is a dry run, the run would process %d repositories", numberOfRepos)
 
 		return nil
 	}
 
-	queryString := repositoryQuery(repositoryList)
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
-	repositories, err := repositoryRequest(queryString, client)
-
+	repositories, err := doRepositoryGet(repositoryList)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("%w", err)
 	}
 
 	approvalArgs := setApprovalArgs()
-	updated, created, info, problems := branchProtectionApply(
+	updated, created, info, problems := doBranchProtectionApply(
 		repositories,
 		"Pr-approval",
 		approvalArgs,

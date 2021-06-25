@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+var (
+	doRepositoryGet = repositoryGet // nolint // Like this for testing mock
+)
+
 func repositoryList(reposFile string) ([]string, error) {
 	var repos []string
 
@@ -69,7 +73,7 @@ func repositoryQuery(repos []string) string {
 	return signingQueryStr.String()
 }
 
-func repositoryRequest(queryString string, client *graphqlclient.Client) (map[string]*RepositoriesNode, error) {
+func repositoryRequest(queryString string) *graphqlclient.Request {
 	authStr := fmt.Sprintf("bearer %s", config.Token)
 
 	req := graphqlclient.NewRequest(queryString)
@@ -77,6 +81,10 @@ func repositoryRequest(queryString string, client *graphqlclient.Client) (map[st
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Authorization", authStr)
 
+	return req
+}
+
+func repositorySend(req *graphqlclient.Request, client *graphqlclient.Client) (map[string]*RepositoriesNode, error) {
 	ctx := context.Background()
 
 	var respData map[string]*RepositoriesNode
@@ -86,4 +94,17 @@ func repositoryRequest(queryString string, client *graphqlclient.Client) (map[st
 	}
 
 	return respData, nil
+}
+
+func repositoryGet(repositoryList []string) (repositories map[string]*RepositoriesNode, err error) {
+	query := repositoryQuery(repositoryList)
+	request := repositoryRequest(query)
+	client := graphqlclient.NewClient("https://api.github.com/graphql")
+
+	repositories, err = repositorySend(request, client)
+	if err != nil {
+		return repositories, fmt.Errorf("failure in repository get : %w", err)
+	}
+
+	return repositories, nil
 }

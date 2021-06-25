@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github-admin-tool/graphqlclient"
 	"log"
 	"os"
 
@@ -22,19 +21,17 @@ var signingCmd = &cobra.Command{ // nolint // needed for cobra
 			log.Fatal(err)
 		}
 
-		repoMap, err := repositoryList(reposFilePath)
+		repositoryList, err := repositoryList(reposFilePath)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		numberOfRepos := len(repoMap)
+		numberOfRepos := len(repositoryList)
 		if numberOfRepos < 1 || numberOfRepos > maxRepositories {
 			log.Fatal("Number of repos passed in must be more than 1 and less than 100")
 		}
 
-		queryString := repositoryQuery(repoMap)
-		client := graphqlclient.NewClient("https://api.github.com/graphql")
-		repoSearchResult, err := repositoryRequest(queryString, client)
+		repositories, err := repositoryGet(repositoryList)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -46,7 +43,7 @@ var signingCmd = &cobra.Command{ // nolint // needed for cobra
 
 		signingArgs := setSigningArgs()
 
-		updated, created, info, problems := branchProtectionApply(repoSearchResult, "Signing", signingArgs)
+		updated, created, info, problems := doBranchProtectionApply(repositories, "Signing", signingArgs)
 
 		for key, repo := range updated {
 			log.Printf("Modified (%d): %v", key, repo)

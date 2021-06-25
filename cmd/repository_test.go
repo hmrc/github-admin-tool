@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"github-admin-tool/graphqlclient"
 	"io/ioutil"
 	"reflect"
 	"testing"
-
-	"github.com/jarcoal/httpmock"
 )
 
 func Test_repositoryList(t *testing.T) {
@@ -110,70 +107,70 @@ func Test_repositoryQuery(t *testing.T) {
 	}
 }
 
-func Test_repositoryRequest(t *testing.T) {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
+// func Test_repositoryRequest(t *testing.T) {
+// 	httpmock.Activate()
+// 	defer httpmock.DeactivateAndReset()
 
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
+// 	client := graphqlclient.NewClient("https://api.github.com/graphql")
 
-	type args struct {
-		queryString string
-		client      *graphqlclient.Client
-	}
+// 	type args struct {
+// 		queryString string
+// 		client      *graphqlclient.Client
+// 	}
 
-	tests := []struct {
-		name               string
-		args               args
-		want               map[string]*RepositoriesNode
-		wantErr            bool
-		mockHTTPReturnFile string
-		mockHTTPStatusCode int
-	}{
-		{
-			name: "repositoryRequest",
-			args: args{
-				queryString: "", client: client,
-			},
-			want: map[string]*RepositoriesNode{"repo0": {
-				ID:            "repoIdTEST",
-				NameWithOwner: "org/some-repo-name",
-			}},
-			wantErr:            false,
-			mockHTTPReturnFile: "../testdata/mockRepoJsonResponse.json",
-			mockHTTPStatusCode: 200,
-		},
-		{
-			name: "repositoryRequest with error",
-			args: args{
-				queryString: "", client: client,
-			},
-			want:               map[string]*RepositoriesNode{"repo0": nil},
-			wantErr:            true,
-			mockHTTPReturnFile: "../testdata/mockEmptyBranchProtectionJsonResponse.json",
-			mockHTTPStatusCode: 400,
-		},
-	}
+// 	tests := []struct {
+// 		name               string
+// 		args               args
+// 		want               map[string]*RepositoriesNode
+// 		wantErr            bool
+// 		mockHTTPReturnFile string
+// 		mockHTTPStatusCode int
+// 	}{
+// 		{
+// 			name: "repositoryRequest",
+// 			args: args{
+// 				queryString: "", client: client,
+// 			},
+// 			want: map[string]*RepositoriesNode{"repo0": {
+// 				ID:            "repoIdTEST",
+// 				NameWithOwner: "org/some-repo-name",
+// 			}},
+// 			wantErr:            false,
+// 			mockHTTPReturnFile: "../testdata/mockRepoJsonResponse.json",
+// 			mockHTTPStatusCode: 200,
+// 		},
+// 		{
+// 			name: "repositoryRequest with error",
+// 			args: args{
+// 				queryString: "", client: client,
+// 			},
+// 			want:               map[string]*RepositoriesNode{"repo0": nil},
+// 			wantErr:            true,
+// 			mockHTTPReturnFile: "../testdata/mockEmptyBranchProtectionJsonResponse.json",
+// 			mockHTTPStatusCode: 400,
+// 		},
+// 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
-			if err != nil {
-				t.Fatalf("failed to read test data: %v", err)
-			}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
+// 			if err != nil {
+// 				t.Fatalf("failed to read test data: %v", err)
+// 			}
 
-			httpmock.RegisterResponder(
-				"POST",
-				"https://api.github.com/graphql",
-				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
-			)
+// 			httpmock.RegisterResponder(
+// 				"POST",
+// 				"https://api.github.com/graphql",
+// 				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
+// 			)
 
-			got, err := repositoryRequest(tt.args.queryString, tt.args.client)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("repositoryRequest() error = %+v, wantErr %+v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("repositoryRequest() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+// 			got, err := repositoryRequest(tt.args.queryString, tt.args.client)
+// 			if (err != nil) != tt.wantErr {
+// 				t.Errorf("repositoryRequest() error = %+v, wantErr %+v", err, tt.wantErr)
+// 			}
+// 			if !reflect.DeepEqual(got, tt.want) {
+// 				t.Errorf("repositoryRequest() = %v, want %v", got, tt.want)
+// 			}
+// 		})
+// 	}
+// }
