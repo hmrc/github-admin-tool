@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func repoList(reposFile string) ([]string, error) {
+func repositoryList(reposFile string) ([]string, error) {
 	var repos []string
 
 	validRepoName := regexp.MustCompile("^[A-Za-z0-9_.-]+$")
@@ -34,7 +34,7 @@ func repoList(reposFile string) ([]string, error) {
 	return repos, nil
 }
 
-func repoQuery(repos []string) string {
+func repositoryQuery(repos []string) string {
 	var signingQueryStr strings.Builder
 
 	signingQueryStr.WriteString("fragment repoProperties on Repository {")
@@ -69,7 +69,7 @@ func repoQuery(repos []string) string {
 	return signingQueryStr.String()
 }
 
-func repoRequest(queryString string, client *graphqlclient.Client) (map[string]*RepositoriesNode, error) {
+func repositoryRequest(queryString string, client *graphqlclient.Client) (map[string]*RepositoriesNode, error) {
 	authStr := fmt.Sprintf("bearer %s", config.Token)
 
 	req := graphqlclient.NewRequest(queryString)

@@ -22,7 +22,7 @@ var signingCmd = &cobra.Command{ // nolint // needed for cobra
 			log.Fatal(err)
 		}
 
-		repoMap, err := repoList(reposFilePath)
+		repoMap, err := repositoryList(reposFilePath)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -32,9 +32,9 @@ var signingCmd = &cobra.Command{ // nolint // needed for cobra
 			log.Fatal("Number of repos passed in must be more than 1 and less than 100")
 		}
 
-		queryString := repoQuery(repoMap)
+		queryString := repositoryQuery(repoMap)
 		client := graphqlclient.NewClient("https://api.github.com/graphql")
-		repoSearchResult, err := repoRequest(queryString, client)
+		repoSearchResult, err := repositoryRequest(queryString, client)
 		if err != nil {
 			log.Fatal(err)
 		}

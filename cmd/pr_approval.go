@@ -19,7 +19,7 @@ var (
 		Short: "Set request signing on to all repos in provided list",
 		RunE:  prApprovalRun,
 	}
-	errTooManyRepos = errors.New("Number of repos passed in must be more than 1 and less than 100")
+	errTooManyRepos = errors.New("number of repos passed in must be more than 1 and less than 100")
 )
 
 func prApprovalRun(cmd *cobra.Command, args []string) error { // nolint // needed for cobra
@@ -33,12 +33,12 @@ func prApprovalRun(cmd *cobra.Command, args []string) error { // nolint // neede
 		return fmt.Errorf("%w", err)
 	}
 
-	repoList, err := repoList(reposFilePath)
+	repositoryList, err := repositoryList(reposFilePath)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	numberOfRepos := len(repoList)
+	numberOfRepos := len(repositoryList)
 	if numberOfRepos < 1 || numberOfRepos > maxRepositories {
 		return errTooManyRepos
 	}
@@ -49,9 +49,9 @@ func prApprovalRun(cmd *cobra.Command, args []string) error { // nolint // neede
 		return nil
 	}
 
-	queryString := repoQuery(repoList)
+	queryString := repositoryQuery(repositoryList)
 	client := graphqlclient.NewClient("https://api.github.com/graphql")
-	repositories, err := repoRequest(queryString, client)
+	repositories, err := repositoryRequest(queryString, client)
 
 	if err != nil {
 		log.Fatal(err)
