@@ -22,8 +22,6 @@ var (
 		Short: "Run a report to generate a csv containing information on all organisation repos",
 		RunE:  reportRun,
 	}
-	doReportRequest     = reportRequest     // nolint // Like this for testing mock
-	doReportCSVGenerate = reportCSVGenerate // nolint // Like this for testing mock
 )
 
 func reportRun(cmd *cobra.Command, args []string) error {

@@ -11,7 +11,10 @@ import (
 )
 
 var (
-	doRepositoryGet = repositoryGet // nolint // Like this for testing mock
+	doReportRequest     = reportRequest     // nolint // Like this for testing mock
+	doReportCSVGenerate = reportCSVGenerate // nolint // Like this for testing mock
+	doRepositorySend    = repositorySend    // nolint // Like this for testing mock
+	doRepositoryGet     = repositoryGet     // nolint // Like this for testing mock
 )
 
 func repositoryList(reposFile string) ([]string, error) {
@@ -84,10 +87,12 @@ func repositoryRequest(queryString string) *graphqlclient.Request {
 	return req
 }
 
-func repositorySend(req *graphqlclient.Request, client *graphqlclient.Client) (map[string]*RepositoriesNode, error) {
+func repositorySend(req *graphqlclient.Request) (map[string]*RepositoriesNode, error) {
 	ctx := context.Background()
 
 	var respData map[string]*RepositoriesNode
+
+	client := graphqlclient.NewClient("https://api.github.com/graphql")
 
 	if err := client.Run(ctx, req, &respData); err != nil {
 		return respData, fmt.Errorf("graphql call: %w", err)
@@ -99,9 +104,8 @@ func repositorySend(req *graphqlclient.Request, client *graphqlclient.Client) (m
 func repositoryGet(repositoryList []string) (repositories map[string]*RepositoriesNode, err error) {
 	query := repositoryQuery(repositoryList)
 	request := repositoryRequest(query)
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
 
-	repositories, err = repositorySend(request, client)
+	repositories, err = doRepositorySend(request)
 	if err != nil {
 		return repositories, fmt.Errorf("failure in repository get : %w", err)
 	}

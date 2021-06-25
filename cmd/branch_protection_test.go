@@ -80,11 +80,11 @@ var (
 	errMockUpdate = errors.New("update: test")
 )
 
-func mockDoBranchProtectionSend(req *graphqlclient.Request, client *graphqlclient.Client) error {
+func mockDoBranchProtectionSend(req *graphqlclient.Request) error {
 	return nil
 }
 
-func mockDoBranchProtectionSendError(req *graphqlclient.Request, client *graphqlclient.Client) error {
+func mockDoBranchProtectionSendError(req *graphqlclient.Request) error {
 	return errMockSend
 }
 
@@ -447,11 +447,11 @@ func Test_branchProtectionRequest(t *testing.T) {
 			got := branchProtectionRequest(tt.args.query, tt.args.requestVars)
 
 			if !reflect.DeepEqual(got.Query(), tt.wantQuery) {
-				t.Errorf("branchProtectionRequest() = %v, want %v", got.Query(), tt.wantQuery)
+				t.Errorf("branchProtectionRequest() query = %v, want %v", got.Query(), tt.wantQuery)
 			}
 
 			if !reflect.DeepEqual(got.Vars(), tt.wantVars) {
-				t.Errorf("branchProtectionRequest() = %v, want %v", got.Vars(), tt.wantVars)
+				t.Errorf("branchProtectionRequest() vars = %v, want %v", got.Vars(), tt.wantVars)
 			}
 		})
 	}
@@ -564,8 +564,7 @@ func Test_branchProtectionSend(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 
 	type args struct {
-		req    *graphqlclient.Request
-		client *graphqlclient.Client
+		req *graphqlclient.Request
 	}
 
 	tests := []struct {
@@ -578,8 +577,7 @@ func Test_branchProtectionSend(t *testing.T) {
 		{
 			name: "branchProtectionSend success",
 			args: args{
-				req:    graphqlclient.NewRequest("query"),
-				client: graphqlclient.NewClient("https://api.github.com/graphql"),
+				req: graphqlclient.NewRequest("query"),
 			},
 			wantErr:            false,
 			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateJsonResponse.json",
@@ -588,8 +586,7 @@ func Test_branchProtectionSend(t *testing.T) {
 		{
 			name: "branchProtectionSend success",
 			args: args{
-				req:    graphqlclient.NewRequest("query"),
-				client: graphqlclient.NewClient("https://api.github.com/graphql"),
+				req: graphqlclient.NewRequest("query"),
 			},
 			wantErr:            true,
 			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateErrorJsonResponse.json",
@@ -610,7 +607,7 @@ func Test_branchProtectionSend(t *testing.T) {
 				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
 			)
 
-			if err := branchProtectionSend(tt.args.req, tt.args.client); (err != nil) != tt.wantErr {
+			if err := branchProtectionSend(tt.args.req); (err != nil) != tt.wantErr {
 				t.Errorf("branchProtectionSend() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
