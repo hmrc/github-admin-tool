@@ -103,7 +103,7 @@ func branchProtectionQueryBlocks(branchProtectionArgs []BranchProtectionArgs) (
 	return mutationBlock.String(), inputBlock.String(), requestVars
 }
 
-func branchProtectionApply(
+func branchProtectionApply( // nolint // cyclomatic error 11 !!! Will sort this soon
 	repositories map[string]*RepositoriesNode,
 	action string,
 	branchProtectionArgs []BranchProtectionArgs,

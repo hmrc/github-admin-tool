@@ -216,7 +216,6 @@ func Test_repositorySend(t *testing.T) {
 var errMockDoRepositorySend = errors.New("send error")
 
 func mockDoRepositorySend(req *graphqlclient.Request) (repositories map[string]*RepositoriesNode, err error) {
-
 	return repositories, nil
 }
 
@@ -264,7 +263,6 @@ func Test_repositoryGet(t *testing.T) {
 			doRepositorySend = mockDoRepositorySend
 			if tt.mockErrorFunction {
 				doRepositorySend = mockDoRepositorySendError
-
 			}
 			defer func() { doRepositorySend = repositorySend }()
 
