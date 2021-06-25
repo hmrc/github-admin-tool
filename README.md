@@ -2,7 +2,7 @@
 
 This is a tool to generate a repository report for an organization.
 
-This tool aims to become a command line tool for adminstrative tasks in github for a given organization.  A bulk updater.
+This tool aims to become a command line tool for adminstrative tasks in github for any given organization.  A bulk updater.
 
 # Config
 
@@ -24,3 +24,11 @@ As with any cli tool just run the following to see available actions/arguments.
 Run the following command generate a CSV with respository settings.
 
 `go run main.go report`
+
+# Signing 
+
+`go run main.go signing --dry-run=false -r repos.txt`
+
+# PR Approval 
+
+`go run main.go pr-approval -r repos.txt --dry-run=false`

@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github-admin-tool/graphqlclient"
+	"log"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -216,4 +219,64 @@ func branchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, reposit
 	err := doBranchProtectionSend(req, client)
 
 	return err
+}
+
+func branchProtectionCommand(cmd *cobra.Command, branchProtectionArgs []BranchProtectionArgs, action string) error {
+	dryRun, err := cmd.Flags().GetBool("dry-run")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	reposFilePath, err := cmd.Flags().GetString("repos")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	repositoryList, err := repositoryList(reposFilePath)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	numberOfRepos := len(repositoryList)
+	if numberOfRepos < 1 || numberOfRepos > maxRepositories {
+		return errTooManyRepos
+	}
+
+	log.SetFlags(0)
+
+	if dryRun {
+		log.Printf("This is a dry run, the run would process %d repositories", numberOfRepos)
+
+		return nil
+	}
+
+	repositories, err := doRepositoryGet(repositoryList)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	
+	updated, created, info, problems := doBranchProtectionApply(
+		repositories,
+		action,
+		branchProtectionArgs,
+	)
+
+	for key, repo := range updated {
+		log.Printf("Modified (%d): %v", key, repo)
+	}
+
+	for key, repo := range created {
+		log.Printf("Created (%d): %v", key, repo)
+	}
+
+	for key, err := range problems {
+		log.Printf("Error (%d): %v", key, err)
+	}
+
+	for key, i := range info {
+		log.Printf("Info (%d): %v", key, i)
+	}
+
+	return nil
 }

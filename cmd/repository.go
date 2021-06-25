@@ -10,9 +10,7 @@ import (
 	"strings"
 )
 
-var (
-	doRepositoryGet = repositoryGet // nolint // Like this for testing mock
-)
+var doRepositoryGet = repositoryGet // nolint // Like this for testing mock
 
 func repositoryList(reposFile string) ([]string, error) {
 	var repos []string

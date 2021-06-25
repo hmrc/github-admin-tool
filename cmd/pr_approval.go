@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
-	"log"
-
+	
 	"github.com/spf13/cobra"
 )
 
@@ -22,64 +20,69 @@ var (
 )
 
 func prApprovalRun(cmd *cobra.Command, args []string) error { // nolint // needed for cobra
-	dryRun, err := cmd.Flags().GetBool("dry-run")
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
+// 	dryRun, err := cmd.Flags().GetBool("dry-run")
+// 	if err != nil {
+// 		return fmt.Errorf("%w", err)
+// 	}
 
-	reposFilePath, err := cmd.Flags().GetString("repos")
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
+// 	reposFilePath, err := cmd.Flags().GetString("repos")
+// 	if err != nil {
+// 		return fmt.Errorf("%w", err)
+// 	}
 
-	repositoryList, err := repositoryList(reposFilePath)
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
+// 	repositoryList, err := repositoryList(reposFilePath)
+// 	if err != nil {
+// 		return fmt.Errorf("%w", err)
+// 	}
 
-	numberOfRepos := len(repositoryList)
-	if numberOfRepos < 1 || numberOfRepos > maxRepositories {
-		return errTooManyRepos
-	}
+// 	numberOfRepos := len(repositoryList)
+// 	if numberOfRepos < 1 || numberOfRepos > maxRepositories {
+// 		return errTooManyRepos
+// 	}
 
-	log.SetFlags(0)
+// 	log.SetFlags(0)
 
-	if dryRun {
-		log.Printf("This is a dry run, the run would process %d repositories", numberOfRepos)
+// 	if dryRun {
+// 		log.Printf("This is a dry run, the run would process %d repositories", numberOfRepos)
 
-		return nil
-	}
+// 		return nil
+// 	}
 
-	repositories, err := doRepositoryGet(repositoryList)
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
+// 	repositories, err := doRepositoryGet(repositoryList)
+// 	if err != nil {
+// 		return fmt.Errorf("%w", err)
+// 	}
 
+// 	approvalArgs := setApprovalArgs()
+// 	updated, created, info, problems := doBranchProtectionApply(
+// 		repositories,
+// 		"Pr-approval",
+// 		approvalArgs,
+// 	)
+
+// 	for key, repo := range updated {
+// 		log.Printf("Modified (%d): %v", key, repo)
+// 	}
+
+// 	for key, repo := range created {
+// 		log.Printf("Created (%d): %v", key, repo)
+// 	}
+
+// 	for key, err := range problems {
+// 		log.Printf("Error (%d): %v", key, err)
+// 	}
+
+// 	for key, i := range info {
+// 		log.Printf("Info (%d): %v", key, i)
+// 	}
+
+// 	return nil
+// 
 	approvalArgs := setApprovalArgs()
-	updated, created, info, problems := doBranchProtectionApply(
-		repositories,
-		"Pr-approval",
-		approvalArgs,
-	)
-
-	for key, repo := range updated {
-		log.Printf("Modified (%d): %v", key, repo)
-	}
-
-	for key, repo := range created {
-		log.Printf("Created (%d): %v", key, repo)
-	}
-
-	for key, err := range problems {
-		log.Printf("Error (%d): %v", key, err)
-	}
-
-	for key, i := range info {
-		log.Printf("Info (%d): %v", key, i)
-	}
-
-	return nil
+	err := branchProtectionCommand(cmd, approvalArgs, "Pr-approval")
+	return err
 }
+
 
 func setApprovalArgs() (branchProtectionArgs []BranchProtectionArgs) {
 	return []BranchProtectionArgs{

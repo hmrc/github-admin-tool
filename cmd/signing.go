@@ -1,73 +1,23 @@
 package cmd
 
 import (
-	"log"
-	"os"
-
 	"github.com/spf13/cobra"
 )
 
-var signingCmd = &cobra.Command{ // nolint // needed for cobra
-	Use:   "signing",
-	Short: "Set request signing on to all repos in provided list",
-	Run: func(cmd *cobra.Command, args []string) {
-		dryRun, err := cmd.Flags().GetBool("dry-run")
-		if err != nil {
-			log.Fatal(err)
-		}
+var (
+	requiresCommitSignatures           bool              // nolint // needed for cobra
+	signingCmd            			   = &cobra.Command{ // nolint // needed for cobra
+		Use:   "signing",
+		Short: "Set request signing on to all repos in provided list",
+		RunE:  signingRun,
+	}
+)
 
-		reposFilePath, err := cmd.Flags().GetString("repos")
-		if err != nil {
-			log.Fatal(err)
-		}
+func signingRun(cmd *cobra.Command, args []string) error { // nolint // needed for cobra
+	signingArgs := setSigningArgs()
+	err := branchProtectionCommand(cmd, signingArgs, "Signing")
+	return err
 
-		repositoryList, err := repositoryList(reposFilePath)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		numberOfRepos := len(repositoryList)
-		if numberOfRepos < 1 || numberOfRepos > maxRepositories {
-			log.Fatal("Number of repos passed in must be more than 1 and less than 100")
-		}
-
-		repositories, err := repositoryGet(repositoryList)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if dryRun {
-			log.Printf("This is a dry run, the run would process %d repositories", numberOfRepos)
-			os.Exit(0)
-		}
-
-		signingArgs := setSigningArgs()
-
-		updated, created, info, problems := doBranchProtectionApply(repositories, "Signing", signingArgs)
-
-		for key, repo := range updated {
-			log.Printf("Modified (%d): %v", key, repo)
-		}
-
-		for key, repo := range created {
-			log.Printf("Created (%d): %v", key, repo)
-		}
-
-		for key, err := range problems {
-			log.Printf("Error (%d): %v", key, err)
-		}
-
-		for key, i := range info {
-			log.Printf("Info (%d): %v", key, i)
-		}
-	},
-}
-
-// nolint // needed for cobra
-func init() {
-	signingCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "file containing repositories on new line without org/ prefix. Max 100 repos")
-	signingCmd.MarkFlagRequired("repos")
-	rootCmd.AddCommand(signingCmd)
 }
 
 func setSigningArgs() (branchProtectionArgs []BranchProtectionArgs) {
@@ -80,4 +30,11 @@ func setSigningArgs() (branchProtectionArgs []BranchProtectionArgs) {
 		})
 
 	return branchProtectionArgs
+}
+
+// nolint // needed for cobra
+func init() {
+	signingCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "file containing repositories on new line without org/ prefix. Max 100 repos")
+	signingCmd.MarkFlagRequired("repos")
+	rootCmd.AddCommand(signingCmd)
 }
