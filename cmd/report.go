@@ -20,30 +20,38 @@ var (
 	reportCmd      = &cobra.Command{ // nolint // needed for cobra
 		Use:   "report",
 		Short: "Run a report to generate a csv containing information on all organisation repos",
-		Run: func(cmd *cobra.Command, args []string) {
-			var err error
-			dryRun, err = cmd.Flags().GetBool("dry-run")
-			if err != nil {
-				log.Fatal(err)
-			}
-			ignoreArchived, err = cmd.Flags().GetBool("ignore-archived")
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			client := graphqlclient.NewClient("https://api.github.com/graphql")
-			allResults, err := reportRequest(client)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if !dryRun {
-				if err = reportCSVGenerate(ignoreArchived, allResults); err != nil {
-					log.Fatal(err)
-				}
-			}
-		},
+		RunE:  reportRun,
 	}
+	doReportRequest     = reportRequest     // nolint // Like this for testing mock
+	doReportCSVGenerate = reportCSVGenerate // nolint // Like this for testing mock
 )
+
+func reportRun(cmd *cobra.Command, args []string) error {
+	var err error
+
+	dryRun, err = cmd.Flags().GetBool("dry-run")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	ignoreArchived, err = cmd.Flags().GetBool("ignore-archived")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	allResults, err := doReportRequest()
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	if !dryRun {
+		if err = doReportCSVGenerate(ignoreArchived, allResults); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+	}
+
+	return nil
+}
 
 // nolint // needed for cobra
 func init() {
@@ -51,7 +59,7 @@ func init() {
 	rootCmd.AddCommand(reportCmd)
 }
 
-func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
+func reportRequest() ([]ReportResponse, error) {
 	var (
 		cursor           *string
 		totalRecordCount int
@@ -59,6 +67,8 @@ func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
 		iteration        int
 		bar              progressbar.Bar
 	)
+
+	client := graphqlclient.NewClient("https://api.github.com/graphql")
 
 	authStr := fmt.Sprintf("bearer %s", config.Token)
 
