@@ -77,8 +77,10 @@ func branchProtectionRequest(query string, requestVars map[string]interface{}) *
 	return req
 }
 
-func branchProtectionSend(req *graphqlclient.Request, client *graphqlclient.Client) error {
+func branchProtectionSend(req *graphqlclient.Request) error {
 	ctx := context.Background()
+
+	client := graphqlclient.NewClient("https://api.github.com/graphql")
 
 	if err := client.Run(ctx, req, nil); err != nil {
 		return fmt.Errorf("from API call: %w", err)
@@ -104,7 +106,7 @@ func branchProtectionQueryBlocks(branchProtectionArgs []BranchProtectionArgs) (
 	return mutationBlock.String(), inputBlock.String(), requestVars
 }
 
-func branchProtectionApply(
+func branchProtectionApply( // nolint // cyclomatic error 11 !!! Will sort this soon
 	repositories map[string]*RepositoriesNode,
 	action string,
 	branchProtectionArgs []BranchProtectionArgs,
@@ -193,8 +195,7 @@ func branchProtectionUpdate(branchProtectionArgs []BranchProtectionArgs, branchP
 	)
 	query, requestVars := branchProtectionQuery(branchProtectionArgs, "update")
 	req := branchProtectionRequest(query, requestVars)
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
-	err := doBranchProtectionSend(req, client)
+	err := doBranchProtectionSend(req)
 
 	return err
 }
@@ -215,8 +216,7 @@ func branchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, reposit
 	)
 	query, requestVars := branchProtectionQuery(branchProtectionArgs, "create")
 	req := branchProtectionRequest(query, requestVars)
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
-	err := doBranchProtectionSend(req, client)
+	err := doBranchProtectionSend(req)
 
 	return err
 }
