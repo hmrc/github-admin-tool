@@ -124,7 +124,7 @@ func Test_repoRequest(t *testing.T) {
 	tests := []struct {
 		name               string
 		args               args
-		want               map[string]RepositoriesNode
+		want               map[string]*RepositoriesNode
 		wantErr            bool
 		mockHTTPReturnFile string
 		mockHTTPStatusCode int
@@ -134,7 +134,7 @@ func Test_repoRequest(t *testing.T) {
 			args: args{
 				queryString: "", client: client,
 			},
-			want: map[string]RepositoriesNode{"repo0": {
+			want: map[string]*RepositoriesNode{"repo0": {
 				ID:            "repoIdTEST",
 				NameWithOwner: "org/some-repo-name",
 			}},
@@ -147,7 +147,7 @@ func Test_repoRequest(t *testing.T) {
 			args: args{
 				queryString: "", client: client,
 			},
-			want:               map[string]RepositoriesNode{"repo0": {}},
+			want:               map[string]*RepositoriesNode{"repo0": nil},
 			wantErr:            true,
 			mockHTTPReturnFile: "../testdata/mockEmptyBranchProtectionJsonResponse.json",
 			mockHTTPStatusCode: 400,

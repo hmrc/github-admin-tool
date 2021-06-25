@@ -100,8 +100,8 @@ func branchProtectionQueryBlocks(branchProtectionArgs []BranchProtectionArgs) (
 	return mutationBlock.String(), inputBlock.String(), requestVars
 }
 
-func branchProtectionApply( //nolint
-	repoSearchResult map[string]RepositoriesNode,
+func branchProtectionApply(
+	repositories map[string]*RepositoriesNode,
 	action string,
 	branchProtectionArgs []BranchProtectionArgs,
 ) (
@@ -114,11 +114,11 @@ func branchProtectionApply( //nolint
 
 OUTER:
 
-	for _, repository := range repoSearchResult { // nolint
+	for _, repository := range repositories {
 		if repository.DefaultBranchRef.Name == "" {
 			info = append(info, fmt.Sprintf("No default branch for %v", repository.NameWithOwner))
 
-			continue OUTER
+			continue
 		}
 
 		// Check all nodes for default branch protection rule
@@ -135,11 +135,7 @@ OUTER:
 			}
 
 			// If default branch has already got pr-approval turned on, no need to update
-			if action == "Pr-approval" &&
-				branchProtection.RequiresApprovingReviews == prApprovalFlag &&
-				branchProtection.RequiredApprovingReviewCount == prApprovalNumber &&
-				branchProtection.DismissesStaleReviews == prApprovalDismissStale &&
-				branchProtection.RequiresCodeOwnerReviews == prApprovalCodeOwnerReview {
+			if action == "Pr-approval" && !branchProtectionPrApprovalCheck(branchProtection) {
 				info = append(info, fmt.Sprintf("%s settings already set for %v", action, repository.NameWithOwner))
 
 				continue OUTER
@@ -169,6 +165,17 @@ OUTER:
 	}
 
 	return modified, created, info, problems
+}
+
+func branchProtectionPrApprovalCheck(branchProtection BranchProtectionRulesNode) bool {
+	if branchProtection.RequiresApprovingReviews == prApprovalFlag &&
+		branchProtection.RequiredApprovingReviewCount == prApprovalNumber &&
+		branchProtection.DismissesStaleReviews == prApprovalDismissStale &&
+		branchProtection.RequiresCodeOwnerReviews == prApprovalCodeOwnerReview {
+		return false
+	}
+
+	return true
 }
 
 func branchProtectionUpdate(branchProtectionArgs []BranchProtectionArgs, branchProtectionRuleID string) error {

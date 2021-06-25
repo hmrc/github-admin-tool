@@ -109,7 +109,7 @@ func mockDoBranchProtectionCreateError(branchProtectionArgs []BranchProtectionAr
 
 func Test_branchProtectionApply(t *testing.T) {
 	type args struct {
-		repoSearchResult     map[string]RepositoriesNode
+		repoSearchResult     map[string]*RepositoriesNode
 		action               string
 		branchProtectionArgs []BranchProtectionArgs
 	}
@@ -132,7 +132,7 @@ func Test_branchProtectionApply(t *testing.T) {
 		{
 			name: "branchProtectionApply with no default branch",
 			args: args{
-				repoSearchResult: map[string]RepositoriesNode{"repo0": {
+				repoSearchResult: map[string]*RepositoriesNode{"repo0": {
 					ID:            "repoIdTEST",
 					NameWithOwner: "org/some-repo-name",
 				}},
@@ -145,7 +145,7 @@ func Test_branchProtectionApply(t *testing.T) {
 		{
 			name: "branchProtectionApply with no default branch protection rule",
 			args: args{
-				repoSearchResult: map[string]RepositoriesNode{"repo0": {
+				repoSearchResult: map[string]*RepositoriesNode{"repo0": {
 					ID:            "repoIdTEST",
 					NameWithOwner: "org/no-branch-protection",
 					DefaultBranchRef: DefaultBranchRef{
@@ -167,7 +167,7 @@ func Test_branchProtectionApply(t *testing.T) {
 		{
 			name: "branchProtectionApply with default branch protection rule signing on",
 			args: args{
-				repoSearchResult: map[string]RepositoriesNode{"repo0": {
+				repoSearchResult: map[string]*RepositoriesNode{"repo0": {
 					ID:            "repoIdTEST",
 					NameWithOwner: "org/signing-on",
 					DefaultBranchRef: DefaultBranchRef{
@@ -190,7 +190,7 @@ func Test_branchProtectionApply(t *testing.T) {
 		{
 			name: "branchProtectionApply with default branch protection rule signing off",
 			args: args{
-				repoSearchResult: map[string]RepositoriesNode{"repo0": {
+				repoSearchResult: map[string]*RepositoriesNode{"repo0": {
 					ID:            "repoIdTEST",
 					NameWithOwner: "org/signing-off",
 					DefaultBranchRef: DefaultBranchRef{
@@ -213,7 +213,7 @@ func Test_branchProtectionApply(t *testing.T) {
 		{
 			name: "branchProtectionApply creating failure",
 			args: args{
-				repoSearchResult: map[string]RepositoriesNode{"repo0": {
+				repoSearchResult: map[string]*RepositoriesNode{"repo0": {
 					ID:            "repoIdTEST",
 					NameWithOwner: "org/signing-off",
 					DefaultBranchRef: DefaultBranchRef{
@@ -230,7 +230,7 @@ func Test_branchProtectionApply(t *testing.T) {
 		{
 			name: "branchProtectionApply with default branch protection rule pr approval settings the same",
 			args: args{
-				repoSearchResult: map[string]RepositoriesNode{"repo0": {
+				repoSearchResult: map[string]*RepositoriesNode{"repo0": {
 					ID:            "repoIdTEST",
 					NameWithOwner: "org/pr-approval-duplicate",
 					DefaultBranchRef: DefaultBranchRef{
@@ -256,7 +256,7 @@ func Test_branchProtectionApply(t *testing.T) {
 		{
 			name: "branchProtectionApply pr approval update failure",
 			args: args{
-				repoSearchResult: map[string]RepositoriesNode{"repo0": {
+				repoSearchResult: map[string]*RepositoriesNode{"repo0": {
 					ID:            "repoIdTEST",
 					NameWithOwner: "org/pr-approval-test",
 					DefaultBranchRef: DefaultBranchRef{
@@ -277,7 +277,7 @@ func Test_branchProtectionApply(t *testing.T) {
 		{
 			name: "branchProtectionApply pr approval create failure",
 			args: args{
-				repoSearchResult: map[string]RepositoriesNode{"repo0": {
+				repoSearchResult: map[string]*RepositoriesNode{"repo0": {
 					ID:            "repoIdTEST",
 					NameWithOwner: "org/pr-approval-test",
 					DefaultBranchRef: DefaultBranchRef{

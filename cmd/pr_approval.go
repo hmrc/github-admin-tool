@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"github-admin-tool/graphqlclient"
 	"log"
 
@@ -15,64 +17,71 @@ var (
 	prApprovalCmd             = &cobra.Command{ // nolint // needed for cobra
 		Use:   "pr-approval",
 		Short: "Set request signing on to all repos in provided list",
-		Run: func(cmd *cobra.Command, args []string) {
-			dryRun, err := cmd.Flags().GetBool("dry-run")
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			reposFilePath, err := cmd.Flags().GetString("repos")
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			repoList, err := repoList(reposFilePath)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			numberOfRepos := len(repoList)
-			if numberOfRepos < 1 || numberOfRepos > maxRepositories {
-				log.Fatal("Number of repos passed in must be more than 1 and less than 100")
-			}
-
-			if dryRun {
-				log.Printf("This is a dry run, the run would process %d repositories", numberOfRepos)
-
-				return
-			}
-
-			queryString := repoQuery(repoList)
-			client := graphqlclient.NewClient("https://api.github.com/graphql")
-			repoSearchResult, err := repoRequest(queryString, client)
-			if err != nil {
-				log.Fatal(err)
-			}
-			approvalArgs := setApprovalArgs()
-			updated, created, info, problems := branchProtectionApply(
-				repoSearchResult,
-				"Pr-approval",
-				approvalArgs,
-			)
-
-			for key, repo := range updated {
-				log.Printf("Modified (%d): %v", key, repo)
-			}
-
-			for key, repo := range created {
-				log.Printf("Created (%d): %v", key, repo)
-			}
-
-			for key, err := range problems {
-				log.Printf("Error (%d): %v", key, err)
-			}
-
-			for key, i := range info {
-				log.Printf("Info (%d): %v", key, i)
-			}
-		},
+		RunE:  prApprovalRun,
 	}
+	errTooManyRepos = errors.New("Number of repos passed in must be more than 1 and less than 100")
 )
+
+func prApprovalRun(cmd *cobra.Command, args []string) error { // nolint // needed for cobra
+	dryRun, err := cmd.Flags().GetBool("dry-run")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	reposFilePath, err := cmd.Flags().GetString("repos")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	repoList, err := repoList(reposFilePath)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	numberOfRepos := len(repoList)
+	if numberOfRepos < 1 || numberOfRepos > maxRepositories {
+		return errTooManyRepos
+	}
+
+	if dryRun {
+		log.Printf("This is a dry run, the run would process %d repositories", numberOfRepos)
+
+		return nil
+	}
+
+	queryString := repoQuery(repoList)
+	client := graphqlclient.NewClient("https://api.github.com/graphql")
+	repositories, err := repoRequest(queryString, client)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	approvalArgs := setApprovalArgs()
+	updated, created, info, problems := branchProtectionApply(
+		repositories,
+		"Pr-approval",
+		approvalArgs,
+	)
+
+	for key, repo := range updated {
+		log.Printf("Modified (%d): %v", key, repo)
+	}
+
+	for key, repo := range created {
+		log.Printf("Created (%d): %v", key, repo)
+	}
+
+	for key, err := range problems {
+		log.Printf("Error (%d): %v", key, err)
+	}
+
+	for key, i := range info {
+		log.Printf("Info (%d): %v", key, i)
+	}
+
+	return nil
+}
 
 func setApprovalArgs() (branchProtectionArgs []BranchProtectionArgs) {
 	return []BranchProtectionArgs{

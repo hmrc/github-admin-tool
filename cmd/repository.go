@@ -69,7 +69,7 @@ func repoQuery(repos []string) string {
 	return signingQueryStr.String()
 }
 
-func repoRequest(queryString string, client *graphqlclient.Client) (map[string]RepositoriesNode, error) {
+func repoRequest(queryString string, client *graphqlclient.Client) (map[string]*RepositoriesNode, error) {
 	authStr := fmt.Sprintf("bearer %s", config.Token)
 
 	req := graphqlclient.NewRequest(queryString)
@@ -79,7 +79,7 @@ func repoRequest(queryString string, client *graphqlclient.Client) (map[string]R
 
 	ctx := context.Background()
 
-	var respData map[string]RepositoriesNode
+	var respData map[string]*RepositoriesNode
 
 	if err := client.Run(ctx, req, &respData); err != nil {
 		return respData, fmt.Errorf("graphql call: %w", err)
