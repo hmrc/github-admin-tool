@@ -5,19 +5,19 @@ import (
 )
 
 var (
-	requiresCommitSignatures           bool              // nolint // needed for cobra
-	signingCmd            			   = &cobra.Command{ // nolint // needed for cobra
+	requiresCommitSignatures bool              // nolint // needed for cobra
+	signingCmd               = &cobra.Command{ // nolint // needed for cobra
 		Use:   "signing",
 		Short: "Set request signing on to all repos in provided list",
 		RunE:  signingRun,
 	}
 )
 
-func signingRun(cmd *cobra.Command, args []string) error { // nolint // needed for cobra
+func signingRun(cmd *cobra.Command, args []string) error {
 	signingArgs := setSigningArgs()
 	err := branchProtectionCommand(cmd, signingArgs, "Signing")
-	return err
 
+	return err
 }
 
 func setSigningArgs() (branchProtectionArgs []BranchProtectionArgs) {

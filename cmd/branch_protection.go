@@ -222,30 +222,20 @@ func branchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, reposit
 }
 
 func branchProtectionCommand(cmd *cobra.Command, branchProtectionArgs []BranchProtectionArgs, action string) error {
-	dryRun, err := cmd.Flags().GetBool("dry-run")
+	dryRun, reposFilePath, err := branchProtectionFlagCheck(cmd)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	reposFilePath, err := cmd.Flags().GetString("repos")
+	repositoryList, err := branchProtectionRepoList(reposFilePath)
 	if err != nil {
 		return fmt.Errorf("%w", err)
-	}
-
-	repositoryList, err := repositoryList(reposFilePath)
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	numberOfRepos := len(repositoryList)
-	if numberOfRepos < 1 || numberOfRepos > maxRepositories {
-		return errTooManyRepos
 	}
 
 	log.SetFlags(0)
 
 	if dryRun {
-		log.Printf("This is a dry run, the run would process %d repositories", numberOfRepos)
+		log.Printf("This is a dry run, the run would process %d repositories", len(repositoryList))
 
 		return nil
 	}
@@ -255,7 +245,6 @@ func branchProtectionCommand(cmd *cobra.Command, branchProtectionArgs []BranchPr
 		return fmt.Errorf("%w", err)
 	}
 
-	
 	updated, created, info, problems := doBranchProtectionApply(
 		repositories,
 		action,
@@ -279,4 +268,32 @@ func branchProtectionCommand(cmd *cobra.Command, branchProtectionArgs []BranchPr
 	}
 
 	return nil
+}
+
+func branchProtectionFlagCheck(cmd *cobra.Command) (dryRun bool, reposFilePath string, err error) {
+	dryRun, err = cmd.Flags().GetBool("dry-run")
+	if err != nil {
+		return dryRun, reposFilePath, fmt.Errorf("%w", err)
+	}
+
+	reposFilePath, err = cmd.Flags().GetString("repos")
+	if err != nil {
+		return dryRun, reposFilePath, fmt.Errorf("%w", err)
+	}
+
+	return dryRun, reposFilePath, nil
+}
+
+func branchProtectionRepoList(reposFilePath string) ([]string, error) {
+	repositoryList, err := repositoryList(reposFilePath)
+	if err != nil {
+		return []string{}, err
+	}
+
+	numberOfRepos := len(repositoryList)
+	if numberOfRepos < 1 || numberOfRepos > maxRepositories {
+		return []string{}, errTooManyRepos
+	}
+
+	return repositoryList, nil
 }
