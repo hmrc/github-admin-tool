@@ -64,8 +64,9 @@ func repositoryQuery(repos []string) string {
 	query.WriteString("}")
 	query.WriteString("query ($org: String!) {")
 
-	for i := 0; i < len(repos); i++ {
-		query.WriteString(fmt.Sprintf("repo%d: repository(owner: $org, name: \"%s\") {", i, repos[i]))
+	// for i := 0; i < len(repos); i++ {
+	for key, repositoryName := range repos {
+		query.WriteString(fmt.Sprintf("repo%d: repository(owner: $org, name: \"%s\") {", key, repositoryName))
 		query.WriteString("	...repoProperties")
 		query.WriteString("}")
 	}

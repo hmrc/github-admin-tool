@@ -21,12 +21,12 @@ func Test_reportGet(t *testing.T) {
 	}{
 		{
 			name:               "reportGet returns empty",
-			mockHTTPReturnFile: "../testdata/mockEmptyResponse.json",
+			mockHTTPReturnFile: "testdata/mockEmptyResponse.json",
 			want:               nil,
 		},
 		{
 			name:               "reportGet returns one",
-			mockHTTPReturnFile: "../testdata/mockRepoNodesJsonResponse.json",
+			mockHTTPReturnFile: "testdata/mockRepoNodesJsonResponse.json",
 			want: []ReportResponse{{Organization{Repositories{
 				TotalCount: 1,
 				Nodes: []RepositoriesNode{{

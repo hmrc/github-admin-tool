@@ -121,7 +121,7 @@ func Test_prApprovalRun(t *testing.T) {
 		&mockReposOver100File,
 		"repos",
 		"r",
-		"../testdata/repo_list_more_than_hundred.txt",
+		"testdata/repo_list_more_than_hundred.txt",
 		"repos file",
 	)
 
@@ -133,7 +133,7 @@ func Test_prApprovalRun(t *testing.T) {
 		&mockRepos2File,
 		"repos",
 		"r",
-		"../testdata/two_repo_list.txt",
+		"testdata/two_repo_list.txt",
 		"repos file",
 	)
 
@@ -145,7 +145,7 @@ func Test_prApprovalRun(t *testing.T) {
 		&mockRepos2File,
 		"repos",
 		"r",
-		"../testdata/two_repo_list.txt",
+		"testdata/two_repo_list.txt",
 		"repos file",
 	)
 

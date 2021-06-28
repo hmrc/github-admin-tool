@@ -351,7 +351,7 @@ func Test_branchProtectionQuery(t *testing.T) {
 				},
 				action: "update",
 			},
-			filePath: "../testdata/mockUpdateBranchProtectionQuery.txt",
+			filePath: "testdata/mockUpdateBranchProtectionQuery.txt",
 			wantRequestVars: map[string]interface{}{
 				"branchProtectionRuleId":   "some-rule-id",
 				"requiresApprovingReviews": true,
@@ -374,7 +374,7 @@ func Test_branchProtectionQuery(t *testing.T) {
 				},
 				action: "create",
 			},
-			filePath: "../testdata/mockCreateBranchProtectionQuery.txt",
+			filePath: "testdata/mockCreateBranchProtectionQuery.txt",
 			wantRequestVars: map[string]interface{}{
 				"repositoryId":             "some-repo-id",
 				"requiresApprovingReviews": true,
@@ -580,7 +580,7 @@ func Test_branchProtectionSend(t *testing.T) {
 				req: graphqlclient.NewRequest("query"),
 			},
 			wantErr:            false,
-			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateJsonResponse.json",
+			mockHTTPReturnFile: "testdata/mockBranchProtectionUpdateJsonResponse.json",
 			mockHTTPStatusCode: 200,
 		},
 		{
@@ -589,7 +589,7 @@ func Test_branchProtectionSend(t *testing.T) {
 				req: graphqlclient.NewRequest("query"),
 			},
 			wantErr:            true,
-			mockHTTPReturnFile: "../testdata/mockBranchProtectionUpdateErrorJsonResponse.json",
+			mockHTTPReturnFile: "testdata/mockBranchProtectionUpdateErrorJsonResponse.json",
 			mockHTTPStatusCode: 400,
 		},
 	}
