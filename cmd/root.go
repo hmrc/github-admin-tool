@@ -30,7 +30,11 @@ type Config struct {
 }
 
 func Execute() error {
-	return errors.Wrap(rootCmd.Execute(), "root execute")
+	if err := rootCmd.Execute(); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }
 
 // nolint // needed for cobra

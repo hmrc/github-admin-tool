@@ -1,13 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"github-admin-tool/graphqlclient"
 	"io/ioutil"
 	"reflect"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/pkg/errors"
 )
 
 func Test_branchProtectionQueryBlocks(t *testing.T) {

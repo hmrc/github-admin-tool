@@ -1,12 +1,12 @@
 package cmd
 
 import (
+	"errors"
 	"io/ioutil"
 	"reflect"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 

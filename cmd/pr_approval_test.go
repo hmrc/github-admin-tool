@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"log"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 

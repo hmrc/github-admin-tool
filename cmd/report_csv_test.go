@@ -1,10 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"reflect"
 	"testing"
-
-	"github.com/pkg/errors"
 )
 
 var TestEmptyCSVRows = [][]string{ // nolint // want to use this in both tests
