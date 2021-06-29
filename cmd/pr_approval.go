@@ -27,7 +27,12 @@ func prApprovalRun(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func setApprovalArgs(codeOwnerReview, dismissStale, approval bool, approvalNumber int) (branchProtectionArgs []BranchProtectionArgs) {
+func setApprovalArgs(
+	codeOwnerReview,
+	dismissStale,
+	approval bool,
+	approvalNumber int,
+) (branchProtectionArgs []BranchProtectionArgs) {
 	return []BranchProtectionArgs{
 		{
 			Name:     "requiresCodeOwnerReviews",
