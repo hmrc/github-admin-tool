@@ -21,33 +21,33 @@ var (
 )
 
 func prApprovalRun(cmd *cobra.Command, args []string) error {
-	approvalArgs := setApprovalArgs()
+	approvalArgs := setApprovalArgs(prApprovalCodeOwnerReview, prApprovalDismissStale, prApprovalFlag, prApprovalNumber)
 	err := branchProtectionCommand(cmd, approvalArgs, "Pr-approval", prBranchName)
 
 	return err
 }
 
-func setApprovalArgs() (branchProtectionArgs []BranchProtectionArgs) {
+func setApprovalArgs(codeOwnerReview, dismissStale, approval bool, approvalNumber int) (branchProtectionArgs []BranchProtectionArgs) {
 	return []BranchProtectionArgs{
 		{
-			Name:     "requiresApprovingReviews",
+			Name:     "requiresCodeOwnerReviews",
 			DataType: "Boolean",
-			Value:    prApprovalFlag,
-		},
-		{
-			Name:     "requiredApprovingReviewCount",
-			DataType: "Int",
-			Value:    prApprovalNumber,
+			Value:    codeOwnerReview,
 		},
 		{
 			Name:     "dismissesStaleReviews",
 			DataType: "Boolean",
-			Value:    prApprovalDismissStale,
+			Value:    dismissStale,
 		},
 		{
-			Name:     "requiresCodeOwnerReviews",
+			Name:     "requiresApprovingReviews",
 			DataType: "Boolean",
-			Value:    prApprovalCodeOwnerReview,
+			Value:    approval,
+		},
+		{
+			Name:     "requiredApprovingReviewCount",
+			DataType: "Int",
+			Value:    approvalNumber,
 		},
 	}
 }

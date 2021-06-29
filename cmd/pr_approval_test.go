@@ -13,13 +13,37 @@ import (
 )
 
 func Test_setApprovalArgs(t *testing.T) {
+	type args struct {
+		codeOwnerReview bool
+		dismissStale    bool
+		approval        bool
+		approvalNumber  int
+	}
+
 	tests := []struct {
 		name                     string
+		args                     args
 		wantBranchProtectionArgs []BranchProtectionArgs
 	}{
 		{
 			name: "setApprovalargs returned values are as expected",
+			args: args{
+				codeOwnerReview: false,
+				dismissStale:    true,
+				approval:        true,
+				approvalNumber:  5,
+			},
 			wantBranchProtectionArgs: []BranchProtectionArgs{
+				{
+					Name:     "requiresCodeOwnerReviews",
+					DataType: "Boolean",
+					Value:    false,
+				},
+				{
+					Name:     "dismissesStaleReviews",
+					DataType: "Boolean",
+					Value:    true,
+				},
 				{
 					Name:     "requiresApprovingReviews",
 					DataType: "Boolean",
@@ -28,17 +52,7 @@ func Test_setApprovalArgs(t *testing.T) {
 				{
 					Name:     "requiredApprovingReviewCount",
 					DataType: "Int",
-					Value:    1,
-				},
-				{
-					Name:     "dismissesStaleReviews",
-					DataType: "Boolean",
-					Value:    true,
-				},
-				{
-					Name:     "requiresCodeOwnerReviews",
-					DataType: "Boolean",
-					Value:    false,
+					Value:    5,
 				},
 			},
 		},
@@ -46,7 +60,12 @@ func Test_setApprovalArgs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotBranchProtectionArgs := setApprovalArgs(); !reflect.DeepEqual(
+			if gotBranchProtectionArgs := setApprovalArgs(
+				tt.args.codeOwnerReview,
+				tt.args.dismissStale,
+				tt.args.approval,
+				tt.args.approvalNumber,
+			); !reflect.DeepEqual(
 				gotBranchProtectionArgs,
 				tt.wantBranchProtectionArgs,
 			) {
