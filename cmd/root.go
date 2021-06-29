@@ -9,8 +9,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const maxRepositories = 100
-
 var (
 	configFile     string // nolint // needed for cobra
 	reposFile      string // nolint // needed for cobra

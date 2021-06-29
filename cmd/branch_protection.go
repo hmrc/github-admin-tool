@@ -278,12 +278,12 @@ func branchProtectionCommand(
 ) error {
 	dryRun, reposFilePath, err := branchProtectionFlagCheck(cmd)
 	if err != nil {
-		return fmt.Errorf("%w", err)
+		return err
 	}
 
-	repositoryList, err := branchProtectionRepoList(reposFilePath)
+	repositoryList, err := branchProtectionRepoList(reposFilePath, 100)
 	if err != nil {
-		return fmt.Errorf("%w", err)
+		return err
 	}
 
 	log.SetFlags(0)
@@ -296,7 +296,7 @@ func branchProtectionCommand(
 
 	repositories, err := doRepositoryGet(repositoryList)
 	if err != nil {
-		return fmt.Errorf("%w", err)
+		return err
 	}
 
 	updated, created, info, problems := doBranchProtectionApply(
@@ -339,7 +339,7 @@ func branchProtectionFlagCheck(cmd *cobra.Command) (dryRun bool, reposFilePath s
 	return dryRun, reposFilePath, nil
 }
 
-func branchProtectionRepoList(reposFilePath string) ([]string, error) {
+func branchProtectionRepoList(reposFilePath string, maxRepositories int) ([]string, error) {
 	repositoryList, err := repositoryList(reposFilePath)
 	if err != nil {
 		return []string{}, err
