@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"errors"
-
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +15,6 @@ var (
 		Short: "Set request signing on to all repos in provided list",
 		RunE:  prApprovalRun,
 	}
-	errTooManyRepos = errors.New("number of repos passed in must be more than 1 and less than 100")
 )
 
 func prApprovalRun(cmd *cobra.Command, args []string) error {

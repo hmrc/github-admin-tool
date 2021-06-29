@@ -90,12 +90,12 @@ func mockBranchProtectionApply(
 	action, branchName string,
 	branchProtectionArgs []BranchProtectionArgs,
 ) (
-	modified,
+	updated,
 	created,
 	info,
 	problems []string,
 ) {
-	return []string{"modified branch"},
+	return []string{"updated branch"},
 		[]string{"created branch"},
 		[]string{"info branch"},
 		[]string{"problems branch"}
@@ -206,14 +206,6 @@ func Test_prApprovalRun(t *testing.T) {
 			wantErrMsg: "could not open repo file: open : no such file or directory",
 		},
 		{
-			name: "prApprovalRun number of repos too big",
-			args: args{
-				cmd: mockCmdWithDryRunAndTooManyRepos,
-			},
-			wantErr:    true,
-			wantErrMsg: "number of repos passed in must be more than 1 and less than 100",
-		},
-		{
 			name: "prApprovalRun dry run on",
 			args: args{
 				cmd: mockCmdWithDryRunOn,
@@ -237,10 +229,10 @@ func Test_prApprovalRun(t *testing.T) {
 				cmd: mockCmdWithDryRunOff,
 			},
 			wantErr: false,
-			wantLogOutput: `Modified (0): modified branch
-Created (0): created branch
-Error (0): problems branch
-Info (0): info branch`,
+			wantLogOutput: `Updated (Batch 0-2): updated branch
+Created (Batch 0-2): created branch
+Info (Batch 0-2): info branch
+Error (Batch 0-2): problems branch`,
 		},
 	}
 

@@ -281,7 +281,7 @@ func branchProtectionCommand(
 		return err
 	}
 
-	repositoryList, err := branchProtectionRepoList(reposFilePath, 100)
+	repositoryList, err := repositoryList(reposFilePath)
 	if err != nil {
 		return err
 	}
@@ -294,32 +294,26 @@ func branchProtectionCommand(
 		return nil
 	}
 
-	repositories, err := doRepositoryGet(repositoryList)
-	if err != nil {
-		return err
-	}
+	callLimit := 100
+	for left := 0; left < len(repositoryList); left += callLimit {
+		right := left + callLimit
+		if right > len(repositoryList) {
+			right = len(repositoryList)
+		}
 
-	updated, created, info, problems := doBranchProtectionApply(
-		repositories,
-		action,
-		branchName,
-		branchProtectionArgs,
-	)
+		repositories, err := doRepositoryGet(repositoryList[left:right])
+		if err != nil {
+			return err
+		}
 
-	for key, repo := range updated {
-		log.Printf("Modified (%d): %v", key, repo)
-	}
+		updated, created, info, problems := doBranchProtectionApply(
+			repositories,
+			action,
+			branchName,
+			branchProtectionArgs,
+		)
 
-	for key, repo := range created {
-		log.Printf("Created (%d): %v", key, repo)
-	}
-
-	for key, err := range problems {
-		log.Printf("Error (%d): %v", key, err)
-	}
-
-	for key, i := range info {
-		log.Printf("Info (%d): %v", key, i)
+		branchProtectionDisplayInfo(updated, created, info, problems, fmt.Sprintf("Batch %d-%d", left, right))
 	}
 
 	return nil
@@ -339,16 +333,20 @@ func branchProtectionFlagCheck(cmd *cobra.Command) (dryRun bool, reposFilePath s
 	return dryRun, reposFilePath, nil
 }
 
-func branchProtectionRepoList(reposFilePath string, maxRepositories int) ([]string, error) {
-	repositoryList, err := repositoryList(reposFilePath)
-	if err != nil {
-		return []string{}, err
+func branchProtectionDisplayInfo(updated, created, info, problems []string, batchInfo string) {
+	for _, repo := range updated {
+		log.Printf("Updated (%s): %v", batchInfo, repo)
 	}
 
-	numberOfRepos := len(repositoryList)
-	if numberOfRepos < 1 || numberOfRepos > maxRepositories {
-		return []string{}, errTooManyRepos
+	for _, repo := range created {
+		log.Printf("Created (%s): %v", batchInfo, repo)
 	}
 
-	return repositoryList, nil
+	for _, i := range info {
+		log.Printf("Info (%s): %v", batchInfo, i)
+	}
+
+	for _, err := range problems {
+		log.Printf("Error (%s): %v", batchInfo, err)
+	}
 }
