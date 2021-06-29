@@ -15,7 +15,7 @@ var (
 
 func signingRun(cmd *cobra.Command, args []string) error {
 	signingArgs := setSigningArgs()
-	err := branchProtectionCommand(cmd, signingArgs, "Signing")
+	err := branchProtectionCommand(cmd, signingArgs, "Signing", "")
 
 	return err
 }

@@ -108,7 +108,8 @@ func branchProtectionQueryBlocks(branchProtectionArgs []BranchProtectionArgs) (
 
 func branchProtectionApply( // nolint // cyclomatic error 11 !!! Will sort this soon
 	repositories map[string]*RepositoriesNode,
-	action string,
+	action,
+	branchName string,
 	branchProtectionArgs []BranchProtectionArgs,
 ) (
 	modified,
@@ -118,8 +119,6 @@ func branchProtectionApply( // nolint // cyclomatic error 11 !!! Will sort this 
 ) {
 	var err error
 
-OUTER:
-
 	for _, repository := range repositories {
 		if repository.DefaultBranchRef.Name == "" {
 			info = append(info, fmt.Sprintf("No default branch for %v", repository.NameWithOwner))
@@ -127,61 +126,111 @@ OUTER:
 			continue
 		}
 
+		desiredBranchRuleExists := false
+
+		branchProtectionPattern := repository.DefaultBranchRef.Name
+		if branchName != "" {
+			branchProtectionPattern = branchName
+		}
+
 		// Check all nodes for default branch protection rule
 		for _, branchProtection := range repository.BranchProtectionRules.Nodes {
-			if repository.DefaultBranchRef.Name != branchProtection.Pattern {
+			if branchProtectionPattern == branchProtection.Pattern {
+				desiredBranchRuleExists = true
+			}
+
+			updateRequired, returnInfo := branchProtectionUpdateCheck(action, branchProtectionPattern, branchProtection)
+			if returnInfo {
+				info = append(
+					info,
+					fmt.Sprintf(
+						"%s already turned on for %v with branch name: %s",
+						action,
+						repository.NameWithOwner,
+						branchProtection.Pattern,
+					),
+				)
+
 				continue
 			}
 
-			// If default branch has already got signing turned on, no need to update
-			if action == "Signing" && branchProtection.RequiresCommitSignatures {
-				info = append(info, fmt.Sprintf("%s already turned on for %v", action, repository.NameWithOwner))
+			if updateRequired {
+				if err = doBranchProtectionUpdate(branchProtectionArgs, branchProtection.ID); err != nil {
+					problems = append(problems, err.Error())
 
-				continue OUTER
+					continue
+				}
+
+				modified = append(
+					modified,
+					fmt.Sprintf(
+						"%s changed for %v with branch name: %s",
+						action,
+						repository.NameWithOwner,
+						branchProtection.Pattern,
+					),
+				)
+
+				continue
 			}
+		}
 
-			// If default branch has already got pr-approval turned on, no need to update
-			if action == "Pr-approval" && !branchProtectionPrApprovalCheck(branchProtection) {
-				info = append(info, fmt.Sprintf("%s settings already set for %v", action, repository.NameWithOwner))
-
-				continue OUTER
-			}
-
-			if err = doBranchProtectionUpdate(branchProtectionArgs, branchProtection.ID); err != nil {
+		if !desiredBranchRuleExists {
+			if err = doBranchProtectionCreate(
+				branchProtectionArgs,
+				repository.ID,
+				branchProtectionPattern,
+			); err != nil {
 				problems = append(problems, err.Error())
 
-				continue OUTER
+				continue
 			}
-			modified = append(modified, repository.NameWithOwner)
 
-			continue OUTER
+			created = append(
+				created,
+				fmt.Sprintf(
+					"Branch protection rule created for %v with branch name: %s",
+					repository.NameWithOwner,
+					branchProtectionPattern,
+				),
+			)
 		}
-
-		if err = doBranchProtectionCreate(
-			branchProtectionArgs,
-			repository.ID,
-			repository.DefaultBranchRef.Name,
-		); err != nil {
-			problems = append(problems, err.Error())
-
-			continue OUTER
-		}
-
-		created = append(created, repository.NameWithOwner)
 	}
 
 	return modified, created, info, problems
 }
 
-func branchProtectionPrApprovalCheck(branchProtection BranchProtectionRulesNode) bool {
-	if branchProtection.RequiresApprovingReviews == prApprovalFlag &&
-		branchProtection.RequiredApprovingReviewCount == prApprovalNumber &&
-		branchProtection.DismissesStaleReviews == prApprovalDismissStale &&
-		branchProtection.RequiresCodeOwnerReviews == prApprovalCodeOwnerReview {
-		return false
+func branchProtectionUpdateCheck(
+	action,
+	branchNamePattern string,
+	branchProtection BranchProtectionRulesNode,
+) (
+	updateRequired bool,
+	returnInfo bool,
+) {
+	// If default branch has already got signing turned on, no need to update
+	if action == "Signing" {
+		if branchProtection.RequiresCommitSignatures {
+			return false, true
+		}
 	}
 
-	return true
+	// If rule pattern doesn't match branch flag then ignore update
+	if action == "Pr-approval" {
+		if branchProtection.Pattern != branchNamePattern {
+			return false, false
+		}
+
+		// If default branch has already got pr-approval turned on, no need to update
+		if branchProtection.RequiresApprovingReviews == prApprovalFlag &&
+			branchProtection.RequiredApprovingReviewCount == prApprovalNumber &&
+			branchProtection.DismissesStaleReviews == prApprovalDismissStale &&
+			branchProtection.RequiresCodeOwnerReviews == prApprovalCodeOwnerReview {
+			return false, true
+		}
+	}
+
+	return true, false
 }
 
 func branchProtectionUpdate(branchProtectionArgs []BranchProtectionArgs, branchProtectionRuleID string) error {
@@ -221,7 +270,12 @@ func branchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, reposit
 	return err
 }
 
-func branchProtectionCommand(cmd *cobra.Command, branchProtectionArgs []BranchProtectionArgs, action string) error {
+func branchProtectionCommand(
+	cmd *cobra.Command,
+	branchProtectionArgs []BranchProtectionArgs,
+	action,
+	branchName string,
+) error {
 	dryRun, reposFilePath, err := branchProtectionFlagCheck(cmd)
 	if err != nil {
 		return fmt.Errorf("%w", err)
@@ -248,6 +302,7 @@ func branchProtectionCommand(cmd *cobra.Command, branchProtectionArgs []BranchPr
 	updated, created, info, problems := doBranchProtectionApply(
 		repositories,
 		action,
+		branchName,
 		branchProtectionArgs,
 	)
 

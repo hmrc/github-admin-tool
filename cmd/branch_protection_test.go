@@ -111,6 +111,7 @@ func Test_branchProtectionApply(t *testing.T) {
 	type args struct {
 		repoSearchResult     map[string]*RepositoriesNode
 		action               string
+		branchName           string
 		branchProtectionArgs []BranchProtectionArgs
 	}
 
@@ -143,7 +144,26 @@ func Test_branchProtectionApply(t *testing.T) {
 			wantErrors:   nil,
 		},
 		{
-			name: "branchProtectionApply with no default branch protection rule",
+			name: "branchProtectionApply signing with no default branch protection rule",
+			args: args{
+				repoSearchResult: map[string]*RepositoriesNode{"repo0": {
+					ID:            "repoIdTEST",
+					NameWithOwner: "org/no-branch-protection",
+					DefaultBranchRef: DefaultBranchRef{
+						Name: "default-branch-name",
+					},
+				}},
+				action: "Signing",
+			},
+			wantModified: nil,
+			wantCreated: []string{
+				"Branch protection rule created for org/no-branch-protection with branch name: default-branch-name",
+			},
+			wantInfo:   nil,
+			wantErrors: nil,
+		},
+		{
+			name: "branchProtectionApply signing with no default branch protection rule and additional rule",
 			args: args{
 				repoSearchResult: map[string]*RepositoriesNode{"repo0": {
 					ID:            "repoIdTEST",
@@ -158,11 +178,16 @@ func Test_branchProtectionApply(t *testing.T) {
 						}},
 					},
 				}},
+				action: "Signing",
 			},
 			wantModified: nil,
-			wantCreated:  []string{"org/no-branch-protection"},
-			wantInfo:     nil,
-			wantErrors:   nil,
+			wantCreated: []string{
+				"Branch protection rule created for org/no-branch-protection with branch name: default-branch-name",
+			},
+			wantInfo: []string{
+				"Signing already turned on for org/no-branch-protection with branch name: another-branch-name",
+			},
+			wantErrors: nil,
 		},
 		{
 			name: "branchProtectionApply with default branch protection rule signing on",
@@ -184,7 +209,7 @@ func Test_branchProtectionApply(t *testing.T) {
 			},
 			wantModified: nil,
 			wantCreated:  nil,
-			wantInfo:     []string{"Signing already turned on for org/signing-on"},
+			wantInfo:     []string{"Signing already turned on for org/signing-on with branch name: default-branch-name"},
 			wantErrors:   nil,
 		},
 		{
@@ -205,10 +230,42 @@ func Test_branchProtectionApply(t *testing.T) {
 				}},
 				action: "Signing",
 			},
-			wantModified: []string{"org/signing-off"},
+			wantModified: []string{"Signing changed for org/signing-off with branch name: default-branch-name"},
 			wantCreated:  nil,
 			wantInfo:     nil,
 			wantErrors:   nil,
+		},
+		{
+			name: "branchProtectionApply signing with multiple rules",
+			args: args{
+				repoSearchResult: map[string]*RepositoriesNode{"repo0": {
+					ID:            "repoIdTEST",
+					NameWithOwner: "org/signing-off",
+					DefaultBranchRef: DefaultBranchRef{
+						Name: "default-branch-name",
+					},
+					BranchProtectionRules: BranchProtectionRules{
+						Nodes: []BranchProtectionRulesNode{
+							{
+								RequiresCommitSignatures: false,
+								Pattern:                  "default-branch-name",
+							},
+							{
+								RequiresCommitSignatures: false,
+								Pattern:                  "another-branch-name",
+							},
+						},
+					},
+				}},
+				action: "Signing",
+			},
+			wantModified: []string{
+				"Signing changed for org/signing-off with branch name: default-branch-name",
+				"Signing changed for org/signing-off with branch name: another-branch-name",
+			},
+			wantCreated: nil,
+			wantInfo:    nil,
+			wantErrors:  nil,
 		},
 		{
 			name: "branchProtectionApply creating failure",
@@ -250,8 +307,48 @@ func Test_branchProtectionApply(t *testing.T) {
 			},
 			wantModified: nil,
 			wantCreated:  nil,
-			wantInfo:     []string{"Pr-approval settings already set for org/pr-approval-duplicate"},
-			wantErrors:   nil,
+			wantInfo: []string{
+				"Pr-approval already turned on for org/pr-approval-duplicate with branch name: default-branch-name",
+			},
+			wantErrors: nil,
+		},
+		{
+			name: "branchProtectionApply with multiple branch protection rules",
+			args: args{
+				repoSearchResult: map[string]*RepositoriesNode{"repo0": {
+					ID:            "repoIdTEST",
+					NameWithOwner: "org/pr-approval-duplicate",
+					DefaultBranchRef: DefaultBranchRef{
+						Name: "default-branch-name",
+					},
+					BranchProtectionRules: BranchProtectionRules{
+						Nodes: []BranchProtectionRulesNode{
+							{
+								RequiresApprovingReviews:     true,
+								RequiredApprovingReviewCount: 1,
+								DismissesStaleReviews:        true,
+								RequiresCodeOwnerReviews:     false,
+								Pattern:                      "default-branch-name",
+							},
+							{
+								RequiresApprovingReviews:     true,
+								RequiredApprovingReviewCount: 1,
+								DismissesStaleReviews:        true,
+								RequiresCodeOwnerReviews:     false,
+								Pattern:                      "main-name",
+							},
+						},
+					},
+				}},
+				action:     "Pr-approval",
+				branchName: "main",
+			},
+			wantModified: nil,
+			wantCreated: []string{
+				"Branch protection rule created for org/pr-approval-duplicate with branch name: main",
+			},
+			wantInfo:   nil,
+			wantErrors: nil,
 		},
 		{
 			name: "branchProtectionApply pr approval update failure",
@@ -304,6 +401,7 @@ func Test_branchProtectionApply(t *testing.T) {
 			gotModified, gotCreated, gotInfo, gotErrors := branchProtectionApply(
 				tt.args.repoSearchResult,
 				tt.args.action,
+				tt.args.branchName,
 				tt.args.branchProtectionArgs,
 			)
 			if !reflect.DeepEqual(gotModified, tt.wantModified) {

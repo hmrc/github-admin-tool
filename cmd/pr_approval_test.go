@@ -68,7 +68,7 @@ func mockRepositoryGetError([]string) (repoNode map[string]*RepositoriesNode, er
 
 func mockBranchProtectionApply(
 	repositories map[string]*RepositoriesNode,
-	action string,
+	action, branchName string,
 	branchProtectionArgs []BranchProtectionArgs,
 ) (
 	modified,
