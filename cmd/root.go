@@ -1,19 +1,22 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var (
-	configFile string            // nolint // needed for cobra
-	config     Config            // nolint // using with viper
-	dryRun     bool              // nolint // using for global flag
-	rootCmd    = &cobra.Command{ // nolint // needed for cobra
+	configFile     string // nolint // needed for cobra
+	reposFile      string // nolint // needed for cobra
+	branchName     string // nolint // needed for cobra
+	config         Config // nolint // using with viper
+	dryRun         bool   // nolint // using for global flag
+	errInvalidRepo = errors.New("invalid repo name")
+	rootCmd        = &cobra.Command{ // nolint // needed for cobra
 		Use:   "github-admin-tool",
 		Short: "Github admin tool allows you to perform actions on your github repos",
 		Long:  "Using Github version 4 GraphQL API to generate repo reports and administer your organisations repos etc",
@@ -26,7 +29,11 @@ type Config struct {
 }
 
 func Execute() error {
-	return errors.Wrap(rootCmd.Execute(), "root execute")
+	if err := rootCmd.Execute(); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }
 
 // nolint // needed for cobra

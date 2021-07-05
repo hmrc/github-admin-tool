@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -44,7 +45,7 @@ var TestEmptyCSVRows = [][]string{ // nolint // want to use this in both tests
 	},
 }
 
-func Test_parse(t *testing.T) {
+func Test_reportCSVParse(t *testing.T) {
 	var (
 		emptyAllResults []ReportResponse
 		TestEmptyList   [][]string
@@ -61,34 +62,34 @@ func Test_parse(t *testing.T) {
 		want [][]string
 	}{
 		{
-			name: "ParseEmptyListReturnEmpty",
+			name: "reportCSVParse empty list return empty",
 			args: args{ignoreArchived: false, allResults: emptyAllResults},
 			want: TestEmptyList,
 		},
 		{
-			name: "ParseArchivedResultSet",
+			name: "reportCSVParse archived result set",
 			args: args{ignoreArchived: true, allResults: []ReportResponse{{
-				Organization{Repositories{Nodes: []RepositoriesNodeList{{IsArchived: true}}}},
+				Organization{Repositories{Nodes: []RepositoriesNode{{IsArchived: true}}}},
 			}}},
 			want: TestEmptyList,
 		},
 		{
-			name: "ParseUnarchivedResultSet",
+			name: "reportCSVParse unarchived result set",
 			args: args{ignoreArchived: true, allResults: []ReportResponse{{
-				Organization{Repositories{Nodes: []RepositoriesNodeList{{IsArchived: false, NameWithOwner: "REPONAME1"}}}},
+				Organization{Repositories{Nodes: []RepositoriesNode{{IsArchived: false, NameWithOwner: "REPONAME1"}}}},
 			}}},
 			want: [][]string{{"REPONAME1", "", "false", "false", "false", "false", "", "false", "false", "false"}},
 		},
 		{
-			name: "ParseBranchProtectionResultSet",
+			name: "reportCSVParse branch protection result set",
 			args: args{
 				ignoreArchived: true,
 				allResults: []ReportResponse{{
 					Organization{
 						Repositories{
-							Nodes: []RepositoriesNodeList{{
+							Nodes: []RepositoriesNode{{
 								BranchProtectionRules: BranchProtectionRules{
-									Nodes: []BranchProtectionRulesNodesList{{
+									Nodes: []BranchProtectionRulesNode{{
 										Pattern: "SOMEREGEXP",
 									}},
 								},
@@ -106,14 +107,14 @@ func Test_parse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := parse(tt.args.ignoreArchived, tt.args.allResults); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parse() = %v, want %v", got, tt.want)
+			if got := reportCSVParse(tt.args.ignoreArchived, tt.args.allResults); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("reportCSVParse() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_writeCSV(t *testing.T) {
+func Test_reportCSVLines(t *testing.T) {
 	var TestEmptyList [][]string
 
 	wantWithBP := make([][]string, 1)
@@ -137,12 +138,12 @@ func Test_writeCSV(t *testing.T) {
 		want [][]string
 	}{
 		{
-			name: "WriteCSVReturnsNoExtraRows",
+			name: "reportCSVLines returns no extra rows",
 			args: args{parsed: TestEmptyList},
 			want: TestEmptyCSVRows,
 		},
 		{
-			name: "WriteCSVReturnsSomeRows",
+			name: "reportCSVLines returns some rows",
 			args: args{parsed: wantWithBP},
 			want: twoCSVRows,
 		},
@@ -150,8 +151,92 @@ func Test_writeCSV(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := writeCSV(tt.args.parsed); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("writeCSV() = %v, want %v", got, tt.want)
+			if got := reportCSVLines(tt.args.parsed); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("reportCSVLines() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+var errReportCSVFile = errors.New("failed to create report")
+
+func mockReportCSVFile(filePath string, lines [][]string) error {
+	return nil
+}
+
+func mockReportCSVFileError(filePath string, lines [][]string) error {
+	return errReportCSVFile
+}
+
+func Test_reportCSVGenerate(t *testing.T) {
+	doReportCSVFileWrite = mockReportCSVFile
+	defer func() { doReportCSVFileWrite = reportCSVFile }()
+
+	type args struct {
+		ignoreArchived bool
+		allResults     []ReportResponse
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "reportCSVGenerate success",
+			wantErr: false,
+		},
+		{
+			name:    "reportCSVGenerate error",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		if tt.wantErr {
+			doReportCSVFileWrite = mockReportCSVFileError
+			defer func() { doReportCSVFileWrite = reportCSVFile }()
+		}
+
+		t.Run(tt.name, func(t *testing.T) {
+			if err := reportCSVGenerate(tt.args.ignoreArchived, tt.args.allResults); (err != nil) != tt.wantErr {
+				t.Errorf("reportCSVGenerate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_reportCSVFile(t *testing.T) {
+	type args struct {
+		filePath string
+		lines    [][]string
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "reportCSVFile success",
+			args: args{
+				filePath: "/tmp/report.csv",
+			},
+			wantErr: false,
+		},
+		{
+			name: "reportCSVFile error",
+			args: args{
+				filePath: "/some/dir/doesnt/exist/report.csv",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := reportCSVFile(tt.args.filePath, tt.args.lines); (err != nil) != tt.wantErr {
+				t.Errorf("reportCSVFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

@@ -6,6 +6,7 @@ import (
 	"github-admin-tool/graphqlclient"
 	"github-admin-tool/progressbar"
 	"log"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -20,30 +21,37 @@ var (
 	reportCmd      = &cobra.Command{ // nolint // needed for cobra
 		Use:   "report",
 		Short: "Run a report to generate a csv containing information on all organisation repos",
-		Run: func(cmd *cobra.Command, args []string) {
-			var err error
-			dryRun, err = cmd.Flags().GetBool("dry-run")
-			if err != nil {
-				log.Fatal(err)
-			}
-			ignoreArchived, err = cmd.Flags().GetBool("ignore-archived")
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			client := graphqlclient.NewClient("https://api.github.com/graphql")
-			allResults, err := reportRequest(client)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if !dryRun {
-				if err = GenerateCSV(ignoreArchived, allResults); err != nil {
-					log.Fatal(err)
-				}
-			}
-		},
+		RunE:  reportRun,
 	}
+	doReportGet = reportGet // nolint // Like this for testing mock
 )
+
+func reportRun(cmd *cobra.Command, args []string) error {
+	var err error
+
+	dryRun, err = cmd.Flags().GetBool("dry-run")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	ignoreArchived, err = cmd.Flags().GetBool("ignore-archived")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	allResults, err := doReportGet()
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	if !dryRun {
+		if err = doReportCSVGenerate(ignoreArchived, allResults); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+	}
+
+	return nil
+}
 
 // nolint // needed for cobra
 func init() {
@@ -51,7 +59,72 @@ func init() {
 	rootCmd.AddCommand(reportCmd)
 }
 
-func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
+func reportQuery() string {
+	var query strings.Builder
+
+	query.WriteString("query ($org: String! $after: String) {")
+	query.WriteString("		organization(login:$org) {")
+	query.WriteString("			repositories(first: 100, after: $after, orderBy: {field: NAME, direction: ASC}) {")
+	query.WriteString("				totalCount")
+	query.WriteString("				pageInfo {")
+	query.WriteString("					endCursor")
+	query.WriteString("					hasNextPage")
+	query.WriteString("				}")
+	query.WriteString("				nodes {")
+	query.WriteString("					deleteBranchOnMerge")
+	query.WriteString("					isArchived")
+	query.WriteString("					isEmpty")
+	query.WriteString("					isFork")
+	query.WriteString("					isPrivate")
+	query.WriteString("					mergeCommitAllowed")
+	query.WriteString("					name")
+	query.WriteString("					nameWithOwner")
+	query.WriteString("					rebaseMergeAllowed")
+	query.WriteString("					squashMergeAllowed")
+	query.WriteString("					branchProtectionRules(first: 100) {")
+	query.WriteString("						nodes {")
+	query.WriteString("							isAdminEnforced")
+	query.WriteString("							requiresCommitSignatures")
+	query.WriteString("							restrictsPushes")
+	query.WriteString("							requiresApprovingReviews")
+	query.WriteString("							requiresStatusChecks")
+	query.WriteString("							requiresCodeOwnerReviews")
+	query.WriteString("							dismissesStaleReviews")
+	query.WriteString("							requiresStrictStatusChecks")
+	query.WriteString("							requiredApprovingReviewCount")
+	query.WriteString("							allowsForcePushes")
+	query.WriteString("							allowsDeletions")
+	query.WriteString("							pattern")
+	query.WriteString("						}")
+	query.WriteString("					}")
+	query.WriteString("					defaultBranchRef {")
+	query.WriteString("						name")
+	query.WriteString("					}")
+	query.WriteString("					parent {")
+	query.WriteString("						name")
+	query.WriteString("						nameWithOwner")
+	query.WriteString("						url")
+	query.WriteString("					}")
+	query.WriteString("				}")
+	query.WriteString("			}")
+	query.WriteString("		}")
+	query.WriteString("	}")
+
+	return query.String()
+}
+
+func reportRequest(queryString string) *graphqlclient.Request {
+	authStr := fmt.Sprintf("bearer %s", config.Token)
+
+	req := graphqlclient.NewRequest(queryString)
+	req.Var("org", config.Org)
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Authorization", authStr)
+
+	return req
+}
+
+func reportGet() ([]ReportResponse, error) {
 	var (
 		cursor           *string
 		totalRecordCount int
@@ -60,62 +133,11 @@ func reportRequest(client *graphqlclient.Client) ([]ReportResponse, error) {
 		bar              progressbar.Bar
 	)
 
-	authStr := fmt.Sprintf("bearer %s", config.Token)
+	client := graphqlclient.NewClient("https://api.github.com/graphql")
 
-	reportQueryStr := `
-		query ($org: String! $after: String) {
-			organization(login:$org) {
-				repositories(first: 100, after: $after, orderBy: {field: NAME, direction: ASC}) {
-					totalCount
-					pageInfo {
-						endCursor
-						hasNextPage
-					}
-					nodes {
-						deleteBranchOnMerge
-						isArchived
-						isEmpty
-						isFork
-						isPrivate
-						mergeCommitAllowed
-						name
-						nameWithOwner
-						rebaseMergeAllowed
-						squashMergeAllowed
-						branchProtectionRules(first: 100) {
-							nodes {
-								isAdminEnforced
-								requiresCommitSignatures
-								restrictsPushes
-								requiresApprovingReviews
-								requiresStatusChecks
-								requiresCodeOwnerReviews
-								dismissesStaleReviews
-								requiresStrictStatusChecks
-								requiredApprovingReviewCount
-								allowsForcePushes
-								allowsDeletions
-								pattern
-							}
-						}
-						defaultBranchRef {
-							name
-						}
-						parent {
-							name
-							nameWithOwner
-							url
-						}
-					}
-				}
-			}
-		}
-	`
+	query := reportQuery()
 
-	req := graphqlclient.NewRequest(reportQueryStr)
-	req.Var("org", config.Org)
-	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Authorization", authStr)
+	req := reportRequest(query)
 
 	ctx := context.Background()
 	iteration = 0

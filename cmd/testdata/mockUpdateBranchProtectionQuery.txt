@@ -1,0 +1,1 @@
+mutation updateBranchProtectionRule($clientMutationId: String!,$requiresApprovingReviews: Boolean!,$branchProtectionRuleId: String!,){updateBranchProtectionRule(input:{clientMutationId: $clientMutationId,requiresApprovingReviews: $requiresApprovingReviews,branchProtectionRuleId: $branchProtectionRuleId,}){branchProtectionRule {id}}}
