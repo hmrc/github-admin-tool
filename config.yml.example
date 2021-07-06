@@ -1,3 +1,2 @@
-client:
-  token: ""
-  org: ""
+token: ""
+org: ""
