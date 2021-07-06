@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -63,9 +62,7 @@ func initConfig() {
 	viper.AddConfigPath(".")
 	viper.SetConfigFile(configFile)
 
-	if err = viper.ReadInConfig(); err != nil {
-		log.Print("Could not find any config files")
-	}
+	viper.ReadInConfig() // nolint // don't want to do anything here if no config
 
 	if err = viper.Unmarshal(&config); err != nil {
 		panic(fmt.Errorf("fatal error config file: %w", err))
