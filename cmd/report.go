@@ -18,6 +18,7 @@ const (
 
 var (
 	ignoreArchived bool              // nolint // modifying within this package
+	filePath       string            // nolint // modifying within this package
 	reportCmd      = &cobra.Command{ // nolint // needed for cobra
 		Use:   "report",
 		Short: "Run a report to generate a csv containing information on all organisation repos",
@@ -45,7 +46,12 @@ func reportRun(cmd *cobra.Command, args []string) error {
 	}
 
 	if !dryRun {
-		if err = doReportCSVGenerate(ignoreArchived, allResults); err != nil {
+		filePath, err := cmd.Flags().GetString("file-path")
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+
+		if err = doReportCSVGenerate(filePath, ignoreArchived, allResults); err != nil {
 			return fmt.Errorf("%w", err)
 		}
 	}
@@ -56,6 +62,7 @@ func reportRun(cmd *cobra.Command, args []string) error {
 // nolint // needed for cobra
 func init() {
 	reportCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", false, "Ignore archived repositores")
+	reportCmd.Flags().StringVarP(&filePath, "file-path", "f", "report.csv", "file path for report to be created, must be .csv")
 	rootCmd.AddCommand(reportCmd)
 }
 

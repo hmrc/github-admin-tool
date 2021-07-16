@@ -11,11 +11,11 @@ import (
 
 var doReportCSVFileWrite = reportCSVFile // nolint // Like this for testing mock
 
-func reportCSVGenerate(ignoreArchived bool, allResults []ReportResponse) error {
+func reportCSVGenerate(filePath string, ignoreArchived bool, allResults []ReportResponse) error {
 	parsed := reportCSVParse(ignoreArchived, allResults)
 	lines := reportCSVLines(parsed)
 
-	if err := doReportCSVFileWrite("report.csv", lines); err != nil {
+	if err := doReportCSVFileWrite(filePath, lines); err != nil {
 		return fmt.Errorf("GenerateCSV failed: %w", err)
 	}
 
@@ -122,10 +122,10 @@ func reportCSVFile(filePath string, lines [][]string) error {
 	writer := csv.NewWriter(file)
 
 	if err = writer.WriteAll(lines); err != nil {
-		return fmt.Errorf("failed to create report.csv: %w", err)
+		return fmt.Errorf("failed to create %s: %w", filePath, err)
 	}
 
-	log.Print("Report written to report.csv")
+	log.Printf("Report written to %s", filePath)
 
 	return nil
 }

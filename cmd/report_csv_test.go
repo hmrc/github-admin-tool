@@ -173,6 +173,7 @@ func Test_reportCSVGenerate(t *testing.T) {
 	defer func() { doReportCSVFileWrite = reportCSVFile }()
 
 	type args struct {
+		filePath       string
 		ignoreArchived bool
 		allResults     []ReportResponse
 	}
@@ -199,7 +200,9 @@ func Test_reportCSVGenerate(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			if err := reportCSVGenerate(tt.args.ignoreArchived, tt.args.allResults); (err != nil) != tt.wantErr {
+			if err := reportCSVGenerate(
+				tt.args.filePath, tt.args.ignoreArchived, tt.args.allResults,
+			); (err != nil) != tt.wantErr {
 				t.Errorf("reportCSVGenerate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
