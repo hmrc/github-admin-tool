@@ -74,11 +74,11 @@ func mockDoReportGetError() (results []ReportResponse, err error) {
 	return results, errMockReportRequest
 }
 
-func mockDoReportCSVGenerate(ignoreArchived bool, allResults []ReportResponse) error {
+func mockDoReportCSVGenerate(filePath string, ignoreArchived bool, allResults []ReportResponse) error {
 	return nil
 }
 
-func mockDoReportCSVGenerateError(ignoreArchived bool, allResults []ReportResponse) error {
+func mockDoReportCSVGenerateError(filePath string, ignoreArchived bool, allResults []ReportResponse) error {
 	return errMockReportCSVGenerate
 }
 
@@ -91,6 +91,8 @@ func Test_reportRun(t *testing.T) {
 	var (
 		mockDryRun         bool
 		mockIgnoreArchived bool
+		mockFilePath       string
+		mockFilePathErr    string
 	)
 
 	mockCmd := &cobra.Command{
@@ -113,6 +115,20 @@ func Test_reportRun(t *testing.T) {
 	}
 	mockCmdDryRunFalse.Flags().BoolVarP(&mockDryRun, "dry-run", "d", false, "dry run flag")
 	mockCmdDryRunFalse.Flags().BoolVarP(&mockIgnoreArchived, "ignore-archived", "i", true, "ignore flag")
+
+	mockCmdFilePathErr := &cobra.Command{
+		Use: "report",
+	}
+	mockCmdFilePathErr.Flags().BoolVarP(&mockDryRun, "dry-run", "d", false, "dry run flag")
+	mockCmdFilePathErr.Flags().BoolVarP(&mockIgnoreArchived, "ignore-archived", "i", true, "ignore flag")
+	mockCmdFilePathErr.Flags().StringVarP(&mockFilePathErr, "file-path", "f", "blah", "file path flag")
+
+	mockCmdAllFlagsSet := &cobra.Command{
+		Use: "report",
+	}
+	mockCmdAllFlagsSet.Flags().BoolVarP(&mockDryRun, "dry-run", "d", false, "dry run flag")
+	mockCmdAllFlagsSet.Flags().BoolVarP(&mockIgnoreArchived, "ignore-archived", "i", true, "ignore flag")
+	mockCmdAllFlagsSet.Flags().StringVarP(&mockFilePath, "file-path", "f", "report.csv", "file path flag")
 
 	tests := []struct {
 		name                         string
@@ -139,9 +155,25 @@ func Test_reportRun(t *testing.T) {
 			wantErrMsg: "flag accessed but not defined: ignore-archived",
 		},
 		{
-			name: "reportRun report request failure",
+			name: "reportRun file-path flag error",
 			args: args{
 				cmd: mockCmdDryRunOnIgnoreArchived,
+			},
+			wantErr:    true,
+			wantErrMsg: "flag accessed but not defined: file-path",
+		},
+		{
+			name: "reportRun file path format error",
+			args: args{
+				cmd: mockCmdFilePathErr,
+			},
+			wantErr:    true,
+			wantErrMsg: "filepath must end with .csv",
+		},
+		{
+			name: "reportRun report request failure",
+			args: args{
+				cmd: mockCmdAllFlagsSet,
 			},
 			wantErr:                  true,
 			wantErrMsg:               "report failure",
@@ -150,7 +182,7 @@ func Test_reportRun(t *testing.T) {
 		{
 			name: "reportRun generate csv error",
 			args: args{
-				cmd: mockCmdDryRunFalse,
+				cmd: mockCmdAllFlagsSet,
 			},
 			wantErr:                      true,
 			wantErrMsg:                   "report csv generate failure",
@@ -159,7 +191,7 @@ func Test_reportRun(t *testing.T) {
 		{
 			name: "reportRun success",
 			args: args{
-				cmd: mockCmdDryRunFalse,
+				cmd: mockCmdAllFlagsSet,
 			},
 			wantErr: false,
 		},

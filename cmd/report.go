@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github-admin-tool/graphqlclient"
 	"github-admin-tool/progressbar"
 	"log"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -18,12 +20,14 @@ const (
 
 var (
 	ignoreArchived bool              // nolint // modifying within this package
+	filePath       string            // nolint // modifying within this package
 	reportCmd      = &cobra.Command{ // nolint // needed for cobra
 		Use:   "report",
 		Short: "Run a report to generate a csv containing information on all organisation repos",
 		RunE:  reportRun,
 	}
-	doReportGet = reportGet // nolint // Like this for testing mock
+	doReportGet        = reportGet // nolint // Like this for testing mock
+	errInvalidFilePath = errors.New("filepath must end with .csv")
 )
 
 func reportRun(cmd *cobra.Command, args []string) error {
@@ -45,7 +49,21 @@ func reportRun(cmd *cobra.Command, args []string) error {
 	}
 
 	if !dryRun {
-		if err = doReportCSVGenerate(ignoreArchived, allResults); err != nil {
+		filePath, err := cmd.Flags().GetString("file-path")
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+
+		matched, err := regexp.MatchString(`.*.csv`, filePath)
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+
+		if !matched {
+			return errInvalidFilePath
+		}
+
+		if err = doReportCSVGenerate(filePath, ignoreArchived, allResults); err != nil {
 			return fmt.Errorf("%w", err)
 		}
 	}
@@ -56,6 +74,7 @@ func reportRun(cmd *cobra.Command, args []string) error {
 // nolint // needed for cobra
 func init() {
 	reportCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", false, "Ignore archived repositores")
+	reportCmd.Flags().StringVarP(&filePath, "file-path", "f", "report.csv", "file path for report to be created, must be .csv")
 	rootCmd.AddCommand(reportCmd)
 }
 
