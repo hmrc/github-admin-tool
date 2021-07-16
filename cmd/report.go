@@ -2,12 +2,10 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github-admin-tool/graphqlclient"
 	"github-admin-tool/progressbar"
 	"log"
-	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -26,8 +24,7 @@ var (
 		Short: "Run a report to generate a csv containing information on all organisation repos",
 		RunE:  reportRun,
 	}
-	doReportGet        = reportGet // nolint // Like this for testing mock
-	errInvalidFilePath = errors.New("filepath must end with .csv")
+	doReportGet = reportGet // nolint // Like this for testing mock
 )
 
 func reportRun(cmd *cobra.Command, args []string) error {
@@ -52,15 +49,6 @@ func reportRun(cmd *cobra.Command, args []string) error {
 		filePath, err := cmd.Flags().GetString("file-path")
 		if err != nil {
 			return fmt.Errorf("%w", err)
-		}
-
-		matched, err := regexp.MatchString(`.*.csv`, filePath)
-		if err != nil {
-			return fmt.Errorf("%w", err)
-		}
-
-		if !matched {
-			return errInvalidFilePath
 		}
 
 		if err = doReportCSVGenerate(filePath, ignoreArchived, allResults); err != nil {
