@@ -7,7 +7,7 @@ By default it runs in a dry run mode.  Turn this off by adding `--dry-run=false`
 ## Installation
 
 ```bash
-wget -O- https://github.com/hmrc/github-admin-tool/releases/download/v0.1.1/github-admin-tool_0.1.1_<OS_VERSION>.tar.gz | tar -xzv && chmod 755 github-admin-tool
+wget -O- https://github.com/hmrc/github-admin-tool/releases/download/v0.1.4/github-admin-tool_0.1.4_<OS_VERSION>.tar.gz | tar -xzv && chmod 755 github-admin-tool
 ```
 
 ## Config
