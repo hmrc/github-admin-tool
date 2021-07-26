@@ -65,3 +65,30 @@ type Organization struct {
 type ReportResponse struct {
 	Organization Organization `json:"organization"`
 }
+
+type OrganizationTeams struct {
+	Teams Teams `json:"teams"`
+}
+
+type OrganizationTeamsReponse struct {
+	OrganizationTeams OrganizationTeams `json:"organization"`
+}
+
+type Teams struct {
+	TeamRepositories TeamRepositories `json:"repositories"`
+}
+
+type TeamRepositories struct {
+	TotalCount int                `json:"totalCount"`
+	PageInfo   PageInfo           `json:"pageInfo"`
+	Edges      []RepositoriesEdge `json:"edges"`
+}
+
+type RepositoriesEdge struct {
+	Node       RepositoriesEdgeNode `json:"node"`
+	Permission string               `json:"permission"`
+}
+
+type RepositoriesEdgeNode struct {
+	Name string `json:"name"`
+}
