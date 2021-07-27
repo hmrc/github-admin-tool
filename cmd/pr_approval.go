@@ -19,7 +19,22 @@ var (
 
 func prApprovalRun(cmd *cobra.Command, args []string) error {
 	approvalArgs := setApprovalArgs(prApprovalCodeOwnerReview, prApprovalDismissStale, prApprovalFlag, prApprovalNumber)
-	err := branchProtectionCommand(cmd, approvalArgs, "Pr-approval", prBranchName)
+	err := branchProtectionCommand(
+		cmd,
+		approvalArgs,
+		"Pr-approval",
+		prBranchName,
+		&repository{
+			reader: &repositoryReaderService{},
+			getter: &repositoryGetterService{},
+		},
+		&githubRepositorySender{
+			sender: &repositorySenderService{},
+		},
+		&githubBranchProtectionSender{
+			sender: &branchProtectionSenderService{},
+		},
+	)
 
 	return err
 }

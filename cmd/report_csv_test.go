@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"reflect"
 	"testing"
 )
@@ -158,58 +157,7 @@ func Test_reportCSVLines(t *testing.T) {
 	}
 }
 
-var errReportCSVFile = errors.New("failed to create report")
-
-func mockReportCSVFile(filePath string, lines [][]string) error {
-	return nil
-}
-
-func mockReportCSVFileError(filePath string, lines [][]string) error {
-	return errReportCSVFile
-}
-
-func Test_reportCSVGenerate(t *testing.T) {
-	doReportCSVFileWrite = mockReportCSVFile
-	defer func() { doReportCSVFileWrite = reportCSVFile }()
-
-	type args struct {
-		filePath       string
-		ignoreArchived bool
-		allResults     []ReportResponse
-	}
-
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name:    "reportCSVGenerate success",
-			wantErr: false,
-		},
-		{
-			name:    "reportCSVGenerate error",
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		if tt.wantErr {
-			doReportCSVFileWrite = mockReportCSVFileError
-			defer func() { doReportCSVFileWrite = reportCSVFile }()
-		}
-
-		t.Run(tt.name, func(t *testing.T) {
-			if err := reportCSVGenerate(
-				tt.args.filePath, tt.args.ignoreArchived, tt.args.allResults,
-			); (err != nil) != tt.wantErr {
-				t.Errorf("reportCSVGenerate() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_reportCSVFile(t *testing.T) {
+func Test_reportCSVService_uploader(t *testing.T) {
 	type args struct {
 		filePath string
 		lines    [][]string
@@ -217,6 +165,7 @@ func Test_reportCSVFile(t *testing.T) {
 
 	tests := []struct {
 		name    string
+		r       *reportCSVService
 		args    args
 		wantErr bool
 	}{
@@ -238,8 +187,35 @@ func Test_reportCSVFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := reportCSVFile(tt.args.filePath, tt.args.lines); (err != nil) != tt.wantErr {
+			if err := tt.r.uploader(tt.args.filePath, tt.args.lines); (err != nil) != tt.wantErr {
 				t.Errorf("reportCSVFile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_reportCSVGenerate(t *testing.T) {
+	type args struct {
+		ignoreArchived bool
+		allResults     []ReportResponse
+	}
+
+	tests := []struct {
+		name string
+		r    *reportCSVService
+		args args
+		want [][]string
+	}{
+		{
+			name: "generator returns lines",
+			want: TestEmptyCSVRows,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := reportCSVGenerate(tt.args.ignoreArchived, tt.args.allResults); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("reportCSVService.generator() = \n%v\n%v\n", got, tt.want)
 			}
 		})
 	}

@@ -10,22 +10,38 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Test_reportGet(t *testing.T) {
+func Test_reportGetterService_getReport(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
+	originalDryRun := dryRun
+	defer func() {
+		dryRun = originalDryRun
+	}()
+
+	var mockEmptyResult []ReportResponse
+
 	tests := []struct {
 		name               string
+		r                  *reportGetterService
 		mockHTTPReturnFile string
 		want               []ReportResponse
+		dryRunValue        bool
 	}{
 		{
-			name:               "reportGet returns empty",
+			name:               "getReport returns empty",
 			mockHTTPReturnFile: "testdata/mockEmptyResponse.json",
 			want:               nil,
+			dryRunValue:        false,
 		},
 		{
-			name:               "reportGet returns one",
+			name:               "getReport dry run true",
+			mockHTTPReturnFile: "testdata/mockRepoNodesJsonResponse.json",
+			want:               mockEmptyResult,
+			dryRunValue:        true,
+		},
+		{
+			name:               "getReport returns one",
 			mockHTTPReturnFile: "testdata/mockRepoNodesJsonResponse.json",
 			want: []ReportResponse{{Organization{Repositories{
 				TotalCount: 1,
@@ -36,6 +52,7 @@ func Test_reportGet(t *testing.T) {
 					SquashMergeAllowed: true,
 				}},
 			}}}},
+			dryRunValue: false,
 		},
 	}
 	for _, tt := range tests {
@@ -51,35 +68,16 @@ func Test_reportGet(t *testing.T) {
 				httpmock.NewStringResponder(200, string(mockHTTPReturn)),
 			)
 
-			if got, err := reportGet(); !reflect.DeepEqual(got, tt.want) {
+			dryRun = tt.dryRunValue
+
+			if got, err := tt.r.getReport(); !reflect.DeepEqual(got, tt.want) {
 				if err != nil {
 					t.Fatalf("failed to run reportGet %v", err)
 				}
-				t.Errorf("reportGet() = %v, want %v", got, tt.want)
+				t.Errorf("getReport() = %v, want %v", got, tt.want)
 			}
 		})
 	}
-}
-
-var (
-	errMockReportRequest     = errors.New("report failure")
-	errMockReportCSVGenerate = errors.New("report csv generate failure")
-)
-
-func mockDoReportGet() (results []ReportResponse, err error) {
-	return results, nil
-}
-
-func mockDoReportGetError() (results []ReportResponse, err error) {
-	return results, errMockReportRequest
-}
-
-func mockDoReportCSVGenerate(filePath string, ignoreArchived bool, allResults []ReportResponse) error {
-	return nil
-}
-
-func mockDoReportCSVGenerateError(filePath string, ignoreArchived bool, allResults []ReportResponse) error {
-	return errMockReportCSVGenerate
 }
 
 func Test_reportRun(t *testing.T) {
@@ -155,24 +153,6 @@ func Test_reportRun(t *testing.T) {
 			wantErrMsg: "flag accessed but not defined: file-path",
 		},
 		{
-			name: "reportRun report request failure",
-			args: args{
-				cmd: mockCmdAllFlagsSet,
-			},
-			wantErr:                  true,
-			wantErrMsg:               "report failure",
-			mockRequestErrorFunction: true,
-		},
-		{
-			name: "reportRun generate csv error",
-			args: args{
-				cmd: mockCmdAllFlagsSet,
-			},
-			wantErr:                      true,
-			wantErrMsg:                   "report csv generate failure",
-			mockCSVGenerateErrorFunction: true,
-		},
-		{
 			name: "reportRun success",
 			args: args{
 				cmd: mockCmdAllFlagsSet,
@@ -182,25 +162,103 @@ func Test_reportRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			doReportGet = mockDoReportGet
-			doReportCSVGenerate = mockDoReportCSVGenerate
-			if tt.mockRequestErrorFunction {
-				doReportGet = mockDoReportGetError
-			}
-			if tt.mockCSVGenerateErrorFunction {
-				doReportCSVGenerate = mockDoReportCSVGenerateError
-			}
-			defer func() {
-				doReportGet = reportGet
-				doReportCSVGenerate = reportCSVGenerate
-			}()
-
 			err := reportRun(tt.args.cmd, tt.args.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reportRun() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if err != nil && tt.wantErr && err.Error() != tt.wantErrMsg {
 				t.Errorf("reportRun() error = %v, wantErrMsg %v", err.Error(), tt.wantErrMsg)
+			}
+		})
+	}
+}
+
+type mockReportGetter struct {
+	fail bool
+}
+
+func (m *mockReportGetter) getReport() ([]ReportResponse, error) {
+	if m.fail {
+		return []ReportResponse{}, errors.New("fail") // nolint // just for testing
+	}
+
+	return []ReportResponse{}, nil
+}
+
+type mockReportCSV struct {
+	fail bool
+}
+
+func (m *mockReportCSV) uploader(filePath string, lines [][]string) error {
+	if m.fail {
+		return errors.New("fail") // nolint // just for testing
+	}
+
+	return nil
+}
+
+func Test_reportCreate(t *testing.T) {
+	type args struct {
+		r              *report
+		dryRun         bool
+		ignoreArchived bool
+		filePath       string
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "reportCreate failure",
+			args: args{
+				r: &report{
+					reportGetter: &mockReportGetter{fail: true},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "reportCreate failure on uploader",
+			args: args{
+				r: &report{
+					reportGetter: &mockReportGetter{},
+					reportCSV:    &mockReportCSV{fail: true},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "reportCreate success",
+			args: args{
+				r: &report{
+					reportGetter: &mockReportGetter{},
+					reportCSV:    &mockReportCSV{},
+				},
+			},
+		},
+		{
+			name: "reportCreate success dry run",
+			args: args{
+				r: &report{
+					reportGetter: &mockReportGetter{},
+					reportCSV:    &mockReportCSV{},
+				},
+				dryRun: true,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := reportCreate(
+				tt.args.r,
+				tt.args.dryRun,
+				tt.args.ignoreArchived,
+				tt.args.filePath,
+			); (err != nil) != tt.wantErr {
+				t.Errorf("reportCreate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

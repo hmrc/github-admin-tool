@@ -17,15 +17,27 @@ const (
 )
 
 var (
-	ignoreArchived bool              // nolint // modifying within this package
-	filePath       string            // nolint // modifying within this package
-	reportCmd      = &cobra.Command{ // nolint // needed for cobra
+	ignoreArchived bool   // nolint // modifying within this package
+	filePath       string // nolint // modifying within this package
+
+	reportCmd = &cobra.Command{ // nolint // needed for cobra
 		Use:   "report",
 		Short: "Run a report to generate a csv containing information on all organisation repos",
 		RunE:  reportRun,
 	}
-	doReportGet = reportGet // nolint // Like this for testing mock
 )
+
+type report struct {
+	reportGetter reportGetter
+	reportCSV    reportCSV
+	reportAccess reportAccess
+}
+
+type reportGetter interface {
+	getReport() ([]ReportResponse, error)
+}
+
+type reportGetterService struct{}
 
 func reportRun(cmd *cobra.Command, args []string) error {
 	var err error
@@ -40,20 +52,36 @@ func reportRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%w", err)
 	}
 
-	allResults, err := doReportGet()
+	filePath, err = cmd.Flags().GetString("file-path")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return reportCreate(
+		&report{
+			reportGetter: &reportGetterService{},
+			reportCSV:    &reportCSVService{},
+			reportAccess: &reportAccessService{},
+		},
+		dryRun,
+		ignoreArchived,
+		filePath,
+	)
+}
+
+func reportCreate(r *report, dryRun, ignoreArchived bool, filePath string) error {
+	allResults, err := r.reportGetter.getReport()
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
 	if !dryRun {
-		filePath, err := cmd.Flags().GetString("file-path")
-		if err != nil {
-			return fmt.Errorf("%w", err)
+		lines := reportCSVGenerate(ignoreArchived, allResults)
+		if err := r.reportCSV.uploader(filePath, lines); err != nil {
+			return fmt.Errorf("GenerateCSV failed: %w", err)
 		}
 
-		if err = doReportCSVGenerate(filePath, ignoreArchived, allResults); err != nil {
-			return fmt.Errorf("%w", err)
-		}
+		return nil
 	}
 
 	return nil
@@ -61,7 +89,7 @@ func reportRun(cmd *cobra.Command, args []string) error {
 
 // nolint // needed for cobra
 func init() {
-	reportCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", false, "Ignore archived repositores")
+	reportCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", true, "Ignore archived repositores")
 	reportCmd.Flags().StringVarP(&filePath, "file-path", "f", "report.csv", "file path for report to be created, must be .csv")
 	rootCmd.AddCommand(reportCmd)
 }
@@ -131,7 +159,7 @@ func reportRequest(queryString string) *graphqlclient.Request {
 	return req
 }
 
-func reportGet() ([]ReportResponse, error) {
+func (r *reportGetterService) getReport() ([]ReportResponse, error) {
 	var (
 		cursor           *string
 		totalRecordCount int

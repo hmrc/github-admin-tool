@@ -9,15 +9,32 @@ import (
 	"strings"
 )
 
-var doReportCSVFileWrite = reportCSVFile // nolint // Like this for testing mock
+type reportCSV interface {
+	uploader(filePath string, lines [][]string) error
+}
+type reportCSVService struct{}
 
-func reportCSVGenerate(filePath string, ignoreArchived bool, allResults []ReportResponse) error {
+func reportCSVGenerate(ignoreArchived bool, allResults []ReportResponse) [][]string {
 	parsed := reportCSVParse(ignoreArchived, allResults)
 	lines := reportCSVLines(parsed)
 
-	if err := doReportCSVFileWrite(filePath, lines); err != nil {
-		return fmt.Errorf("GenerateCSV failed: %w", err)
+	return lines
+}
+
+func (r *reportCSVService) uploader(filePath string, lines [][]string) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
 	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+
+	if err = writer.WriteAll(lines); err != nil {
+		return fmt.Errorf("failed to create %s: %w", filePath, err)
+	}
+
+	log.Printf("Report written to %s", filePath)
 
 	return nil
 }
@@ -110,22 +127,4 @@ func reportCSVLines(parsed [][]string) [][]string {
 	lines = append(lines, parsed...)
 
 	return lines
-}
-
-func reportCSVFile(filePath string, lines [][]string) error {
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-
-	if err = writer.WriteAll(lines); err != nil {
-		return fmt.Errorf("failed to create %s: %w", filePath, err)
-	}
-
-	log.Printf("Report written to %s", filePath)
-
-	return nil
 }

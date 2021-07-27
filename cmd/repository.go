@@ -10,13 +10,18 @@ import (
 	"strings"
 )
 
-var (
-	doReportCSVGenerate = reportCSVGenerate // nolint // Like this for testing mock
-	doRepositorySend    = repositorySend    // nolint // Like this for testing mock
-	doRepositoryGet     = repositoryGet     // nolint // Like this for testing mock
-)
+type repository struct {
+	reader repositoryReader
+	getter repositoryGetter
+}
 
-func repositoryList(reposFile string) ([]string, error) {
+type repositoryReader interface {
+	read(reposFile string) ([]string, error)
+}
+
+type repositoryReaderService struct{}
+
+func (r *repositoryReaderService) read(reposFile string) ([]string, error) {
 	var repos []string
 
 	validRepoName := regexp.MustCompile("^[A-Za-z0-9_.-]+$")
@@ -38,6 +43,54 @@ func repositoryList(reposFile string) ([]string, error) {
 	}
 
 	return repos, nil
+}
+
+type repositoryGetter interface {
+	get(repositoryList []string, sender *githubRepositorySender) (repositories map[string]*RepositoriesNode, err error)
+}
+
+type repositoryGetterService struct{}
+
+func (r *repositoryGetterService) get(
+	repositoryList []string,
+	sender *githubRepositorySender,
+) (
+	repositories map[string]*RepositoriesNode,
+	err error,
+) {
+	query := repositoryQuery(repositoryList)
+	request := repositoryRequest(query)
+
+	repositories, err = sender.sender.send(request)
+	if err != nil {
+		return repositories, fmt.Errorf("failure in repository get : %w", err)
+	}
+
+	return repositories, nil
+}
+
+type githubRepositorySender struct {
+	sender repositorySender
+}
+
+type repositorySender interface {
+	send(req *graphqlclient.Request) (map[string]*RepositoriesNode, error)
+}
+
+type repositorySenderService struct{}
+
+func (r *repositorySenderService) send(req *graphqlclient.Request) (map[string]*RepositoriesNode, error) {
+	ctx := context.Background()
+
+	var respData map[string]*RepositoriesNode
+
+	client := graphqlclient.NewClient("https://api.github.com/graphql")
+
+	if err := client.Run(ctx, req, &respData); err != nil {
+		return respData, fmt.Errorf("graphql call: %w", err)
+	}
+
+	return respData, nil
 }
 
 func repositoryQuery(repos []string) string {
@@ -64,7 +117,6 @@ func repositoryQuery(repos []string) string {
 	query.WriteString("}")
 	query.WriteString("query ($org: String!) {")
 
-	// for i := 0; i < len(repos); i++ {
 	for key, repositoryName := range repos {
 		query.WriteString(fmt.Sprintf("repo%d: repository(owner: $org, name: \"%s\") {", key, repositoryName))
 		query.WriteString("	...repoProperties")
@@ -85,30 +137,4 @@ func repositoryRequest(queryString string) *graphqlclient.Request {
 	req.Header.Set("Authorization", authStr)
 
 	return req
-}
-
-func repositorySend(req *graphqlclient.Request) (map[string]*RepositoriesNode, error) {
-	ctx := context.Background()
-
-	var respData map[string]*RepositoriesNode
-
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
-
-	if err := client.Run(ctx, req, &respData); err != nil {
-		return respData, fmt.Errorf("graphql call: %w", err)
-	}
-
-	return respData, nil
-}
-
-func repositoryGet(repositoryList []string) (repositories map[string]*RepositoriesNode, err error) {
-	query := repositoryQuery(repositoryList)
-	request := repositoryRequest(query)
-
-	repositories, err = doRepositorySend(request)
-	if err != nil {
-		return repositories, fmt.Errorf("failure in repository get : %w", err)
-	}
-
-	return repositories, nil
 }

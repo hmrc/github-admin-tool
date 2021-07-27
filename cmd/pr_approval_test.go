@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"errors"
 	"log"
 	"os"
 	"reflect"
@@ -75,7 +74,7 @@ func Test_setApprovalArgs(t *testing.T) {
 	}
 }
 
-var errRepositoryGet = errors.New("repo failure")
+/*var errRepositoryGet = errors.New("repo failure")
 
 func mockRepositoryGet([]string) (repoNode map[string]*RepositoriesNode, err error) {
 	return repoNode, nil
@@ -99,15 +98,9 @@ func mockBranchProtectionApply(
 		[]string{"created branch"},
 		[]string{"info branch"},
 		[]string{"problems branch"}
-}
+} */
 
 func Test_prApprovalRun(t *testing.T) {
-	doRepositoryGet = mockRepositoryGet
-	defer func() { doRepositoryGet = repositoryGet }()
-
-	doBranchProtectionApply = mockBranchProtectionApply
-	defer func() { doBranchProtectionApply = branchProtectionApply }()
-
 	mockCmd := &cobra.Command{
 		Use: "pr-approval",
 	}
@@ -117,11 +110,10 @@ func Test_prApprovalRun(t *testing.T) {
 	}
 
 	var (
-		mockDryRun           bool
-		mockDryRunFalse      bool
-		mockReposFile        string
-		mockReposOver100File string
-		mockRepos2File       string
+		mockDryRun      bool
+		mockDryRunFalse bool
+		mockReposFile   string
+		mockRepos2File  string
 	)
 
 	mockCmdWithDryRun.Flags().BoolVarP(&mockDryRun, "dry-run", "d", true, "dry run flag")
@@ -131,18 +123,6 @@ func Test_prApprovalRun(t *testing.T) {
 	}
 	mockCmdWithDryRunAndRepos.Flags().BoolVarP(&mockDryRun, "dry-run", "d", true, "dry run flag")
 	mockCmdWithDryRunAndRepos.Flags().StringVarP(&mockReposFile, "repos", "r", "", "repos file")
-
-	mockCmdWithDryRunAndTooManyRepos := &cobra.Command{
-		Use: "pr-approval",
-	}
-	mockCmdWithDryRunAndTooManyRepos.Flags().BoolVarP(&mockDryRun, "dry-run", "d", true, "dry run flag")
-	mockCmdWithDryRunAndTooManyRepos.Flags().StringVarP(
-		&mockReposOver100File,
-		"repos",
-		"r",
-		"testdata/repo_list_more_than_hundred.txt",
-		"repos file",
-	)
 
 	mockCmdWithDryRunOn := &cobra.Command{
 		Use: "pr-approval",
@@ -213,36 +193,10 @@ func Test_prApprovalRun(t *testing.T) {
 			wantErr:       false,
 			wantLogOutput: "This is a dry run, the run would process 2 repositories",
 		},
-		{
-			name: "prApprovalRun repo get fails",
-			args: args{
-				cmd: mockCmdWithDryRunOff,
-			},
-			wantErr:           true,
-			wantErrMsg:        "repo failure",
-			mockErrorFunction: true,
-		},
-
-		{
-			name: "prApprovalRun check log output",
-			args: args{
-				cmd: mockCmdWithDryRunOff,
-			},
-			wantErr: false,
-			wantLogOutput: `Updated (Batch 0-2): updated branch
-Created (Batch 0-2): created branch
-Info (Batch 0-2): info branch
-Error (Batch 0-2): problems branch`,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.mockErrorFunction {
-				doRepositoryGet = mockRepositoryGetError
-				defer func() { doRepositoryGet = mockRepositoryGet }()
-			}
-
 			var buf bytes.Buffer
 
 			log.SetOutput(&buf)

@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"github-admin-tool/graphqlclient"
 	"io/ioutil"
 	"reflect"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
+	"github.com/spf13/cobra"
 )
 
 func Test_branchProtectionQueryBlocks(t *testing.T) {
@@ -74,37 +76,17 @@ func Test_branchProtectionQueryBlocks(t *testing.T) {
 	}
 }
 
-var (
-	errMockSend   = errors.New("from API call: something went wrong")
-	errMockCreate = errors.New("create: test")
-	errMockUpdate = errors.New("update: test")
-)
+type testSender struct {
+	sendFail bool
+	action   string
+}
 
-func mockDoBranchProtectionSend(req *graphqlclient.Request) error {
+func (t *testSender) send(req *graphqlclient.Request) error {
+	if t.sendFail {
+		return errors.New(fmt.Sprintf("%s: test", t.action)) // nolint // only mock error for test
+	}
+
 	return nil
-}
-
-func mockDoBranchProtectionSendError(req *graphqlclient.Request) error {
-	return errMockSend
-}
-
-func mockDoBranchProtectionUpdate(branchProtectionArgs []BranchProtectionArgs, branchProtectionRuleID string) error {
-	return nil
-}
-
-func mockDoBranchProtectionUpdateError(
-	branchProtectionArgs []BranchProtectionArgs,
-	branchProtectionRuleID string,
-) error {
-	return errMockUpdate
-}
-
-func mockDoBranchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, repoID, pattern string) error {
-	return nil
-}
-
-func mockDoBranchProtectionCreateError(branchProtectionArgs []BranchProtectionArgs, repoID, pattern string) error {
-	return errMockCreate
 }
 
 func Test_branchProtectionApply(t *testing.T) {
@@ -113,22 +95,16 @@ func Test_branchProtectionApply(t *testing.T) {
 		action               string
 		branchName           string
 		branchProtectionArgs []BranchProtectionArgs
+		sender               *githubBranchProtectionSender
 	}
 
-	doBranchProtectionUpdate = mockDoBranchProtectionUpdate
-	defer func() { doBranchProtectionUpdate = branchProtectionUpdate }()
-
-	doBranchProtectionCreate = mockDoBranchProtectionCreate
-	defer func() { doBranchProtectionCreate = branchProtectionCreate }()
-
 	tests := []struct {
-		name               string
-		args               args
-		wantModified       []string
-		wantCreated        []string
-		wantInfo           []string
-		wantErrors         []string
-		mockErrorFunctions bool
+		name         string
+		args         args
+		wantModified []string
+		wantCreated  []string
+		wantInfo     []string
+		wantErrors   []string
 	}{
 		{
 			name: "branchProtectionApply with no default branch",
@@ -154,6 +130,9 @@ func Test_branchProtectionApply(t *testing.T) {
 					},
 				}},
 				action: "Signing",
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{sendFail: false},
+				},
 			},
 			wantModified: nil,
 			wantCreated: []string{
@@ -179,6 +158,9 @@ func Test_branchProtectionApply(t *testing.T) {
 					},
 				}},
 				action: "Signing",
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{sendFail: false},
+				},
 			},
 			wantModified: nil,
 			wantCreated: []string{
@@ -206,6 +188,9 @@ func Test_branchProtectionApply(t *testing.T) {
 					},
 				}},
 				action: "Signing",
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{sendFail: false},
+				},
 			},
 			wantModified: nil,
 			wantCreated:  nil,
@@ -229,6 +214,9 @@ func Test_branchProtectionApply(t *testing.T) {
 					},
 				}},
 				action: "Signing",
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{sendFail: false},
+				},
 			},
 			wantModified: []string{"Signing changed for org/signing-off with branch name: default-branch-name"},
 			wantCreated:  nil,
@@ -258,6 +246,9 @@ func Test_branchProtectionApply(t *testing.T) {
 					},
 				}},
 				action: "Signing",
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{sendFail: false},
+				},
 			},
 			wantModified: []string{
 				"Signing changed for org/signing-off with branch name: default-branch-name",
@@ -277,12 +268,17 @@ func Test_branchProtectionApply(t *testing.T) {
 						Name: "default-branch-name",
 					},
 				}},
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{
+						sendFail: true,
+						action:   "create",
+					},
+				},
 			},
-			wantModified:       nil,
-			wantCreated:        nil,
-			wantInfo:           nil,
-			wantErrors:         []string{"create: test"},
-			mockErrorFunctions: true,
+			wantModified: nil,
+			wantCreated:  nil,
+			wantInfo:     nil,
+			wantErrors:   []string{"create: test"},
 		},
 		{
 			name: "branchProtectionApply with default branch protection rule pr approval settings the same",
@@ -304,6 +300,9 @@ func Test_branchProtectionApply(t *testing.T) {
 					},
 				}},
 				action: "Pr-approval",
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{sendFail: false},
+				},
 			},
 			wantModified: nil,
 			wantCreated:  nil,
@@ -342,6 +341,9 @@ func Test_branchProtectionApply(t *testing.T) {
 				}},
 				action:     "Pr-approval",
 				branchName: "main",
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{sendFail: false},
+				},
 			},
 			wantModified: nil,
 			wantCreated: []string{
@@ -367,9 +369,14 @@ func Test_branchProtectionApply(t *testing.T) {
 					},
 				}},
 				action: "Pr-approval",
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{
+						sendFail: true,
+						action:   "update",
+					},
+				},
 			},
-			wantErrors:         []string{"update: test"},
-			mockErrorFunctions: true,
+			wantErrors: []string{"update: test"},
 		},
 		{
 			name: "branchProtectionApply pr approval create failure",
@@ -382,27 +389,25 @@ func Test_branchProtectionApply(t *testing.T) {
 					},
 				}},
 				action: "Pr-approval",
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{
+						sendFail: true,
+						action:   "create",
+					},
+				},
 			},
-			wantErrors:         []string{"create: test"},
-			mockErrorFunctions: true,
+			wantErrors: []string{"create: test"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.mockErrorFunctions {
-				doBranchProtectionUpdate = mockDoBranchProtectionUpdateError
-				defer func() { doBranchProtectionUpdate = branchProtectionUpdate }()
-
-				doBranchProtectionCreate = mockDoBranchProtectionCreateError
-				defer func() { doBranchProtectionCreate = branchProtectionCreate }()
-			}
-
 			gotModified, gotCreated, gotInfo, gotErrors := branchProtectionApply(
 				tt.args.repoSearchResult,
 				tt.args.action,
 				tt.args.branchName,
 				tt.args.branchProtectionArgs,
+				tt.args.sender,
 			)
 			if !reflect.DeepEqual(gotModified, tt.wantModified) {
 				t.Errorf("applySigning() gotModified = %v, want %v", gotModified, tt.wantModified)
@@ -559,44 +564,42 @@ func Test_branchProtectionUpdate(t *testing.T) {
 	type args struct {
 		branchProtectionArgs   []BranchProtectionArgs
 		branchProtectionRuleID string
+		sender                 *githubBranchProtectionSender
 	}
 
-	doBranchProtectionSend = mockDoBranchProtectionSend
-	defer func() { doBranchProtectionSend = branchProtectionSend }()
-
 	tests := []struct {
-		name               string
-		args               args
-		wantErr            bool
-		mockErrorFunctions bool
+		name    string
+		args    args
+		wantErr bool
 	}{
 		{
 			name: "branchProtectionUpdate is successful",
 			args: args{
 				branchProtectionRuleID: "some-rule-id",
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{},
+				},
 			},
-			wantErr:            false,
-			mockErrorFunctions: false,
+			wantErr: false,
 		},
 		{
 			name: "branchProtectionUpdate is successful",
 			args: args{
 				branchProtectionRuleID: "some-rule-id",
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{sendFail: true},
+				},
 			},
-			wantErr:            true,
-			mockErrorFunctions: true,
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.mockErrorFunctions {
-				doBranchProtectionSend = mockDoBranchProtectionSendError
-				defer func() { doBranchProtectionSend = branchProtectionSend }()
-			}
 			if err := branchProtectionUpdate(
 				tt.args.branchProtectionArgs,
 				tt.args.branchProtectionRuleID,
+				tt.args.sender,
 			); (err != nil) != tt.wantErr {
 				t.Errorf("branchProtectionUpdate() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -609,47 +612,45 @@ func Test_branchProtectionCreate(t *testing.T) {
 		branchProtectionArgs []BranchProtectionArgs
 		repositoryID         string
 		pattern              string
+		sender               *githubBranchProtectionSender
 	}
 
-	doBranchProtectionSend = mockDoBranchProtectionSend
-	defer func() { doBranchProtectionSend = branchProtectionSend }()
-
 	tests := []struct {
-		name               string
-		args               args
-		wantErr            bool
-		mockErrorFunctions bool
+		name    string
+		args    args
+		wantErr bool
 	}{
 		{
 			name: "branchProtectionCreate is successful",
 			args: args{
 				repositoryID: "some-repo-id",
 				pattern:      "branch-name",
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{},
+				},
 			},
-			wantErr:            false,
-			mockErrorFunctions: false,
+			wantErr: false,
 		},
 		{
 			name: "branchProtectionCreate is successful",
 			args: args{
 				repositoryID: "some-repo-id",
 				pattern:      "branch-name",
+				sender: &githubBranchProtectionSender{
+					sender: &testSender{sendFail: true},
+				},
 			},
-			wantErr:            true,
-			mockErrorFunctions: true,
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.mockErrorFunctions {
-				doBranchProtectionSend = mockDoBranchProtectionSendError
-				defer func() { doBranchProtectionSend = branchProtectionSend }()
-			}
 			if err := branchProtectionCreate(
 				tt.args.branchProtectionArgs,
 				tt.args.repositoryID,
 				tt.args.pattern,
+				tt.args.sender,
 			); (err != nil) != tt.wantErr {
 				t.Errorf("branchProtectionCreate() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -657,7 +658,7 @@ func Test_branchProtectionCreate(t *testing.T) {
 	}
 }
 
-func Test_branchProtectionSend(t *testing.T) {
+func Test_branchProtectionSenderService_send(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
@@ -667,6 +668,7 @@ func Test_branchProtectionSend(t *testing.T) {
 
 	tests := []struct {
 		name               string
+		b                  *branchProtectionSenderService
 		args               args
 		wantErr            bool
 		mockHTTPReturnFile string
@@ -694,6 +696,7 @@ func Test_branchProtectionSend(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			b := &branchProtectionSenderService{}
 			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
 			if err != nil {
 				t.Fatalf("failed to read test data: %v", err)
@@ -705,9 +708,186 @@ func Test_branchProtectionSend(t *testing.T) {
 				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
 			)
 
-			if err := branchProtectionSend(tt.args.req); (err != nil) != tt.wantErr {
-				t.Errorf("branchProtectionSend() error = %v, wantErr %v", err, tt.wantErr)
+			if err := b.send(tt.args.req); (err != nil) != tt.wantErr {
+				t.Errorf("branchProtectionSenderService.send() error = %v, wantErr %v", err, tt.wantErr)
 			}
+		})
+	}
+}
+
+type testRepositoryReader struct {
+	readFail    bool
+	returnValue []string
+}
+
+func (t *testRepositoryReader) read(reposFile string) ([]string, error) {
+	if t.readFail {
+		return []string{}, errors.New("fail") // nolint // only mock error for test
+	}
+
+	if len(t.returnValue) > 0 {
+		return t.returnValue, nil
+	}
+
+	return []string{}, nil
+}
+
+type testRepositoryGetter struct {
+	getFail     bool
+	returnValue map[string]*RepositoriesNode
+}
+
+func (t *testRepositoryGetter) get(
+	repositoryList []string,
+	sender *githubRepositorySender,
+) (
+	repositories map[string]*RepositoriesNode,
+	err error,
+) {
+	if t.getFail {
+		return repositories, errors.New("fail") // nolint // only mock error for test
+	}
+
+	if len(t.returnValue) > 0 {
+		return t.returnValue, nil
+	}
+
+	return repositories, nil
+}
+
+func Test_branchProtectionCommand(t *testing.T) {
+	type args struct {
+		cmd                    *cobra.Command
+		branchProtectionArgs   []BranchProtectionArgs
+		action                 string
+		branchName             string
+		repo                   *repository
+		repoSender             *githubRepositorySender
+		branchProtectionSender *githubBranchProtectionSender
+	}
+
+	var (
+		mockRepos2File  string
+		mockDryRunFalse bool
+	)
+
+	mockCmdWithDryRunOff := &cobra.Command{
+		Use: "pr-approval",
+	}
+	mockCmdWithDryRunOff.Flags().BoolVarP(&mockDryRunFalse, "dry-run", "d", false, "dry run flag")
+	mockCmdWithDryRunOff.Flags().StringVarP(
+		&mockRepos2File,
+		"repos",
+		"r",
+		"testdata/two_repo_list.txt",
+		"repos file",
+	)
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "branchProtectionCommand is success",
+			args: args{
+				cmd: mockCmdWithDryRunOff,
+				repo: &repository{
+					reader: &testRepositoryReader{
+						returnValue: []string{
+							"some-repo-name",
+						},
+					},
+					getter: &testRepositoryGetter{
+						returnValue: map[string]*RepositoriesNode{"repo0": {
+							ID:            "repoIdTEST",
+							NameWithOwner: "org/some-repo-name",
+						}},
+					},
+				},
+				repoSender: &githubRepositorySender{
+					sender: &testRepositorySender{
+						returnValue: map[string]*RepositoriesNode{"repo0": {
+							ID:            "repoIdTEST",
+							NameWithOwner: "org/some-repo-name",
+						}},
+					},
+				},
+				branchProtectionSender: &githubBranchProtectionSender{
+					sender: &testSender{sendFail: false},
+				},
+			},
+		},
+		{
+			name: "branchProtectionCommand is failure",
+			args: args{
+				cmd: mockCmdWithDryRunOff,
+				repo: &repository{
+					reader: &testRepositoryReader{
+						returnValue: []string{
+							"some-repo-name",
+						},
+					},
+					getter: &testRepositoryGetter{
+						getFail: true,
+					},
+				},
+				repoSender: &githubRepositorySender{
+					sender: &testRepositorySender{},
+				},
+				branchProtectionSender: &githubBranchProtectionSender{
+					sender: &testSender{},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := branchProtectionCommand(
+				tt.args.cmd,
+				tt.args.branchProtectionArgs,
+				tt.args.action,
+				tt.args.branchName,
+				tt.args.repo,
+				tt.args.repoSender,
+				tt.args.branchProtectionSender,
+			); (err != nil) != tt.wantErr {
+				t.Errorf("branchProtectionCommand() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_branchProtectionDisplayInfo(t *testing.T) {
+	type args struct {
+		updated   []string
+		created   []string
+		info      []string
+		problems  []string
+		batchInfo string
+	}
+
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "branchProtectionDisplayInfo all logs",
+			args: args{
+				updated:   []string{"updated-repo-name"},
+				created:   []string{"created-repo-name"},
+				info:      []string{"some-info"},
+				problems:  []string{"some-problems"},
+				batchInfo: "1-4",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			branchProtectionDisplayInfo(tt.args.updated, tt.args.created, tt.args.info, tt.args.problems, tt.args.batchInfo)
 		})
 	}
 }

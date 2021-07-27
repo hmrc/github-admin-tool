@@ -10,17 +10,32 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	doBranchProtectionSend   = branchProtectionSend   // nolint // Like this for testing mock
-	doBranchProtectionUpdate = branchProtectionUpdate // nolint // Like this for testing mock
-	doBranchProtectionCreate = branchProtectionCreate // nolint // Like this for testing mock
-	doBranchProtectionApply  = branchProtectionApply  // nolint // Like this for testing mock
-)
-
 type BranchProtectionArgs struct {
 	Name     string
 	DataType string
 	Value    interface{}
+}
+
+type githubBranchProtectionSender struct {
+	sender branchProtectionSender
+}
+
+type branchProtectionSender interface {
+	send(req *graphqlclient.Request) error
+}
+
+type branchProtectionSenderService struct{}
+
+func (b *branchProtectionSenderService) send(req *graphqlclient.Request) error {
+	ctx := context.Background()
+
+	client := graphqlclient.NewClient("https://api.github.com/graphql")
+
+	if err := client.Run(ctx, req, nil); err != nil {
+		return fmt.Errorf("from API call: %w", err)
+	}
+
+	return nil
 }
 
 func branchProtectionQuery(
@@ -77,18 +92,6 @@ func branchProtectionRequest(query string, requestVars map[string]interface{}) *
 	return req
 }
 
-func branchProtectionSend(req *graphqlclient.Request) error {
-	ctx := context.Background()
-
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
-
-	if err := client.Run(ctx, req, nil); err != nil {
-		return fmt.Errorf("from API call: %w", err)
-	}
-
-	return nil
-}
-
 func branchProtectionQueryBlocks(branchProtectionArgs []BranchProtectionArgs) (
 	mutation, input string,
 	requestVars map[string]interface{},
@@ -111,6 +114,7 @@ func branchProtectionApply( // nolint // cyclomatic error 11 !!! Will sort this 
 	action,
 	branchName string,
 	branchProtectionArgs []BranchProtectionArgs,
+	sender *githubBranchProtectionSender,
 ) (
 	modified,
 	created,
@@ -155,7 +159,7 @@ func branchProtectionApply( // nolint // cyclomatic error 11 !!! Will sort this 
 			}
 
 			if updateRequired {
-				if err = doBranchProtectionUpdate(branchProtectionArgs, branchProtection.ID); err != nil {
+				if err = branchProtectionUpdate(branchProtectionArgs, branchProtection.ID, sender); err != nil {
 					problems = append(problems, err.Error())
 
 					continue
@@ -176,10 +180,11 @@ func branchProtectionApply( // nolint // cyclomatic error 11 !!! Will sort this 
 		}
 
 		if !desiredBranchRuleExists {
-			if err = doBranchProtectionCreate(
+			if err = branchProtectionCreate(
 				branchProtectionArgs,
 				repository.ID,
 				branchProtectionPattern,
+				sender,
 			); err != nil {
 				problems = append(problems, err.Error())
 
@@ -233,7 +238,11 @@ func branchProtectionUpdateCheck(
 	return true, false
 }
 
-func branchProtectionUpdate(branchProtectionArgs []BranchProtectionArgs, branchProtectionRuleID string) error {
+func branchProtectionUpdate(
+	branchProtectionArgs []BranchProtectionArgs,
+	branchProtectionRuleID string,
+	s *githubBranchProtectionSender,
+) error {
 	branchProtectionArgs = append(
 		branchProtectionArgs,
 		BranchProtectionArgs{
@@ -244,12 +253,20 @@ func branchProtectionUpdate(branchProtectionArgs []BranchProtectionArgs, branchP
 	)
 	query, requestVars := branchProtectionQuery(branchProtectionArgs, "update")
 	req := branchProtectionRequest(query, requestVars)
-	err := doBranchProtectionSend(req)
 
-	return err
+	if err := s.sender.send(req); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }
 
-func branchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, repositoryID, pattern string) error {
+func branchProtectionCreate(
+	branchProtectionArgs []BranchProtectionArgs,
+	repositoryID,
+	pattern string,
+	s *githubBranchProtectionSender,
+) error {
 	branchProtectionArgs = append(
 		branchProtectionArgs,
 		BranchProtectionArgs{
@@ -265,9 +282,12 @@ func branchProtectionCreate(branchProtectionArgs []BranchProtectionArgs, reposit
 	)
 	query, requestVars := branchProtectionQuery(branchProtectionArgs, "create")
 	req := branchProtectionRequest(query, requestVars)
-	err := doBranchProtectionSend(req)
 
-	return err
+	if err := s.sender.send(req); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }
 
 func branchProtectionCommand(
@@ -275,15 +295,18 @@ func branchProtectionCommand(
 	branchProtectionArgs []BranchProtectionArgs,
 	action,
 	branchName string,
+	repo *repository,
+	repoSender *githubRepositorySender,
+	branchProtectionSender *githubBranchProtectionSender,
 ) error {
 	dryRun, reposFilePath, err := branchProtectionFlagCheck(cmd)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
-	repositoryList, err := repositoryList(reposFilePath)
+	repositoryList, err := repo.reader.read(reposFilePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	log.SetFlags(0)
@@ -301,16 +324,17 @@ func branchProtectionCommand(
 			right = len(repositoryList)
 		}
 
-		repositories, err := doRepositoryGet(repositoryList[left:right])
+		repositories, err := repo.getter.get(repositoryList[left:right], repoSender)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w", err)
 		}
 
-		updated, created, info, problems := doBranchProtectionApply(
+		updated, created, info, problems := branchProtectionApply(
 			repositories,
 			action,
 			branchName,
 			branchProtectionArgs,
+			branchProtectionSender,
 		)
 
 		branchProtectionDisplayInfo(updated, created, info, problems, fmt.Sprintf("Batch %d-%d", left, right))
