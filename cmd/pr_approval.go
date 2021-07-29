@@ -12,7 +12,7 @@ var (
 	prBranchName              string            // nolint // needed for cobra
 	prApprovalCmd             = &cobra.Command{ // nolint // needed for cobra
 		Use:   "pr-approval",
-		Short: "Set request signing on to all repos in provided list",
+		Short: "Toggle pr-approval settings for repos in provided list",
 		RunE:  prApprovalRun,
 	}
 )

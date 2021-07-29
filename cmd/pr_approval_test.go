@@ -74,32 +74,6 @@ func Test_setApprovalArgs(t *testing.T) {
 	}
 }
 
-/*var errRepositoryGet = errors.New("repo failure")
-
-func mockRepositoryGet([]string) (repoNode map[string]*RepositoriesNode, err error) {
-	return repoNode, nil
-}
-
-func mockRepositoryGetError([]string) (repoNode map[string]*RepositoriesNode, err error) {
-	return repoNode, errRepositoryGet
-}
-
-func mockBranchProtectionApply(
-	repositories map[string]*RepositoriesNode,
-	action, branchName string,
-	branchProtectionArgs []BranchProtectionArgs,
-) (
-	updated,
-	created,
-	info,
-	problems []string,
-) {
-	return []string{"updated branch"},
-		[]string{"created branch"},
-		[]string{"info branch"},
-		[]string{"problems branch"}
-} */
-
 func Test_prApprovalRun(t *testing.T) {
 	mockCmd := &cobra.Command{
 		Use: "pr-approval",
