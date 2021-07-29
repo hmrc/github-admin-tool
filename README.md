@@ -16,9 +16,12 @@ Please set the following ENV vars or use config.yml.example->config.yaml as file
 
 github-bearer-token (PAT) should have the following: admin:org, repo, user.
 
+github-admin-team will add the teams permission level to audit report.
+
 ```bash
 GHTOOL_TOKEN=github-bearer-token
 GHTOOL_ORG=github-org-name
+GHTOOL_TEAM=github-admin-team
 ```
 
 ## Help
@@ -27,9 +30,9 @@ As with any cli tool just run the following to see available actions/arguments.
 
 `./github-admin-tool -h`
 
-## Report
+## Repository Report
 
-Run the following command generate a CSV with respository settings.
+Run the following command generate a CSV report with respository settings and branch protection rules.
 
 `./github-admin-tool report`
 

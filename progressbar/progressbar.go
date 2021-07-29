@@ -46,6 +46,6 @@ func (bar *Bar) Play(cur int) {
 	}
 }
 
-func (bar *Bar) Finish() {
-	fmt.Println("") // nolint // output of last blank line when finished progress
+func (bar *Bar) Finish(msg string) {
+	fmt.Printf("\t%s\n", msg) // nolint // output of last blank line when finished progress
 }

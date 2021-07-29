@@ -10,13 +10,14 @@ import (
 	"github.com/jarcoal/httpmock"
 )
 
-func Test_repositoryList(t *testing.T) {
+func Test_repositoryReaderService_read(t *testing.T) {
 	type args struct {
 		reposFile string
 	}
 
 	tests := []struct {
 		name    string
+		r       *repositoryReaderService
 		args    args
 		want    []string
 		wantErr bool
@@ -57,12 +58,15 @@ func Test_repositoryList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := repositoryList(tt.args.reposFile)
+			r := &repositoryReaderService{}
+			got, err := r.read(tt.args.reposFile)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("repositoryList() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("repositoryReaderService.read() error = %v, wantErr %v", err, tt.wantErr)
+
+				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("repositoryList() = %v, want %v", got, tt.want)
+				t.Errorf("repositoryReaderService.read() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -149,7 +153,82 @@ func Test_repositoryRequest(t *testing.T) {
 	}
 }
 
-func Test_repositorySend(t *testing.T) {
+type testRepositorySender struct {
+	sendFail    bool
+	returnValue map[string]*RepositoriesNode
+}
+
+func (t *testRepositorySender) send(req *graphqlclient.Request) (map[string]*RepositoriesNode, error) {
+	if t.sendFail {
+		return nil, errors.New("fail") // nolint // only mock error for test
+	}
+
+	if len(t.returnValue) > 0 {
+		return t.returnValue, nil
+	}
+
+	return make(map[string]*RepositoriesNode), nil
+}
+
+func Test_repositoryGetterService_get(t *testing.T) {
+	type args struct {
+		repositoryList []string
+		sender         *githubRepositorySender
+	}
+
+	tests := []struct {
+		name             string
+		r                *repositoryGetterService
+		args             args
+		wantRepositories map[string]*RepositoriesNode
+		wantErr          bool
+	}{
+		{
+			name: "repositoryGet returns error",
+			args: args{
+				repositoryList: []string{
+					"repo-name1",
+					"repo-name2",
+				},
+				sender: &githubRepositorySender{
+					sender: &testRepositorySender{sendFail: true},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "repositoryGet success",
+			args: args{
+				repositoryList: []string{
+					"repo-name1",
+					"repo-name2",
+				},
+				sender: &githubRepositorySender{
+					sender: &testRepositorySender{sendFail: false},
+				},
+			},
+			wantRepositories: make(map[string]*RepositoriesNode),
+			wantErr:          false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &repositoryGetterService{}
+			gotRepositories, err := r.get(tt.args.repositoryList, tt.args.sender)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("repositoryGetterService.get() error = %v, wantErr %v", err, tt.wantErr)
+
+				return
+			}
+			if !reflect.DeepEqual(gotRepositories, tt.wantRepositories) {
+				t.Errorf("repositoryGetterService.get() = %v, want %v", gotRepositories, tt.wantRepositories)
+			}
+		})
+	}
+}
+
+func Test_repositorySenderService_send(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
@@ -159,6 +238,7 @@ func Test_repositorySend(t *testing.T) {
 
 	tests := []struct {
 		name               string
+		r                  *repositorySenderService
 		args               args
 		want               map[string]*RepositoriesNode
 		wantErr            bool
@@ -202,76 +282,15 @@ func Test_repositorySend(t *testing.T) {
 				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
 			)
 
-			got, err := repositorySend(tt.args.req)
+			r := &repositorySenderService{}
+			got, err := r.send(tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("repositorySend() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("repositorySenderService.send() error = %v, wantErr %v", err, tt.wantErr)
+
+				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("repositorySend() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-var errMockDoRepositorySend = errors.New("send error")
-
-func mockDoRepositorySend(req *graphqlclient.Request) (repositories map[string]*RepositoriesNode, err error) {
-	return repositories, nil
-}
-
-func mockDoRepositorySendError(req *graphqlclient.Request) (repositories map[string]*RepositoriesNode, err error) {
-	return repositories, errMockDoRepositorySend
-}
-
-func Test_repositoryGet(t *testing.T) {
-	type args struct {
-		repositoryList []string
-	}
-
-	tests := []struct {
-		name              string
-		args              args
-		wantRepositories  map[string]*RepositoriesNode
-		wantErr           bool
-		mockErrorFunction bool
-	}{
-		{
-			name: "repositoryGet returns error",
-			args: args{
-				repositoryList: []string{
-					"repo-name1",
-					"repo-name2",
-				},
-			},
-			wantErr:           true,
-			mockErrorFunction: true,
-		},
-		{
-			name: "repositoryGet success",
-			args: args{
-				repositoryList: []string{
-					"repo-name1",
-					"repo-name2",
-				},
-			},
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			doRepositorySend = mockDoRepositorySend
-			if tt.mockErrorFunction {
-				doRepositorySend = mockDoRepositorySendError
-			}
-			defer func() { doRepositorySend = repositorySend }()
-
-			gotRepositories, err := repositoryGet(tt.args.repositoryList)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("repositoryGet() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(gotRepositories, tt.wantRepositories) {
-				t.Errorf("repositoryGet() = %v, want %v", gotRepositories, tt.wantRepositories)
+				t.Errorf("repositorySenderService.send() = %v, want %v", got, tt.want)
 			}
 		})
 	}

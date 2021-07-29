@@ -9,20 +9,37 @@ import (
 	"strings"
 )
 
-var doReportCSVFileWrite = reportCSVFile // nolint // Like this for testing mock
+type reportCSV interface {
+	uploader(filePath string, lines [][]string) error
+}
+type reportCSVService struct{}
 
-func reportCSVGenerate(filePath string, ignoreArchived bool, allResults []ReportResponse) error {
-	parsed := reportCSVParse(ignoreArchived, allResults)
+func reportCSVGenerate(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string {
+	parsed := reportCSVParse(ignoreArchived, allResults, teamAccess)
 	lines := reportCSVLines(parsed)
 
-	if err := doReportCSVFileWrite(filePath, lines); err != nil {
-		return fmt.Errorf("GenerateCSV failed: %w", err)
+	return lines
+}
+
+func (r *reportCSVService) uploader(filePath string, lines [][]string) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
 	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+
+	if err = writer.WriteAll(lines); err != nil {
+		return fmt.Errorf("failed to create %s: %w", filePath, err)
+	}
+
+	log.Printf("Report written to %s", filePath)
 
 	return nil
 }
 
-func reportCSVParse(ignoreArchived bool, allResults []ReportResponse) [][]string {
+func reportCSVParse(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string {
 	var parsed [][]string
 
 	for _, allData := range allResults {
@@ -42,6 +59,7 @@ func reportCSVParse(ignoreArchived bool, allResults []ReportResponse) [][]string
 				strconv.FormatBool(repo.MergeCommitAllowed),
 				strconv.FormatBool(repo.SquashMergeAllowed),
 				strconv.FormatBool(repo.RebaseMergeAllowed),
+				strings.TrimSpace(teamAccess[repo.Name]),
 			}
 
 			for _, protection := range repo.BranchProtectionRules.Nodes {
@@ -81,6 +99,7 @@ func reportCSVLines(parsed [][]string) [][]string {
 			"Merge Commit Allowed",
 			"Squash Merge Allowed",
 			"Rebase Merge Allowed",
+			"Team Permissions",
 			"(BP1) IsAdminEnforced",
 			"(BP1) RequiresCommitSignatures",
 			"(BP1) RestrictsPushes",
@@ -110,22 +129,4 @@ func reportCSVLines(parsed [][]string) [][]string {
 	lines = append(lines, parsed...)
 
 	return lines
-}
-
-func reportCSVFile(filePath string, lines [][]string) error {
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-
-	if err = writer.WriteAll(lines); err != nil {
-		return fmt.Errorf("failed to create %s: %w", filePath, err)
-	}
-
-	log.Printf("Report written to %s", filePath)
-
-	return nil
 }
