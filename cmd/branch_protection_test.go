@@ -722,14 +722,10 @@ type testRepositoryReader struct {
 
 func (t *testRepositoryReader) read(reposFile string) ([]string, error) {
 	if t.readFail {
-		return []string{}, errors.New("fail") // nolint // only mock error for test
+		return t.returnValue, errors.New("fail") // nolint // only mock error for test
 	}
 
-	if len(t.returnValue) > 0 {
-		return t.returnValue, nil
-	}
-
-	return []string{}, nil
+	return t.returnValue, nil
 }
 
 type testRepositoryGetter struct {
@@ -741,18 +737,14 @@ func (t *testRepositoryGetter) get(
 	repositoryList []string,
 	sender *githubRepositorySender,
 ) (
-	repositories map[string]*RepositoriesNode,
-	err error,
+	map[string]*RepositoriesNode,
+	error,
 ) {
 	if t.getFail {
-		return repositories, errors.New("fail") // nolint // only mock error for test
+		return t.returnValue, errors.New("fail") // nolint // only mock error for test
 	}
 
-	if len(t.returnValue) > 0 {
-		return t.returnValue, nil
-	}
-
-	return repositories, nil
+	return t.returnValue, nil
 }
 
 func Test_branchProtectionCommand(t *testing.T) {

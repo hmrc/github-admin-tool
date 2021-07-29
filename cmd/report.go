@@ -75,8 +75,13 @@ func reportCreate(r *report, dryRun, ignoreArchived bool, filePath string) error
 		return fmt.Errorf("%w", err)
 	}
 
+	teamAccess, err := r.reportAccess.getReport()
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
 	if !dryRun {
-		lines := reportCSVGenerate(ignoreArchived, allResults)
+		lines := reportCSVGenerate(ignoreArchived, allResults, teamAccess)
 		if err := r.reportCSV.uploader(filePath, lines); err != nil {
 			return fmt.Errorf("GenerateCSV failed: %w", err)
 		}
@@ -153,6 +158,7 @@ func reportRequest(queryString string) *graphqlclient.Request {
 
 	req := graphqlclient.NewRequest(queryString)
 	req.Var("org", config.Org)
+
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Authorization", authStr)
 
@@ -192,7 +198,7 @@ func (r *reportGetterService) getReport() ([]ReportResponse, error) {
 		if dryRun {
 			log.Printf("This is a dry run, the report would process %d records\n", totalRecordCount)
 
-			break
+			return allResults, nil
 		}
 
 		if len(respData.Organization.Repositories.Nodes) > 0 {
@@ -203,19 +209,18 @@ func (r *reportGetterService) getReport() ([]ReportResponse, error) {
 			bar.NewOption(0, totalRecordCount)
 		}
 
-		if !respData.Organization.Repositories.PageInfo.HasNextPage {
-			iteration = totalRecordCount
-			bar.Play(iteration)
-
-			break
-		}
-
 		bar.Play(iteration)
 
 		iteration += IterationCount
+
+		if !respData.Organization.Repositories.PageInfo.HasNextPage {
+			bar.Play(totalRecordCount)
+
+			break
+		}
 	}
 
-	bar.Finish()
+	bar.Finish("Get repository data")
 
 	return allResults, nil
 }

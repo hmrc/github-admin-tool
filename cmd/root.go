@@ -25,6 +25,7 @@ var (
 type Config struct {
 	Token string `mapstructure:"token"`
 	Org   string `mapstructure:"org"`
+	Team  string `mapstructure:"team"`
 }
 
 func Execute() error {
@@ -54,6 +55,10 @@ func initConfig() {
 	}
 
 	if err = viper.BindEnv("org"); err != nil {
+		panic(fmt.Errorf("fatal error binding var: %w", err))
+	}
+
+	if err = viper.BindEnv("team"); err != nil {
 		panic(fmt.Errorf("fatal error binding var: %w", err))
 	}
 

@@ -75,6 +75,10 @@ type OrganizationTeamsReponse struct {
 }
 
 type Teams struct {
+	TeamNodes []TeamNodes `json:"nodes"`
+}
+
+type TeamNodes struct {
 	TeamRepositories TeamRepositories `json:"repositories"`
 }
 

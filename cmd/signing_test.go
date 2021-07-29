@@ -36,7 +36,6 @@ func Test_setSigningArgs(t *testing.T) {
 }
 
 func Test_signingRun(t *testing.T) {
-
 	var (
 		mockDryRun     bool
 		mockRepos2File string

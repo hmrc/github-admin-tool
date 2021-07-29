@@ -14,8 +14,8 @@ type reportCSV interface {
 }
 type reportCSVService struct{}
 
-func reportCSVGenerate(ignoreArchived bool, allResults []ReportResponse) [][]string {
-	parsed := reportCSVParse(ignoreArchived, allResults)
+func reportCSVGenerate(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string {
+	parsed := reportCSVParse(ignoreArchived, allResults, teamAccess)
 	lines := reportCSVLines(parsed)
 
 	return lines
@@ -39,7 +39,7 @@ func (r *reportCSVService) uploader(filePath string, lines [][]string) error {
 	return nil
 }
 
-func reportCSVParse(ignoreArchived bool, allResults []ReportResponse) [][]string {
+func reportCSVParse(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string {
 	var parsed [][]string
 
 	for _, allData := range allResults {
@@ -59,6 +59,7 @@ func reportCSVParse(ignoreArchived bool, allResults []ReportResponse) [][]string
 				strconv.FormatBool(repo.MergeCommitAllowed),
 				strconv.FormatBool(repo.SquashMergeAllowed),
 				strconv.FormatBool(repo.RebaseMergeAllowed),
+				strings.TrimSpace(teamAccess[repo.Name]),
 			}
 
 			for _, protection := range repo.BranchProtectionRules.Nodes {
@@ -98,6 +99,7 @@ func reportCSVLines(parsed [][]string) [][]string {
 			"Merge Commit Allowed",
 			"Squash Merge Allowed",
 			"Rebase Merge Allowed",
+			"Team Permissions",
 			"(BP1) IsAdminEnforced",
 			"(BP1) RequiresCommitSignatures",
 			"(BP1) RestrictsPushes",

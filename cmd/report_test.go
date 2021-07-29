@@ -197,6 +197,19 @@ func (m *mockReportCSV) uploader(filePath string, lines [][]string) error {
 	return nil
 }
 
+type mockReportAccess struct {
+	fail        bool
+	returnValue map[string]string
+}
+
+func (m *mockReportAccess) getReport() (map[string]string, error) {
+	if m.fail {
+		return m.returnValue, errors.New("fail") // nolint // just for testing
+	}
+
+	return m.returnValue, nil
+}
+
 func Test_reportCreate(t *testing.T) {
 	type args struct {
 		r              *report
@@ -225,6 +238,7 @@ func Test_reportCreate(t *testing.T) {
 				r: &report{
 					reportGetter: &mockReportGetter{},
 					reportCSV:    &mockReportCSV{fail: true},
+					reportAccess: &mockReportAccess{},
 				},
 			},
 			wantErr: true,
@@ -235,6 +249,7 @@ func Test_reportCreate(t *testing.T) {
 				r: &report{
 					reportGetter: &mockReportGetter{},
 					reportCSV:    &mockReportCSV{},
+					reportAccess: &mockReportAccess{},
 				},
 			},
 		},
@@ -244,6 +259,7 @@ func Test_reportCreate(t *testing.T) {
 				r: &report{
 					reportGetter: &mockReportGetter{},
 					reportCSV:    &mockReportCSV{},
+					reportAccess: &mockReportAccess{},
 				},
 				dryRun: true,
 			},
