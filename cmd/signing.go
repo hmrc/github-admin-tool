@@ -50,7 +50,7 @@ func setSigningArgs() (branchProtectionArgs []BranchProtectionArgs) {
 
 // nolint // needed for cobra
 func init() {
-	signingCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "file containing repositories on new line without org/ prefix. Max 100 repos")
+	signingCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "file containing repositories on new line without org/ prefix")
 	signingCmd.MarkFlagRequired("repos")
 	rootCmd.AddCommand(signingCmd)
 }
