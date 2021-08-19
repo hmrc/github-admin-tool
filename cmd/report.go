@@ -19,6 +19,7 @@ const (
 var (
 	ignoreArchived bool   // nolint // modifying within this package
 	filePath       string // nolint // modifying within this package
+	fileType       string // nolint // modifying within this package
 
 	reportCmd = &cobra.Command{ // nolint // needed for cobra
 		Use:   "report",
@@ -30,6 +31,7 @@ var (
 type report struct {
 	reportGetter reportGetter
 	reportCSV    reportCSV
+	reportJSON   reportJSON
 	reportAccess reportAccess
 }
 
@@ -57,22 +59,33 @@ func reportRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%w", err)
 	}
 
+	fileType, err = cmd.Flags().GetString("file-type")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
 	return reportCreate(
 		&report{
 			reportGetter: &reportGetterService{},
 			reportCSV:    &reportCSVService{},
+			reportJSON:   &reportJSONService{},
 			reportAccess: &reportAccessService{},
 		},
 		dryRun,
 		ignoreArchived,
 		filePath,
+		fileType,
 	)
 }
 
-func reportCreate(r *report, dryRun, ignoreArchived bool, filePath string) error {
+func reportCreate(r *report, dryRun, ignoreArchived bool, filePath, fileType string) error {
 	allResults, err := r.reportGetter.getReport()
 	if err != nil {
 		return fmt.Errorf("%w", err)
+	}
+
+	if dryRun {
+		return nil
 	}
 
 	teamAccess, err := r.reportAccess.getReport()
@@ -80,13 +93,22 @@ func reportCreate(r *report, dryRun, ignoreArchived bool, filePath string) error
 		return fmt.Errorf("%w", err)
 	}
 
-	if !dryRun {
-		lines := reportCSVGenerate(ignoreArchived, allResults, teamAccess)
-		if err := r.reportCSV.uploader(filePath, lines); err != nil {
-			return fmt.Errorf("GenerateCSV failed: %w", err)
+	if fileType == "json" {
+		jsonReport, err := r.reportJSON.generate(ignoreArchived, allResults, teamAccess)
+		if err != nil {
+			return fmt.Errorf("generate json failed: %w", err)
+		}
+
+		if err := r.reportJSON.uploader(filePath, jsonReport); err != nil {
+			return fmt.Errorf("upload json failed: %w", err)
 		}
 
 		return nil
+	}
+
+	lines := r.reportCSV.generate(ignoreArchived, allResults, teamAccess)
+	if err := r.reportCSV.uploader(filePath, lines); err != nil {
+		return fmt.Errorf("upload CSV failed: %w", err)
 	}
 
 	return nil
@@ -95,7 +117,8 @@ func reportCreate(r *report, dryRun, ignoreArchived bool, filePath string) error
 // nolint // needed for cobra
 func init() {
 	reportCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", true, "Ignore archived repositores")
-	reportCmd.Flags().StringVarP(&filePath, "file-path", "f", "report.csv", "file path for report to be created, must be .csv")
+	reportCmd.Flags().StringVarP(&filePath, "file-path", "f", "report.csv", "file path for report to be created, must be .csv or .json")
+	reportCmd.Flags().StringVarP(&fileType, "file-type", "t", "csv", "file type, must be csv or json")
 	rootCmd.AddCommand(reportCmd)
 }
 
@@ -111,6 +134,7 @@ func reportQuery() string {
 	query.WriteString("					hasNextPage")
 	query.WriteString("				}")
 	query.WriteString("				nodes {")
+	query.WriteString("					id")
 	query.WriteString("					deleteBranchOnMerge")
 	query.WriteString("					isArchived")
 	query.WriteString("					isEmpty")
@@ -123,6 +147,7 @@ func reportQuery() string {
 	query.WriteString("					squashMergeAllowed")
 	query.WriteString("					branchProtectionRules(first: 100) {")
 	query.WriteString("						nodes {")
+	query.WriteString("							id")
 	query.WriteString("							isAdminEnforced")
 	query.WriteString("							requiresCommitSignatures")
 	query.WriteString("							restrictsPushes")
