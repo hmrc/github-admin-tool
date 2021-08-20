@@ -6,3 +6,4 @@ cmd/*.csv
 cover.out
 run.sh
 dist/
+/*.json

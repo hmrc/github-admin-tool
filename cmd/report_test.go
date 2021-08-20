@@ -90,6 +90,7 @@ func Test_reportRun(t *testing.T) {
 		mockDryRun         bool
 		mockIgnoreArchived bool
 		mockFilePath       string
+		mockFileType       string
 	)
 
 	mockCmd := &cobra.Command{
@@ -107,11 +108,12 @@ func Test_reportRun(t *testing.T) {
 	mockCmdDryRunOnIgnoreArchived.Flags().BoolVarP(&mockDryRun, "dry-run", "d", true, "dry run flag")
 	mockCmdDryRunOnIgnoreArchived.Flags().BoolVarP(&mockIgnoreArchived, "ignore-archived", "i", true, "ignore flag")
 
-	mockCmdDryRunFalse := &cobra.Command{
+	mockCmdFileTypeMissing := &cobra.Command{
 		Use: "report",
 	}
-	mockCmdDryRunFalse.Flags().BoolVarP(&mockDryRun, "dry-run", "d", false, "dry run flag")
-	mockCmdDryRunFalse.Flags().BoolVarP(&mockIgnoreArchived, "ignore-archived", "i", true, "ignore flag")
+	mockCmdFileTypeMissing.Flags().BoolVarP(&mockDryRun, "dry-run", "d", true, "dry run flag")
+	mockCmdFileTypeMissing.Flags().BoolVarP(&mockIgnoreArchived, "ignore-archived", "i", true, "ignore flag")
+	mockCmdFileTypeMissing.Flags().StringVarP(&mockFilePath, "file-path", "f", "report.csv", "file path flag")
 
 	mockCmdAllFlagsSet := &cobra.Command{
 		Use: "report",
@@ -119,6 +121,7 @@ func Test_reportRun(t *testing.T) {
 	mockCmdAllFlagsSet.Flags().BoolVarP(&mockDryRun, "dry-run", "d", false, "dry run flag")
 	mockCmdAllFlagsSet.Flags().BoolVarP(&mockIgnoreArchived, "ignore-archived", "i", true, "ignore flag")
 	mockCmdAllFlagsSet.Flags().StringVarP(&mockFilePath, "file-path", "f", "report.csv", "file path flag")
+	mockCmdAllFlagsSet.Flags().StringVarP(&mockFileType, "file-type", "t", "csv", "file type flag")
 
 	tests := []struct {
 		name                         string
@@ -151,6 +154,14 @@ func Test_reportRun(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "flag accessed but not defined: file-path",
+		},
+		{
+			name: "reportRun file-type flag error",
+			args: args{
+				cmd: mockCmdFileTypeMissing,
+			},
+			wantErr:    true,
+			wantErrMsg: "flag accessed but not defined: file-type",
 		},
 		{
 			name: "reportRun success",
@@ -197,6 +208,39 @@ func (m *mockReportCSV) uploader(filePath string, lines [][]string) error {
 	return nil
 }
 
+func (m *mockReportCSV) generate(
+	ignoreArchived bool,
+	allResults []ReportResponse,
+	teamAccess map[string]string,
+) [][]string {
+	return nil
+}
+
+type mockReportJSON struct {
+	failupload   bool
+	failgenerate bool
+}
+
+func (m *mockReportJSON) uploader(filePath string, reportJSON []byte) error {
+	if m.failupload {
+		return errors.New("fail") // nolint // just for testing
+	}
+
+	return nil
+}
+
+func (m *mockReportJSON) generate(
+	ignoreArchived bool,
+	allResults []ReportResponse,
+	teamAccess map[string]string,
+) ([]byte, error) {
+	if m.failgenerate {
+		return nil, errors.New("fail") // nolint // just for testing
+	}
+
+	return nil, nil
+}
+
 type mockReportAccess struct {
 	fail        bool
 	returnValue map[string]string
@@ -204,7 +248,7 @@ type mockReportAccess struct {
 
 func (m *mockReportAccess) getReport() (map[string]string, error) {
 	if m.fail {
-		return m.returnValue, errors.New("fail") // nolint // just for testing
+		return m.returnValue, errors.New("access fail") // nolint // just for testing
 	}
 
 	return m.returnValue, nil
@@ -216,12 +260,14 @@ func Test_reportCreate(t *testing.T) {
 		dryRun         bool
 		ignoreArchived bool
 		filePath       string
+		fileType       string
 	}
 
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name       string
+		args       args
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "reportCreate failure",
@@ -254,6 +300,59 @@ func Test_reportCreate(t *testing.T) {
 			},
 		},
 		{
+			name: "reportCreate upload failure with JSON",
+			args: args{
+				r: &report{
+					reportGetter: &mockReportGetter{},
+					reportCSV:    &mockReportCSV{},
+					reportJSON:   &mockReportJSON{failupload: true},
+					reportAccess: &mockReportAccess{},
+				},
+				fileType: "json",
+			},
+			wantErr:    true,
+			wantErrMsg: "upload json failed: fail",
+		},
+		{
+			name: "reportCreate generate failure with JSON",
+			args: args{
+				r: &report{
+					reportGetter: &mockReportGetter{},
+					reportCSV:    &mockReportCSV{},
+					reportJSON:   &mockReportJSON{failgenerate: true},
+					reportAccess: &mockReportAccess{},
+				},
+				fileType: "json",
+			},
+			wantErr:    true,
+			wantErrMsg: "generate json failed: fail",
+		},
+		{
+			name: "reportCreate success with JSON",
+			args: args{
+				r: &report{
+					reportGetter: &mockReportGetter{},
+					reportCSV:    &mockReportCSV{},
+					reportJSON:   &mockReportJSON{},
+					reportAccess: &mockReportAccess{},
+				},
+				fileType: "json",
+			},
+		},
+		{
+			name: "reportCreate failure on access report",
+			args: args{
+				r: &report{
+					reportGetter: &mockReportGetter{},
+					reportCSV:    &mockReportCSV{},
+					reportJSON:   &mockReportJSON{},
+					reportAccess: &mockReportAccess{fail: true},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "access fail",
+		},
+		{
 			name: "reportCreate success dry run",
 			args: args{
 				r: &report{
@@ -268,13 +367,18 @@ func Test_reportCreate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := reportCreate(
+			err := reportCreate(
 				tt.args.r,
 				tt.args.dryRun,
 				tt.args.ignoreArchived,
 				tt.args.filePath,
-			); (err != nil) != tt.wantErr {
+				tt.args.fileType,
+			)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("reportCreate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErrMsg != "" && tt.wantErrMsg != err.Error() {
+				t.Errorf("reportCreate() error = %v, wantErrMsg %v", err.Error(), tt.wantErrMsg)
 			}
 		})
 	}

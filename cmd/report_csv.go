@@ -10,16 +10,10 @@ import (
 )
 
 type reportCSV interface {
+	generate(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string
 	uploader(filePath string, lines [][]string) error
 }
 type reportCSVService struct{}
-
-func reportCSVGenerate(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string {
-	parsed := reportCSVParse(ignoreArchived, allResults, teamAccess)
-	lines := reportCSVLines(parsed)
-
-	return lines
-}
 
 func (r *reportCSVService) uploader(filePath string, lines [][]string) error {
 	file, err := os.Create(filePath)
@@ -37,6 +31,17 @@ func (r *reportCSVService) uploader(filePath string, lines [][]string) error {
 	log.Printf("Report written to %s", filePath)
 
 	return nil
+}
+
+func (r *reportCSVService) generate(
+	ignoreArchived bool,
+	allResults []ReportResponse,
+	teamAccess map[string]string,
+) [][]string {
+	parsed := reportCSVParse(ignoreArchived, allResults, teamAccess)
+	lines := reportCSVLines(parsed)
+
+	return lines
 }
 
 func reportCSVParse(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string {

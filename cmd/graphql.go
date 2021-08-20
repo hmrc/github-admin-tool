@@ -42,6 +42,7 @@ type RepositoriesNode struct {
 	NameWithOwner         string                `json:"nameWithOwner"`
 	RebaseMergeAllowed    bool                  `json:"rebaseMergeAllowed"`
 	SquashMergeAllowed    bool                  `json:"squashMergeAllowed"`
+	TeamPermissions       string                `json:"teamPermissions"`
 	BranchProtectionRules BranchProtectionRules `json:"branchProtectionRules"`
 	Parent                Parent
 	DefaultBranchRef      DefaultBranchRef
