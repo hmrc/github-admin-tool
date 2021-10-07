@@ -97,3 +97,29 @@ type RepositoriesEdge struct {
 type RepositoriesEdgeNode struct {
 	Name string `json:"name"`
 }
+
+type WebhookRepositoryResponse struct {
+	Organization struct {
+		Repositories struct {
+			PageInfo struct {
+				EndCursor   string `json:"endCursor"`
+				HasNextPage bool   `json:"hasNextPage"`
+			} `json:"pageInfo"`
+			TotalCount int `json:"totalCount"`
+			Nodes      []struct {
+				Name       string `json:"name"`
+				IsArchived bool   `json:"isArchived"`
+			} `json:"nodes"`
+		} `json:"repositories"`
+	} `json:"organization"`
+}
+
+type WebhookResponse struct {
+	Config struct {
+		URL         string `json:"url"`
+		InsecureURL int    `json:"insecure_url"`
+	} `json:"config"`
+	Active bool     `json:"active"`
+	ID     int      `json:"id"`
+	Events []string `json:"events"`
+}

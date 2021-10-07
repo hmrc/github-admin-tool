@@ -10,10 +10,23 @@ import (
 )
 
 type reportCSV interface {
-	generate(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string
 	uploader(filePath string, lines [][]string) error
 }
 type reportCSVService struct{}
+
+func reportCSVGenerate(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string {
+	parsed := reportCSVParse(ignoreArchived, allResults, teamAccess)
+	lines := reportCSVLines(parsed)
+
+	return lines
+}
+
+func reportCSVWebhookGenerate(webhooks map[string][]WebhookResponse) [][]string {
+	parsed := reportCSVWebhookParse(webhooks)
+	lines := reportCSVWebhookLines(parsed)
+
+	return lines
+}
 
 func (r *reportCSVService) uploader(filePath string, lines [][]string) error {
 	file, err := os.Create(filePath)
@@ -31,17 +44,6 @@ func (r *reportCSVService) uploader(filePath string, lines [][]string) error {
 	log.Printf("Report written to %s", filePath)
 
 	return nil
-}
-
-func (r *reportCSVService) generate(
-	ignoreArchived bool,
-	allResults []ReportResponse,
-	teamAccess map[string]string,
-) [][]string {
-	parsed := reportCSVParse(ignoreArchived, allResults, teamAccess)
-	lines := reportCSVLines(parsed)
-
-	return lines
 }
 
 func reportCSVParse(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string {
@@ -129,6 +131,43 @@ func reportCSVLines(parsed [][]string) [][]string {
 			"(BP2) AllowsForcePushes",
 			"(BP2) AllowsDeletions",
 			"(BP2) Branch Protection Pattern",
+		},
+	}
+	lines = append(lines, parsed...)
+
+	return lines
+}
+
+func reportCSVWebhookParse(webhooks map[string][]WebhookResponse) [][]string {
+	var parsed [][]string
+
+	for repositoryName, webhooks := range webhooks {
+		for _, webhook := range webhooks {
+			repoSlice := []string{
+				strings.TrimSpace(repositoryName),
+				strconv.Itoa(webhook.ID),
+				strings.TrimSpace(webhook.Config.URL),
+				strconv.FormatBool(webhook.Active),
+				strconv.Itoa(webhook.Config.InsecureURL),
+				fmt.Sprintf("%+v", webhook.Events),
+			}
+
+			parsed = append(parsed, repoSlice)
+		}
+	}
+
+	return parsed
+}
+
+func reportCSVWebhookLines(parsed [][]string) [][]string {
+	lines := [][]string{
+		{
+			"Repo Name",
+			"Webhook ID",
+			"Webhook URL",
+			"Is Active",
+			"Insecure URL",
+			"Events",
 		},
 	}
 	lines = append(lines, parsed...)

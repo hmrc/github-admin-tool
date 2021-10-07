@@ -9,17 +9,28 @@ import (
 )
 
 var (
-	configFile     string // nolint // needed for cobra
-	reposFile      string // nolint // needed for cobra
-	branchName     string // nolint // needed for cobra
-	config         Config // nolint // using with viper
-	dryRun         bool   // nolint // using for global flag
-	errInvalidRepo = errors.New("invalid repo name")
-	rootCmd        = &cobra.Command{ // nolint // needed for cobra
+	configFile           string // nolint // needed for cobra
+	reposFile            string // nolint // needed for cobra
+	branchName           string // nolint // needed for cobra
+	config               Config // nolint // using with viper
+	dryRun               bool   // nolint // using for global flag
+	ignoreArchived       bool   // nolint // modifying within this package
+	filePath             string // nolint // modifying within this package
+	fileType             string // nolint // modifying within this package
+	startCursor          string // nolint // modifying within this package
+	lastCursorUsed       string
+	completedAllApiCalls bool
+	errInvalidRepo       = errors.New("invalid repo name")
+	rootCmd              = &cobra.Command{ // nolint // needed for cobra
 		Use:   "github-admin-tool",
 		Short: "Github admin tool allows you to perform actions on your github repos",
 		Long:  "Using Github version 4 GraphQL API to generate repo reports and administer your organisations repos etc",
 	}
+)
+
+const (
+	// IterationCount the number of repos per result set.
+	IterationCount int = 100
 )
 
 type Config struct {

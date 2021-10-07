@@ -11,16 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	// IterationCount the number of repos per result set.
-	IterationCount int = 100
-)
-
 var (
-	ignoreArchived bool   // nolint // modifying within this package
-	filePath       string // nolint // modifying within this package
-	fileType       string // nolint // modifying within this package
-
 	reportCmd = &cobra.Command{ // nolint // needed for cobra
 		Use:   "report",
 		Short: "Run a report to generate a csv containing information on all organisation repos",
@@ -106,7 +97,7 @@ func reportCreate(r *report, dryRun, ignoreArchived bool, filePath, fileType str
 		return nil
 	}
 
-	lines := r.reportCSV.generate(ignoreArchived, allResults, teamAccess)
+	lines := reportCSVGenerate(ignoreArchived, allResults, teamAccess)
 	if err := r.reportCSV.uploader(filePath, lines); err != nil {
 		return fmt.Errorf("upload CSV failed: %w", err)
 	}

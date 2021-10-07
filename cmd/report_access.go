@@ -23,11 +23,8 @@ func (r *reportAccessService) getReport() (map[string]string, error) {
 	)
 
 	client := graphqlclient.NewClient("https://api.github.com/graphql")
-
 	query := reportAccessQuery()
-
 	req := reportRequest(query)
-
 	ctx := context.Background()
 	iteration = 0
 
