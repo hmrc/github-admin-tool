@@ -22,7 +22,7 @@ func (r *reportAccessService) getReport() (map[string]string, error) {
 		bar              progressbar.Bar
 	)
 
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
+	client := graphqlclient.NewClient()
 	query := reportAccessQuery()
 	req := reportRequest(query)
 	ctx := context.Background()

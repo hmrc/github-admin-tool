@@ -11,13 +11,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	reportCmd = &cobra.Command{ // nolint // needed for cobra
-		Use:   "report",
-		Short: "Run a report to generate a csv containing information on all organisation repos",
-		RunE:  reportRun,
-	}
-)
+var reportCmd = &cobra.Command{ // nolint // needed for cobra
+	Use:   "report",
+	Short: "Run a report to generate a csv containing information on all organisation repos",
+	RunE:  reportRun,
+}
 
 type report struct {
 	reportGetter reportGetter
@@ -190,7 +188,7 @@ func (r *reportGetterService) getReport() ([]ReportResponse, error) {
 		bar              progressbar.Bar
 	)
 
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
+	client := graphqlclient.NewClient()
 
 	query := reportQuery()
 

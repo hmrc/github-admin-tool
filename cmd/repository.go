@@ -84,7 +84,7 @@ func (r *repositorySenderService) send(req *graphqlclient.Request) (map[string]*
 
 	var respData map[string]*RepositoriesNode
 
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
+	client := graphqlclient.NewClient()
 
 	if err := client.Run(ctx, req, &respData); err != nil {
 		return respData, fmt.Errorf("graphql call: %w", err)

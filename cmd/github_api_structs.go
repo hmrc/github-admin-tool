@@ -117,7 +117,7 @@ type WebhookRepositoryResponse struct {
 type WebhookResponse struct {
 	Config struct {
 		URL         string `json:"url"`
-		InsecureURL int    `json:"insecure_url"`
+		InsecureURL int    `json:"insecure_url"` // nolint // this is from github
 	} `json:"config"`
 	Active bool     `json:"active"`
 	ID     int      `json:"id"`

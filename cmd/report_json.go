@@ -8,13 +8,15 @@ import (
 )
 
 type reportJSON interface {
-	generate(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) ([]byte, error)
-	uploader(filePath string, reportJSON []byte) error
+	generate(bool, []ReportResponse, map[string]string) ([]byte, error)
+	generateWebhook(map[string][]WebhookResponse) ([]byte, error)
+	uploader(string, []byte) error
 }
+
 type reportJSONService struct{}
 
 func (r *reportJSONService) uploader(filePath string, reportJSON []byte) error {
-	if err := ioutil.WriteFile(filePath, reportJSON, 0600); err != nil {
+	if err := ioutil.WriteFile(filePath, reportJSON, 0o600); err != nil {
 		return fmt.Errorf("failed to create %s: %w", filePath, err)
 	}
 
@@ -44,6 +46,16 @@ func (r *reportJSONService) generate(
 	reportJSON, err := json.Marshal(repos)
 
 	if err != nil || len(repos) == 0 {
+		return nil, fmt.Errorf("failed to marshal: %w", err)
+	}
+
+	return reportJSON, nil
+}
+
+func (r *reportJSONService) generateWebhook(allResults map[string][]WebhookResponse) ([]byte, error) {
+	reportJSON, err := json.Marshal(allResults)
+
+	if err != nil || len(allResults) == 0 {
 		return nil, fmt.Errorf("failed to marshal: %w", err)
 	}
 

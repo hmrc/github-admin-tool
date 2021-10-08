@@ -223,7 +223,7 @@ func Test_reportCSVService_uploader(t *testing.T) {
 	}
 }
 
-func Test_reportCSVService_generate(t *testing.T) {
+func Test_reportCSVGenerate(t *testing.T) {
 	type args struct {
 		ignoreArchived bool
 		allResults     []ReportResponse
@@ -244,7 +244,7 @@ func Test_reportCSVService_generate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.r.generate(
+			if got := reportCSVGenerate(
 				tt.args.ignoreArchived,
 				tt.args.allResults,
 				tt.args.teamAccess,

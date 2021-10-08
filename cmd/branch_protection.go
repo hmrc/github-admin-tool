@@ -29,7 +29,7 @@ type branchProtectionSenderService struct{}
 func (b *branchProtectionSenderService) send(req *graphqlclient.Request) error {
 	ctx := context.Background()
 
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
+	client := graphqlclient.NewClient()
 
 	if err := client.Run(ctx, req, nil); err != nil {
 		return fmt.Errorf("from API call: %w", err)

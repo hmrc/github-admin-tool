@@ -2,46 +2,83 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github-admin-tool/graphqlclient"
 	"github-admin-tool/progressbar"
+	"github-admin-tool/ratelimit"
 	"github-admin-tool/restclient"
 	"log"
-	"net/http"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	reportWebookCmd = &cobra.Command{ // nolint // needed for cobra
+	reportWebhookResponse WebhookCmdResponse // nolint // needed for cobra
+	reportWebookCmd       = &cobra.Command{  // nolint // needed for cobra
 		Use:   "report-webhook",
 		Short: "Run a report to generate a csv containing webhooks for organisation repos",
-		RunE:  reportWebookRun,
+		Long: `Webhook report can often run over 15 minutes depending on large number of repositories in your org.  
+Use the timeout flag and resulting $file-path.status file to run again from cursor point if needed, 
+this is useful when calling from a Lambda.`,
+		RunE: reportWebookRun,
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("{\"lastCursor\": \"%+v\", \"completedAllCalls\": %t}", lastCursorUsed, completedAllApiCalls)
+			response, err := json.Marshal(reportWebhookResponse)
+			if err != nil {
+				log.Print(fmt.Errorf("%w", err))
+			}
+			log.Printf("End time %v", time.Now().Format(time.RFC1123))
+
+			jsonService := reportJSONService{}
+			if err := jsonService.uploader(filePath+".status", response); err != nil {
+				log.Print(fmt.Errorf("%w", err))
+			}
 		},
 	}
-	totalRestApiCalls = 0
-	totalGraphqlCalls = 0
 )
 
-// nolint // needed for cobra
-func init() {
-	reportWebookCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", true, "Ignore archived repositores")
-	reportWebookCmd.Flags().StringVarP(&filePath, "file-path", "f", "report.csv", "File path for report to be created, must be .csv")
-	reportWebookCmd.Flags().StringVarP(&startCursor, "start-cursor", "s", "", "The starting cursor for webhook search to start from")
+func init() { // nolint // needed for cobra
+	reportWebookCmd.Flags().BoolP("ignore-archived", "i", true, "Ignore archived repositores")
+	reportWebookCmd.Flags().StringP(
+		"file-path", "f", "report.csv", "File path for report to be created, must be .csv or .json",
+	)
+	reportWebookCmd.Flags().StringP("file-type", "t", "csv", "file type, must be csv or json")
+	reportWebookCmd.Flags().StringP("start-cursor", "s", "", "The starting cursor for webhook search to start from")
+	reportWebookCmd.Flags().IntP(
+		"timeout", "o", 60, "Timeout for script (in minutes), useful when calling from Lambdas",
+	)
 	rootCmd.AddCommand(reportWebookCmd)
+}
+
+type WebhookCmdResponse struct {
+	LastCursor         string
+	CompletedAllCalls  bool
+	RestCalls          int
+	GraphqlCalls       int
+	Errors             []string
+	StartTimeSecs      int64
+	EndTimeSecs        int64
+	RateLimit          int
+	RateLimitResetSecs int64
 }
 
 type reportWebook struct {
 	reportWebookGetter reportWebookGetter
 	reportCSV          reportCSV
+	reportJSON         reportJSON
+	dryRun             bool
+	ignoreArchived     bool
+	filePath           string
+	fileType           string
+	startCursor        string
+	timeout            int
 }
 
 type reportWebookGetter interface {
-	getRepositoryList(bool) ([]repositoryCursorList, error)
-	getWebhooks([]repositoryCursorList) (map[string][]WebhookResponse, error)
+	getRepositoryList(*reportWebook) ([]repositoryCursorList, error)
+	getWebhooks(*reportWebook, []repositoryCursorList) (map[string][]WebhookResponse, error)
 }
 
 type repositoryCursorList struct {
@@ -52,54 +89,100 @@ type repositoryCursorList struct {
 type reportWebookGetterService struct{}
 
 func reportWebookRun(cmd *cobra.Command, args []string) error {
-	var err error
-
-	dryRun, err = cmd.Flags().GetBool("dry-run")
-	if err != nil {
-		return fmt.Errorf("%w", err)
+	report := &reportWebook{
+		reportWebookGetter: &reportWebookGetterService{},
+		reportCSV:          &reportCSVService{},
+		reportJSON:         &reportJSONService{},
 	}
 
-	ignoreArchived, err = cmd.Flags().GetBool("ignore-archived")
-	if err != nil {
-		return fmt.Errorf("%w", err)
+	if err := reportWebhookValidateFlags(report, cmd); err != nil {
+		return err
 	}
 
-	filePath, err = cmd.Flags().GetString("file-path")
-	if err != nil {
-		return fmt.Errorf("%w", err)
+	setTimeout(report)
+
+	if err := setRateLimit(); err != nil {
+		return err
 	}
 
-	return reportWebookCreate(
-		&reportWebook{
-			reportWebookGetter: &reportWebookGetterService{},
-			reportCSV:          &reportCSVService{},
-		},
-		dryRun,
-		ignoreArchived,
-		filePath,
-	)
+	log.Printf("Rate limit remaining %d", reportWebhookResponse.RateLimit)
+	log.Printf("Rate limit reset %v", time.Unix(reportWebhookResponse.RateLimitResetSecs, 0).Format(time.RFC1123))
+
+	return reportWebookCreate(report)
 }
 
-func reportWebookCreate(r *reportWebook, dryRun, ignoreArchived bool, filePath string) error {
-	allRepositories, err := r.reportWebookGetter.getRepositoryList(ignoreArchived)
+func reportWebhookValidateFlags(r *reportWebook, cmd *cobra.Command) error {
+	var err error
+
+	r.dryRun, err = cmd.Flags().GetBool("dry-run")
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	if !dryRun {
-		allWebhooks, err := r.reportWebookGetter.getWebhooks(allRepositories)
-		if err != nil {
-			return fmt.Errorf("%w", err)
-		}
-
-		lines := reportCSVWebhookGenerate(allWebhooks)
-		if err := r.reportCSV.uploader(filePath, lines); err != nil {
-			return fmt.Errorf("upload failed: %w", err)
-		}
+	r.ignoreArchived, err = cmd.Flags().GetBool("ignore-archived")
+	if err != nil {
+		return fmt.Errorf("%w", err)
 	}
 
-	log.Printf("total rest api calls %d", totalRestApiCalls)
-	log.Printf("total graphql calls %d", totalGraphqlCalls)
+	r.filePath, err = cmd.Flags().GetString("file-path")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	r.fileType, err = cmd.Flags().GetString("file-type")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	r.startCursor, err = cmd.Flags().GetString("start-cursor")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	r.timeout, err = cmd.Flags().GetInt("timeout")
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	if r.timeout > 60 || r.timeout < 1 {
+		return errInvalidTimeout
+	}
+
+	return nil
+}
+
+func reportWebookCreate(r *reportWebook) error {
+	allRepositories, err := r.reportWebookGetter.getRepositoryList(r)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	if dryRun {
+		return nil
+	}
+
+	allWebhooks, err := r.reportWebookGetter.getWebhooks(r, allRepositories)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	if fileType == "json" {
+		jsonReport, err := r.reportJSON.generateWebhook(allWebhooks)
+		if err != nil {
+			return fmt.Errorf("generate json failed: %w", err)
+		}
+
+		if err := r.reportJSON.uploader(filePath, jsonReport); err != nil {
+			return fmt.Errorf("upload json failed: %w", err)
+		}
+
+		return nil
+	}
+
+	lines := reportCSVWebhookGenerate(allWebhooks)
+	if err := r.reportCSV.uploader(filePath, lines); err != nil {
+		return fmt.Errorf("upload failed: %w", err)
+	}
 
 	return nil
 }
@@ -138,7 +221,7 @@ func reportWebookRequest(queryString string) *graphqlclient.Request {
 	return req
 }
 
-func (r *reportWebookGetterService) getRepositoryList(ignoreArchived bool) ([]repositoryCursorList, error) {
+func (r *reportWebookGetterService) getRepositoryList(report *reportWebook) ([]repositoryCursorList, error) {
 	var (
 		cursor     *string
 		totalCount int
@@ -147,14 +230,14 @@ func (r *reportWebookGetterService) getRepositoryList(ignoreArchived bool) ([]re
 		bar        progressbar.Bar
 	)
 
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
+	client := graphqlclient.NewClient()
 	query := reportWebookQuery()
 	req := reportWebookRequest(query)
 	ctx := context.Background()
 	iteration = 0
 
-	if startCursor != "" {
-		cursor = &startCursor
+	if report.startCursor != "" {
+		cursor = &report.startCursor
 	}
 
 	for {
@@ -176,6 +259,7 @@ func (r *reportWebookGetterService) getRepositoryList(ignoreArchived bool) ([]re
 		}
 
 		repositoryList := []string{}
+
 		for _, node := range response.Organization.Repositories.Nodes {
 			if ignoreArchived && node.IsArchived {
 				continue
@@ -193,7 +277,7 @@ func (r *reportWebookGetterService) getRepositoryList(ignoreArchived bool) ([]re
 		bar.Play(iteration)
 
 		iteration += IterationCount
-		totalGraphqlCalls++
+		reportWebhookResponse.GraphqlCalls++
 
 		if !response.Organization.Repositories.PageInfo.HasNextPage {
 			break
@@ -206,56 +290,96 @@ func (r *reportWebookGetterService) getRepositoryList(ignoreArchived bool) ([]re
 	return result, nil
 }
 
-func (r *reportWebookGetterService) getWebhooks(repositories []repositoryCursorList) (map[string][]WebhookResponse, error) {
+func (r *reportWebookGetterService) getWebhooks(
+	report *reportWebook,
+	repositories []repositoryCursorList,
+) (map[string][]WebhookResponse, error) {
 	allResults := make(map[string][]WebhookResponse, len(repositories))
 
 	ctx := context.Background()
 	totalCount := len(repositories)
-	var bar progressbar.Bar
-
 	iteration := 0
+
+	var bar progressbar.Bar
 
 	// This loops through every set of 100 repos and set last cursor for each group
 	for _, repositoryCursorList := range repositories {
-		lastCursorUsed = repositoryCursorList.cursor
-
 		if iteration == 0 {
 			bar.NewOption(0, totalCount)
 		}
+
 		bar.Play(iteration)
 		iteration++
 
-		for _, repositoryName := range repositoryCursorList.repositories {
+		if hasReachedRateLimit() || hasTimeoutElapsed() {
+			bar.Finish("Get webhook data timed out or rate limit hit")
 
+			return allResults, nil
+		}
+
+		for _, repositoryName := range repositoryCursorList.repositories {
 			client := restclient.NewClient(
-				fmt.Sprintf("https://api.github.com/repos/%s/%s/hooks", config.Org, repositoryName),
+				fmt.Sprintf("/repos/%s/%s/hooks", config.Org, repositoryName),
 				config.Token,
 			)
 
 			response := []WebhookResponse{}
-			if err, statusCode := client.Run(ctx, &response); err != nil {
-				//return allResults, fmt.Errorf("rest call: %w", err)
-
-				// Assuming forbidden code is when rate limit is hit
-				if statusCode == http.StatusForbidden {
-					return allResults, nil
-				}
-
+			if err := client.Run(ctx, &response); err != nil {
 				// Ignore any other errors and continue to top of loop
-				log.Printf("Error: %s", err.Error())
+				reportWebhookResponse.Errors = append(reportWebhookResponse.Errors, err.Error())
 
 				continue
 			}
 
 			allResults[repositoryName] = response
-			totalRestApiCalls++
+			reportWebhookResponse.RestCalls++
 		}
+
+		reportWebhookResponse.LastCursor = repositoryCursorList.cursor
 	}
 
 	bar.Play(totalCount)
 	bar.Finish("Get webhook data")
 
-	completedAllApiCalls = true
+	reportWebhookResponse.CompletedAllCalls = true
 
 	return allResults, nil
+}
+
+func setTimeout(r *reportWebook) {
+	now := time.Now()
+	reportWebhookResponse.StartTimeSecs = now.Unix()
+	log.Printf("Start time %v", now.Format(time.RFC1123))
+
+	reportWebhookResponse.EndTimeSecs = now.Add(time.Minute * time.Duration(r.timeout)).Unix()
+}
+
+func hasTimeoutElapsed() bool {
+	currentSeconds := time.Now().Unix()
+
+	return currentSeconds >= reportWebhookResponse.EndTimeSecs
+}
+
+func setRateLimit() error {
+	rateResponse, err := ratelimit.GetRateLimit(config.Token)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	reportWebhookResponse.RateLimit = rateResponse.Resources.Rest.Remaining
+	reportWebhookResponse.RateLimitResetSecs = rateResponse.Resources.Rest.Reset
+
+	return nil
+}
+
+func hasReachedRateLimit() bool {
+	// Reset rate limit
+	if err := setRateLimit(); err != nil {
+		reportWebhookResponse.Errors = append(reportWebhookResponse.Errors, err.Error())
+
+		return true
+	}
+
+	// If limit cannot fulfill number in the next iteration then fail
+	return reportWebhookResponse.RateLimit < IterationCount
 }

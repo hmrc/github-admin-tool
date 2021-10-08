@@ -10,6 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	errReportTestFail       = errors.New("fail")
+	errReportTestAccessFail = errors.New("access fail")
+)
+
 func Test_reportGetterService_getReport(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -208,14 +213,6 @@ func (m *mockReportCSV) uploader(filePath string, lines [][]string) error {
 	return nil
 }
 
-func (m *mockReportCSV) generate(
-	ignoreArchived bool,
-	allResults []ReportResponse,
-	teamAccess map[string]string,
-) [][]string {
-	return nil
-}
-
 type mockReportJSON struct {
 	failupload   bool
 	failgenerate bool
@@ -223,7 +220,7 @@ type mockReportJSON struct {
 
 func (m *mockReportJSON) uploader(filePath string, reportJSON []byte) error {
 	if m.failupload {
-		return errors.New("fail") // nolint // just for testing
+		return errReportTestFail
 	}
 
 	return nil
@@ -235,7 +232,15 @@ func (m *mockReportJSON) generate(
 	teamAccess map[string]string,
 ) ([]byte, error) {
 	if m.failgenerate {
-		return nil, errors.New("fail") // nolint // just for testing
+		return nil, errReportTestFail
+	}
+
+	return nil, nil
+}
+
+func (m *mockReportJSON) generateWebhook(map[string][]WebhookResponse) ([]byte, error) {
+	if m.failgenerate {
+		return nil, errReportTestFail
 	}
 
 	return nil, nil
@@ -248,7 +253,7 @@ type mockReportAccess struct {
 
 func (m *mockReportAccess) getReport() (map[string]string, error) {
 	if m.fail {
-		return m.returnValue, errors.New("access fail") // nolint // just for testing
+		return m.returnValue, errReportTestAccessFail
 	}
 
 	return m.returnValue, nil

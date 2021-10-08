@@ -9,6 +9,8 @@ import (
 	"net/http"
 )
 
+const RestEndpoint = "https://api.github.com"
+
 var errStatusCode = errors.New("returned a non-200 status code")
 
 type Client struct {
@@ -18,9 +20,9 @@ type Client struct {
 	closeReq   bool
 }
 
-func NewClient(endpoint, token string) *Client {
+func NewClient(path, token string) *Client {
 	return &Client{
-		endpoint:   endpoint,
+		endpoint:   RestEndpoint + path,
 		token:      token,
 		httpClient: &http.Client{},
 		closeReq:   true,
@@ -37,8 +39,7 @@ func NewRequest(q string) *Request {
 }
 
 type Request struct {
-	q    string
-	vars map[string]interface{}
+	q string
 
 	// Header represent any request headers that will be set
 	// when the request is made.
@@ -50,10 +51,10 @@ type errorResponse struct {
 	Message string `json:"message"`
 }
 
-func (c *Client) Run(ctx context.Context, resp interface{}) (error, int) {
+func (c *Client) Run(ctx context.Context, resp interface{}) (err error) {
 	req, err := http.NewRequest(http.MethodGet, c.endpoint, nil)
 	if err != nil {
-		return fmt.Errorf("new request: %w", err), 0
+		return fmt.Errorf("new request: %w", err)
 	}
 
 	req.Close = c.closeReq
@@ -66,7 +67,7 @@ func (c *Client) Run(ctx context.Context, resp interface{}) (error, int) {
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("running do: %w", err), 0
+		return fmt.Errorf("running do: %w", err)
 	}
 
 	defer res.Body.Close()
@@ -75,20 +76,20 @@ func (c *Client) Run(ctx context.Context, resp interface{}) (error, int) {
 		var errRes errorResponse
 
 		if err = json.NewDecoder(res.Body).Decode(&errRes); err != nil {
-			return fmt.Errorf("decoding response: %w", err), res.StatusCode
+			return fmt.Errorf("decoding response: %w", err)
 		}
 
-		return fmt.Errorf("incorrect status: %w, %s", errStatusCode, c.endpoint), res.StatusCode
+		return fmt.Errorf("incorrect status: %w, %s", errStatusCode, c.endpoint)
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return fmt.Errorf("reading body: %w", err), res.StatusCode
+		return fmt.Errorf("reading body: %w", err)
 	}
 
 	if err := json.Unmarshal(body, &resp); err != nil {
-		return fmt.Errorf("unmarshall: %w", err), res.StatusCode
+		return fmt.Errorf("unmarshall: %w", err)
 	}
 
-	return nil, res.StatusCode
+	return nil
 }
