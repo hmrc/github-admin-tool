@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 )
@@ -18,32 +19,32 @@ type Client struct {
 	token      string
 	httpClient *http.Client
 	closeReq   bool
+	bodyReader bodyReader
+}
+
+type bodyReader interface {
+	read(io.Reader) ([]byte, error)
+}
+
+type bodyReaderService struct{}
+
+func (b *bodyReaderService) read(body io.Reader) ([]byte, error) {
+	result, err := ioutil.ReadAll(body)
+	if err != nil {
+		return result, fmt.Errorf("reading body: %w", err)
+	}
+
+	return result, nil
 }
 
 func NewClient(path, token string) *Client {
 	return &Client{
 		endpoint:   RestEndpoint + path,
 		token:      token,
-		httpClient: &http.Client{},
+		httpClient: http.DefaultClient,
 		closeReq:   true,
+		bodyReader: &bodyReaderService{},
 	}
-}
-
-func NewRequest(q string) *Request {
-	req := &Request{
-		q:      q,
-		Header: make(map[string][]string),
-	}
-
-	return req
-}
-
-type Request struct {
-	q string
-
-	// Header represent any request headers that will be set
-	// when the request is made.
-	Header http.Header
 }
 
 type errorResponse struct {
@@ -79,10 +80,14 @@ func (c *Client) Run(ctx context.Context, resp interface{}) (err error) {
 			return fmt.Errorf("decoding response: %w", err)
 		}
 
+		if res.StatusCode == http.StatusUnauthorized {
+			return fmt.Errorf("unauthorised status: %s", c.endpoint)
+		}
+
 		return fmt.Errorf("incorrect status: %w, %s", errStatusCode, c.endpoint)
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := c.bodyReader.read(res.Body)
 	if err != nil {
 		return fmt.Errorf("reading body: %w", err)
 	}

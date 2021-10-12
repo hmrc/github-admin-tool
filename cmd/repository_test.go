@@ -33,7 +33,7 @@ func Test_repositoryReaderService_read(t *testing.T) {
 		{
 			name: "repositoryList returns one repo",
 			args: args{
-				reposFile: "testdata/one_repo_list.txt",
+				reposFile: "../testdata/one_repo_list.txt",
 			},
 			want:    []string{"a-test-repo"},
 			wantErr: false,
@@ -41,7 +41,7 @@ func Test_repositoryReaderService_read(t *testing.T) {
 		{
 			name: "repositoryList returns two repos",
 			args: args{
-				reposFile: "testdata/two_repo_list.txt",
+				reposFile: "../testdata/two_repo_list.txt",
 			},
 			want:    []string{"a-test-repo", "a-test-repo2"},
 			wantErr: false,
@@ -49,7 +49,7 @@ func Test_repositoryReaderService_read(t *testing.T) {
 		{
 			name: "repositoryList throws error",
 			args: args{
-				reposFile: "testdata/repo_list_bad.txt",
+				reposFile: "../testdata/repo_list_bad.txt",
 			},
 			want:    nil,
 			wantErr: true,
@@ -87,14 +87,14 @@ func Test_repositoryQuery(t *testing.T) {
 			args: args{
 				repos: []string{"repo-name-1"},
 			},
-			filePath: "testdata/mockGenerateRepoWithOneRepo.txt",
+			filePath: "../testdata/mockGenerateRepoWithOneRepo.txt",
 		},
 		{
 			name: "repositoryQuery with two repos",
 			args: args{
 				repos: []string{"repo-name-1", "repo-name-2"},
 			},
-			filePath: "testdata/mockGenerateRepoWithTwoRepos.txt",
+			filePath: "../testdata/mockGenerateRepoWithTwoRepos.txt",
 		},
 	}
 
@@ -255,7 +255,7 @@ func Test_repositorySenderService_send(t *testing.T) {
 				NameWithOwner: "org/some-repo-name",
 			}},
 			wantErr:            false,
-			mockHTTPReturnFile: "testdata/mockRepoJsonResponse.json",
+			mockHTTPReturnFile: "../testdata/mockRepoJsonResponse.json",
 			mockHTTPStatusCode: 200,
 		},
 		{
@@ -264,7 +264,7 @@ func Test_repositorySenderService_send(t *testing.T) {
 				req: graphqlclient.NewRequest("query"),
 			},
 			wantErr:            true,
-			mockHTTPReturnFile: "testdata/mockEmptyResponse.json",
+			mockHTTPReturnFile: "../testdata/mockEmptyResponse.json",
 			mockHTTPStatusCode: 400,
 		},
 	}

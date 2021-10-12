@@ -180,7 +180,7 @@ func reportWebookCreate(r *reportWebook) error {
 	}
 
 	lines := reportCSVWebhookGenerate(allWebhooks)
-	if err := r.reportCSV.uploader(filePath, lines); err != nil {
+	if err := reportCSVUpload(r.reportCSV, filePath, lines); err != nil {
 		return fmt.Errorf("upload failed: %w", err)
 	}
 

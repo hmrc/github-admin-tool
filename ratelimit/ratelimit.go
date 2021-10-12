@@ -7,20 +7,26 @@ import (
 )
 
 type RateResponse struct {
-	Resources struct {
-		Rest struct {
-			Limit     int   `json:"limit"`
-			Used      int   `json:"used"`
-			Remaining int   `json:"remaining"`
-			Reset     int64 `json:"reset"`
-		} `json:"core"`
-		Graphql struct {
-			Limit     int   `json:"limit"`
-			Used      int   `json:"used"`
-			Remaining int   `json:"remaining"`
-			Reset     int64 `json:"reset"`
-		} `json:"graphql"`
-	} `json:"resources"`
+	Resources RateResources `json:"resources"`
+}
+
+type RateResources struct {
+	Rest    RateRest    `json:"core"`
+	Graphql RateGraphql `json:"graphql"`
+}
+
+type RateRest struct {
+	Limit     int   `json:"limit"`
+	Used      int   `json:"used"`
+	Remaining int   `json:"remaining"`
+	Reset     int64 `json:"reset"`
+}
+
+type RateGraphql struct {
+	Limit     int   `json:"limit"`
+	Used      int   `json:"used"`
+	Remaining int   `json:"remaining"`
+	Reset     int64 `json:"reset"`
 }
 
 func GetRateLimit(token string) (RateResponse, error) {

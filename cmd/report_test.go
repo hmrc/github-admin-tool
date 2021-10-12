@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 
@@ -35,19 +36,19 @@ func Test_reportGetterService_getReport(t *testing.T) {
 	}{
 		{
 			name:               "getReport returns empty",
-			mockHTTPReturnFile: "testdata/mockEmptyResponse.json",
+			mockHTTPReturnFile: "../testdata/mockEmptyResponse.json",
 			want:               nil,
 			dryRunValue:        false,
 		},
 		{
 			name:               "getReport dry run true",
-			mockHTTPReturnFile: "testdata/mockRepoNodesJsonResponse.json",
+			mockHTTPReturnFile: "../testdata/mockRepoNodesJsonResponse.json",
 			want:               mockEmptyResult,
 			dryRunValue:        true,
 		},
 		{
 			name:               "getReport returns one",
-			mockHTTPReturnFile: "testdata/mockRepoNodesJsonResponse.json",
+			mockHTTPReturnFile: "../testdata/mockRepoNodesJsonResponse.json",
 			want: []ReportResponse{{Organization{Repositories{
 				TotalCount: 1,
 				Nodes: []RepositoriesNode{{
@@ -205,7 +206,15 @@ type mockReportCSV struct {
 	fail bool
 }
 
-func (m *mockReportCSV) uploader(filePath string, lines [][]string) error {
+func (m *mockReportCSV) opener(filePath string) (file *os.File, err error) {
+	if m.fail {
+		return nil, errors.New("fail") // nolint // just for testing
+	}
+
+	return nil, nil
+}
+
+func (m *mockReportCSV) writer(file *os.File, lines [][]string) error {
 	if m.fail {
 		return errors.New("fail") // nolint // just for testing
 	}

@@ -16,7 +16,11 @@ type reportJSON interface {
 type reportJSONService struct{}
 
 func (r *reportJSONService) uploader(filePath string, reportJSON []byte) error {
-	if err := ioutil.WriteFile(filePath, reportJSON, 0o600); err != nil {
+	if err := ioutil.WriteFile(
+		filePath,
+		reportJSON,
+		0o600,
+	); err != nil {
 		return fmt.Errorf("failed to create %s: %w", filePath, err)
 	}
 

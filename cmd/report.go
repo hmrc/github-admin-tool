@@ -96,7 +96,7 @@ func reportCreate(r *report, dryRun, ignoreArchived bool, filePath, fileType str
 	}
 
 	lines := reportCSVGenerate(ignoreArchived, allResults, teamAccess)
-	if err := r.reportCSV.uploader(filePath, lines); err != nil {
+	if err := reportCSVUpload(r.reportCSV, filePath, lines); err != nil {
 		return fmt.Errorf("upload CSV failed: %w", err)
 	}
 

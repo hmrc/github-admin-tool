@@ -49,7 +49,7 @@ func Test_signingRun(t *testing.T) {
 		&mockRepos2File,
 		"repos",
 		"r",
-		"testdata/two_repo_list.txt",
+		"../testdata/two_repo_list.txt",
 		"repos file",
 	)
 

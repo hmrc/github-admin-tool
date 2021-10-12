@@ -1,9 +1,0 @@
-{
-    "data": {
-      "updateBranchProtectionRule": {
-            "branchProtectionRule": {
-                "id": "some-random-branch-protection-rule-id"
-            }
-        }
-    }
-}

@@ -10,9 +10,43 @@ import (
 )
 
 type reportCSV interface {
-	uploader(filePath string, lines [][]string) error
+	opener(string) (*os.File, error)
+	writer(*os.File, [][]string) error
 }
+
 type reportCSVService struct{}
+
+func (r *reportCSVService) opener(filePath string) (file *os.File, err error) {
+	file, err = os.Create(filePath)
+	if err != nil {
+		return file, fmt.Errorf("failed to create file: %w", err)
+	}
+
+	return file, nil
+}
+
+func (r *reportCSVService) writer(file *os.File, lines [][]string) error {
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+
+	if err := writer.WriteAll(lines); err != nil {
+		return fmt.Errorf("failed to create %s: %w", filePath, err)
+	}
+
+	log.Printf("Report written to %s", filePath)
+
+	return nil
+}
+
+func reportCSVUpload(service reportCSV, filePath string, lines [][]string) error {
+	file, err := service.opener(filePath)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return service.writer(file, lines)
+}
 
 func reportCSVGenerate(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string {
 	parsed := reportCSVParse(ignoreArchived, allResults, teamAccess)
@@ -26,24 +60,6 @@ func reportCSVWebhookGenerate(webhooks map[string][]WebhookResponse) [][]string 
 	lines := reportCSVWebhookLines(parsed)
 
 	return lines
-}
-
-func (r *reportCSVService) uploader(filePath string, lines [][]string) error {
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-
-	if err = writer.WriteAll(lines); err != nil {
-		return fmt.Errorf("failed to create %s: %w", filePath, err)
-	}
-
-	log.Printf("Report written to %s", filePath)
-
-	return nil
 }
 
 func reportCSVParse(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string {
