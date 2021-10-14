@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"reflect"
 	"testing"
@@ -134,27 +133,14 @@ func Test_reportWebhookRun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.mockHTTPReturnFile != "" {
-				mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
-				if err != nil {
-					t.Fatalf("failed to read test data: %v", err)
-				}
-
-				httpmock.RegisterResponder(
-					"GET",
-					tt.mockHTTPURL,
-					httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
-				)
+				mockHTTPResponder("GET", tt.mockHTTPURL, tt.mockHTTPReturnFile, tt.mockHTTPStatusCode)
 
 				if tt.setWebhookResponders {
-					mockRepoReturn, err := ioutil.ReadFile("../testdata/mockGraphqlWebhookRepoResponse.json")
-					if err != nil {
-						t.Fatalf("failed to read test data: %v", err)
-					}
-
-					httpmock.RegisterResponder(
+					mockHTTPResponder(
 						"POST",
 						"https://api.github.com/graphql",
-						httpmock.NewStringResponder(200, string(mockRepoReturn)),
+						"../testdata/mockGraphqlWebhookRepoResponse.json",
+						200,
 					)
 				}
 			}
@@ -481,16 +467,7 @@ func Test_reportWebhookGetterService_getRepositoryList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.mockHTTPReturnFile != "" {
-				mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
-				if err != nil {
-					t.Fatalf("failed to read test data: %v", err)
-				}
-
-				httpmock.RegisterResponder(
-					"POST",
-					tt.mockHTTPURL,
-					httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
-				)
+				mockHTTPResponder("POST", tt.mockHTTPURL, tt.mockHTTPReturnFile, tt.mockHTTPStatusCode)
 			}
 			r := &reportWebhookGetterService{}
 			got, err := r.getRepositoryList(tt.args.report)

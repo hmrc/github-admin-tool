@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"reflect"
 	"testing"
 
@@ -56,16 +55,7 @@ func Test_reportGetterService_getReport(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
-			if err != nil {
-				t.Fatalf("failed to read test data: %v", err)
-			}
-
-			httpmock.RegisterResponder(
-				"POST",
-				"https://api.github.com/graphql",
-				httpmock.NewStringResponder(200, string(mockHTTPReturn)),
-			)
+			mockHTTPResponder("POST", "https://api.github.com/graphql", tt.mockHTTPReturnFile, 200)
 
 			dryRun = tt.dryRunValue
 

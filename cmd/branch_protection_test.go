@@ -682,16 +682,8 @@ func Test_branchProtectionSenderService_send(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &branchProtectionSenderService{}
-			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
-			if err != nil {
-				t.Fatalf("failed to read test data: %v", err)
-			}
 
-			httpmock.RegisterResponder(
-				"POST",
-				"https://api.github.com/graphql",
-				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
-			)
+			mockHTTPResponder("POST", "https://api.github.com/graphql", tt.mockHTTPReturnFile, tt.mockHTTPStatusCode)
 
 			if err := b.send(tt.args.req); (err != nil) != tt.wantErr {
 				t.Errorf("branchProtectionSenderService.send() error = %v, wantErr %v", err, tt.wantErr)

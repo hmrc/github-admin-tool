@@ -253,16 +253,7 @@ func Test_repositorySenderService_send(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
-			if err != nil {
-				t.Fatalf("failed to read test data: %v", err)
-			}
-
-			httpmock.RegisterResponder(
-				"POST",
-				"https://api.github.com/graphql",
-				httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
-			)
+			mockHTTPResponder("POST", "https://api.github.com/graphql", tt.mockHTTPReturnFile, tt.mockHTTPStatusCode)
 
 			r := &repositorySenderService{}
 			got, err := r.send(tt.args.req)
