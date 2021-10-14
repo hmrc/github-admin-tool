@@ -6,19 +6,21 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jarcoal/httpmock"
 )
 
-type testBodyReader struct {
+type mockBodyReader struct {
 	readFail    bool
 	returnValue []byte
 }
 
-func (t *testBodyReader) read(body io.Reader) ([]byte, error) {
+func (t *mockBodyReader) read(body io.Reader) ([]byte, error) {
 	if t.readFail {
 		return t.returnValue, errors.New("fail") // nolint // only mock error for test
 	}
@@ -26,13 +28,21 @@ func (t *testBodyReader) read(body io.Reader) ([]byte, error) {
 	return t.returnValue, nil
 }
 
-type errReader int
-
-func (errReader) Read(p []byte) (n int, err error) {
-	return 0, errors.New("test error")
-}
-
 func Test_bodyReaderService_read(t *testing.T) {
+	var client = &http.Client{
+		Timeout: time.Duration(1000) * time.Millisecond,
+	}
+	bodyErrorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", "1")
+	}))
+	mockResponse, err := client.Get(bodyErrorServer.URL)
+	if err != nil {
+		t.Errorf("bodyReaderService.read() could not setup read failure %+v", err)
+		return
+	}
+
+	defer mockResponse.Body.Close()
+
 	type args struct {
 		body io.Reader
 	}
@@ -40,20 +50,26 @@ func Test_bodyReaderService_read(t *testing.T) {
 		name         string
 		b            *bodyReaderService
 		args         args
-		stringToRead string
+		stringToRead io.Reader
 		wantResult   []byte
 		wantErr      bool
 	}{
 		{
 			name:         "bodyReaderService_read fails",
-			stringToRead: "{}",
+			stringToRead: mockResponse.Body,
+			wantErr:      true,
+			wantResult:   []byte{},
+		},
+		{
+			name:         "bodyReaderService_read success",
+			stringToRead: strings.NewReader("{}"),
 			wantResult:   []byte{123, 125},
 			wantErr:      false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.args.body = strings.NewReader(tt.stringToRead)
+			tt.args.body = tt.stringToRead
 			b := &bodyReaderService{}
 			gotResult, err := b.read(tt.args.body)
 			if (err != nil) != tt.wantErr {
@@ -110,7 +126,7 @@ func TestClient_Run(t *testing.T) {
 		token      string
 		httpClient *http.Client
 		closeReq   bool
-		bodyReader testBodyReader
+		bodyReader mockBodyReader
 	}
 
 	type args struct {
@@ -177,12 +193,25 @@ func TestClient_Run(t *testing.T) {
 			mockHTTPReturnFile: "../testdata/mockRest404Response.json",
 		},
 		{
+			name:    "Run fails on unauthorized code",
+			wantErr: true,
+			fields: fields{
+				httpClient: http.DefaultClient,
+				endpoint:   "https://api.github.com/rate_limit",
+			},
+			args: args{
+				ctx: ctx,
+			},
+			mockHTTPStatusCode: 401,
+			mockHTTPReturnFile: "../testdata/mockRest401Response.json",
+		},
+		{
 			name:    "Run fails on reading body",
 			wantErr: true,
 			fields: fields{
 				httpClient: http.DefaultClient,
 				endpoint:   "https://api.github.com/rate_limit",
-				bodyReader: testBodyReader{
+				bodyReader: mockBodyReader{
 					readFail: true,
 				},
 			},
@@ -211,7 +240,7 @@ func TestClient_Run(t *testing.T) {
 			fields: fields{
 				httpClient: http.DefaultClient,
 				endpoint:   "https://api.github.com/rate_limit",
-				bodyReader: testBodyReader{
+				bodyReader: mockBodyReader{
 					returnValue: []byte{123, 10, 125},
 				},
 			},

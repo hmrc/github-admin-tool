@@ -16,40 +16,30 @@ import (
 )
 
 var (
+	jsonMarshal           = json.Marshal
 	reportWebhookResponse WebhookCmdResponse // nolint // needed for cobra
-	reportWebookCmd       = &cobra.Command{  // nolint // needed for cobra
+	reportWebhookCmd      = &cobra.Command{  // nolint // needed for cobra
 		Use:   "report-webhook",
 		Short: "Run a report to generate a csv containing webhooks for organisation repos",
 		Long: `Webhook report can often run over 15 minutes depending on large number of repositories in your org.  
 Use the timeout flag and resulting $file-path.status file to run again from cursor point if needed, 
 this is useful when calling from a Lambda.`,
-		RunE: reportWebookRun,
-		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			response, err := json.Marshal(reportWebhookResponse)
-			if err != nil {
-				log.Print(fmt.Errorf("%w", err))
-			}
-			log.Printf("End time %v", time.Now().Format(time.RFC1123))
-
-			jsonService := reportJSONService{}
-			if err := jsonService.uploader(filePath+".status", response); err != nil {
-				log.Print(fmt.Errorf("%w", err))
-			}
-		},
+		RunE:               reportWebhookRun,
+		PersistentPostRunE: reportWebhookPostRun,
 	}
 )
 
 func init() { // nolint // needed for cobra
-	reportWebookCmd.Flags().BoolP("ignore-archived", "i", true, "Ignore archived repositores")
-	reportWebookCmd.Flags().StringP(
+	reportWebhookCmd.Flags().BoolP("ignore-archived", "i", true, "Ignore archived repositores")
+	reportWebhookCmd.Flags().StringP(
 		"file-path", "f", "report.csv", "File path for report to be created, must be .csv or .json",
 	)
-	reportWebookCmd.Flags().StringP("file-type", "t", "csv", "file type, must be csv or json")
-	reportWebookCmd.Flags().StringP("start-cursor", "s", "", "The starting cursor for webhook search to start from")
-	reportWebookCmd.Flags().IntP(
+	reportWebhookCmd.Flags().StringP("file-type", "t", "csv", "file type, must be csv or json")
+	reportWebhookCmd.Flags().StringP("start-cursor", "s", "", "The starting cursor for webhook search to start from")
+	reportWebhookCmd.Flags().IntP(
 		"timeout", "o", 60, "Timeout for script (in minutes), useful when calling from Lambdas",
 	)
-	rootCmd.AddCommand(reportWebookCmd)
+	rootCmd.AddCommand(reportWebhookCmd)
 }
 
 type WebhookCmdResponse struct {
@@ -62,23 +52,24 @@ type WebhookCmdResponse struct {
 	EndTimeSecs        int64
 	RateLimit          int
 	RateLimitResetSecs int64
+	FilePath           string
 }
 
-type reportWebook struct {
-	reportWebookGetter reportWebookGetter
-	reportCSV          reportCSV
-	reportJSON         reportJSON
-	dryRun             bool
-	ignoreArchived     bool
-	filePath           string
-	fileType           string
-	startCursor        string
-	timeout            int
+type reportWebhook struct {
+	reportWebhookGetter reportWebhookGetter
+	reportCSV           reportCSV
+	reportJSON          reportJSON
+	dryRun              bool
+	ignoreArchived      bool
+	filePath            string
+	fileType            string
+	startCursor         string
+	timeout             int
 }
 
-type reportWebookGetter interface {
-	getRepositoryList(*reportWebook) ([]repositoryCursorList, error)
-	getWebhooks(*reportWebook, []repositoryCursorList) (map[string][]WebhookResponse, error)
+type reportWebhookGetter interface {
+	getRepositoryList(*reportWebhook) ([]repositoryCursorList, error)
+	getWebhooks(*reportWebhook, []repositoryCursorList) (map[string][]WebhookResponse, error)
 }
 
 type repositoryCursorList struct {
@@ -86,20 +77,34 @@ type repositoryCursorList struct {
 	repositories []string
 }
 
-type reportWebookGetterService struct{}
+type reportWebhookGetterService struct{}
 
-func reportWebookRun(cmd *cobra.Command, args []string) error {
-	report := &reportWebook{
-		reportWebookGetter: &reportWebookGetterService{},
-		reportCSV:          &reportCSVService{},
-		reportJSON:         &reportJSONService{},
+func reportWebhookPostRun(cmd *cobra.Command, args []string) error {
+	response, err := jsonMarshal(reportWebhookResponse)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	jsonService := reportJSONService{}
+	if err := jsonService.uploader(reportWebhookResponse.FilePath+".status", response); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
+}
+
+func reportWebhookRun(cmd *cobra.Command, args []string) error {
+	report := &reportWebhook{
+		reportWebhookGetter: &reportWebhookGetterService{},
+		reportCSV:           &reportCSVService{},
+		reportJSON:          &reportJSONService{},
 	}
 
 	if err := reportWebhookValidateFlags(report, cmd); err != nil {
 		return err
 	}
 
-	setTimeout(report)
+	setTimeout(report.timeout)
 
 	if err := setRateLimit(); err != nil {
 		return err
@@ -108,10 +113,10 @@ func reportWebookRun(cmd *cobra.Command, args []string) error {
 	log.Printf("Rate limit remaining %d", reportWebhookResponse.RateLimit)
 	log.Printf("Rate limit reset %v", time.Unix(reportWebhookResponse.RateLimitResetSecs, 0).Format(time.RFC1123))
 
-	return reportWebookCreate(report)
+	return reportWebhookCreate(report)
 }
 
-func reportWebhookValidateFlags(r *reportWebook, cmd *cobra.Command) error {
+func reportWebhookValidateFlags(r *reportWebhook, cmd *cobra.Command) error {
 	var err error
 
 	r.dryRun, err = cmd.Flags().GetBool("dry-run")
@@ -128,6 +133,7 @@ func reportWebhookValidateFlags(r *reportWebook, cmd *cobra.Command) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
+	reportWebhookResponse.FilePath = r.filePath
 
 	r.fileType, err = cmd.Flags().GetString("file-type")
 	if err != nil {
@@ -151,28 +157,28 @@ func reportWebhookValidateFlags(r *reportWebook, cmd *cobra.Command) error {
 	return nil
 }
 
-func reportWebookCreate(r *reportWebook) error {
-	allRepositories, err := r.reportWebookGetter.getRepositoryList(r)
+func reportWebhookCreate(r *reportWebhook) error {
+	allRepositories, err := r.reportWebhookGetter.getRepositoryList(r)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	if dryRun {
+	if r.dryRun {
 		return nil
 	}
 
-	allWebhooks, err := r.reportWebookGetter.getWebhooks(r, allRepositories)
+	allWebhooks, err := r.reportWebhookGetter.getWebhooks(r, allRepositories)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	if fileType == "json" {
+	if r.fileType == "json" {
 		jsonReport, err := r.reportJSON.generateWebhook(allWebhooks)
 		if err != nil {
 			return fmt.Errorf("generate json failed: %w", err)
 		}
 
-		if err := r.reportJSON.uploader(filePath, jsonReport); err != nil {
+		if err := r.reportJSON.uploader(r.filePath, jsonReport); err != nil {
 			return fmt.Errorf("upload json failed: %w", err)
 		}
 
@@ -180,14 +186,14 @@ func reportWebookCreate(r *reportWebook) error {
 	}
 
 	lines := reportCSVWebhookGenerate(allWebhooks)
-	if err := reportCSVUpload(r.reportCSV, filePath, lines); err != nil {
+	if err := reportCSVUpload(r.reportCSV, r.filePath, lines); err != nil {
 		return fmt.Errorf("upload failed: %w", err)
 	}
 
 	return nil
 }
 
-func reportWebookQuery() string {
+func reportWebhookQuery() string {
 	var query strings.Builder
 
 	query.WriteString("query ($org: String! $after: String) {")
@@ -209,7 +215,7 @@ func reportWebookQuery() string {
 	return query.String()
 }
 
-func reportWebookRequest(queryString string) *graphqlclient.Request {
+func reportWebhookRequest(queryString string) *graphqlclient.Request {
 	authStr := fmt.Sprintf("bearer %s", config.Token)
 
 	req := graphqlclient.NewRequest(queryString)
@@ -221,7 +227,7 @@ func reportWebookRequest(queryString string) *graphqlclient.Request {
 	return req
 }
 
-func (r *reportWebookGetterService) getRepositoryList(report *reportWebook) ([]repositoryCursorList, error) {
+func (r *reportWebhookGetterService) getRepositoryList(report *reportWebhook) ([]repositoryCursorList, error) {
 	var (
 		cursor     *string
 		totalCount int
@@ -231,8 +237,8 @@ func (r *reportWebookGetterService) getRepositoryList(report *reportWebook) ([]r
 	)
 
 	client := graphqlclient.NewClient()
-	query := reportWebookQuery()
-	req := reportWebookRequest(query)
+	query := reportWebhookQuery()
+	req := reportWebhookRequest(query)
 	ctx := context.Background()
 	iteration = 0
 
@@ -252,7 +258,7 @@ func (r *reportWebookGetterService) getRepositoryList(report *reportWebook) ([]r
 		cursor = &response.Organization.Repositories.PageInfo.EndCursor
 		totalCount = response.Organization.Repositories.TotalCount
 
-		if dryRun {
+		if report.dryRun {
 			log.Printf("This is a dry run, the report would process %d records\n", totalCount)
 
 			return result, nil
@@ -261,7 +267,7 @@ func (r *reportWebookGetterService) getRepositoryList(report *reportWebook) ([]r
 		repositoryList := []string{}
 
 		for _, node := range response.Organization.Repositories.Nodes {
-			if ignoreArchived && node.IsArchived {
+			if report.ignoreArchived && node.IsArchived {
 				continue
 			}
 
@@ -290,8 +296,8 @@ func (r *reportWebookGetterService) getRepositoryList(report *reportWebook) ([]r
 	return result, nil
 }
 
-func (r *reportWebookGetterService) getWebhooks(
-	report *reportWebook,
+func (r *reportWebhookGetterService) getWebhooks(
+	report *reportWebhook,
 	repositories []repositoryCursorList,
 ) (map[string][]WebhookResponse, error) {
 	allResults := make(map[string][]WebhookResponse, len(repositories))
@@ -311,8 +317,14 @@ func (r *reportWebookGetterService) getWebhooks(
 		bar.Play(iteration)
 		iteration++
 
-		if hasReachedRateLimit() || hasTimeoutElapsed() {
-			bar.Finish("Get webhook data timed out or rate limit hit")
+		if hasReachedRateLimit() {
+			bar.Finish("Get webhook data reached rate limit hit")
+
+			return allResults, nil
+		}
+
+		if hasTimeoutElapsed() {
+			bar.Finish("Get webhook data timed out")
 
 			return allResults, nil
 		}
@@ -346,12 +358,12 @@ func (r *reportWebookGetterService) getWebhooks(
 	return allResults, nil
 }
 
-func setTimeout(r *reportWebook) {
+func setTimeout(timeout int) {
 	now := time.Now()
 	reportWebhookResponse.StartTimeSecs = now.Unix()
 	log.Printf("Start time %v", now.Format(time.RFC1123))
 
-	reportWebhookResponse.EndTimeSecs = now.Add(time.Minute * time.Duration(r.timeout)).Unix()
+	reportWebhookResponse.EndTimeSecs = now.Add(time.Minute * time.Duration(timeout)).Unix()
 }
 
 func hasTimeoutElapsed() bool {

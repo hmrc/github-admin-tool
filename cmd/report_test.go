@@ -1,19 +1,12 @@
 package cmd
 
 import (
-	"errors"
 	"io/ioutil"
-	"os"
 	"reflect"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/spf13/cobra"
-)
-
-var (
-	errReportTestFail       = errors.New("fail")
-	errReportTestAccessFail = errors.New("access fail")
 )
 
 func Test_reportGetterService_getReport(t *testing.T) {
@@ -130,12 +123,10 @@ func Test_reportRun(t *testing.T) {
 	mockCmdAllFlagsSet.Flags().StringVarP(&mockFileType, "file-type", "t", "csv", "file type flag")
 
 	tests := []struct {
-		name                         string
-		args                         args
-		wantErr                      bool
-		wantErrMsg                   string
-		mockRequestErrorFunction     bool
-		mockCSVGenerateErrorFunction bool
+		name       string
+		args       args
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "reportRun dry run flag error",
@@ -188,84 +179,6 @@ func Test_reportRun(t *testing.T) {
 			}
 		})
 	}
-}
-
-type mockReportGetter struct {
-	fail bool
-}
-
-func (m *mockReportGetter) getReport() ([]ReportResponse, error) {
-	if m.fail {
-		return []ReportResponse{}, errors.New("fail") // nolint // just for testing
-	}
-
-	return []ReportResponse{}, nil
-}
-
-type mockReportCSV struct {
-	fail bool
-}
-
-func (m *mockReportCSV) opener(filePath string) (file *os.File, err error) {
-	if m.fail {
-		return nil, errors.New("fail") // nolint // just for testing
-	}
-
-	return nil, nil
-}
-
-func (m *mockReportCSV) writer(file *os.File, lines [][]string) error {
-	if m.fail {
-		return errors.New("fail") // nolint // just for testing
-	}
-
-	return nil
-}
-
-type mockReportJSON struct {
-	failupload   bool
-	failgenerate bool
-}
-
-func (m *mockReportJSON) uploader(filePath string, reportJSON []byte) error {
-	if m.failupload {
-		return errReportTestFail
-	}
-
-	return nil
-}
-
-func (m *mockReportJSON) generate(
-	ignoreArchived bool,
-	allResults []ReportResponse,
-	teamAccess map[string]string,
-) ([]byte, error) {
-	if m.failgenerate {
-		return nil, errReportTestFail
-	}
-
-	return nil, nil
-}
-
-func (m *mockReportJSON) generateWebhook(map[string][]WebhookResponse) ([]byte, error) {
-	if m.failgenerate {
-		return nil, errReportTestFail
-	}
-
-	return nil, nil
-}
-
-type mockReportAccess struct {
-	fail        bool
-	returnValue map[string]string
-}
-
-func (m *mockReportAccess) getReport() (map[string]string, error) {
-	if m.fail {
-		return m.returnValue, errReportTestAccessFail
-	}
-
-	return m.returnValue, nil
 }
 
 func Test_reportCreate(t *testing.T) {
