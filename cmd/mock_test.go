@@ -14,9 +14,10 @@ import (
 var (
 	errTestFail                    = errors.New("fail")
 	errTestAccessFail              = errors.New("access fail")
-	mockRateLimitResponseFile      = "../testdata/mockRestRateLimitResponse.json"
-	mockRateLimitEmptyResponseFile = "../testdata/mockRestRateLimitEmptyResponse.json"
-	mockRestEmptyBodyResponseFile  = "../testdata/mockRestEmptyBodyResponse.json"
+	errTestMarshalFail             = errors.New("Marshalling failed")                  // nolint // expected global
+	mockRateLimitResponseFile      = "../testdata/mockRestRateLimitResponse.json"      // nolint // expected global
+	mockRateLimitEmptyResponseFile = "../testdata/mockRestRateLimitEmptyResponse.json" // nolint // expected global
+	mockRestEmptyBodyResponseFile  = "../testdata/mockRestEmptyBodyResponse.json"      // nolint // expected global
 )
 
 type mockReportGetter struct {
@@ -32,11 +33,12 @@ func (m *mockReportGetter) getReport() ([]ReportResponse, error) {
 }
 
 type mockReportCSV struct {
-	fail bool
+	failOpen  bool
+	failWrite bool
 }
 
 func (m *mockReportCSV) opener(filePath string) (file *os.File, err error) {
-	if m.fail {
+	if m.failOpen {
 		return nil, errTestFail
 	}
 
@@ -44,7 +46,7 @@ func (m *mockReportCSV) opener(filePath string) (file *os.File, err error) {
 }
 
 func (m *mockReportCSV) writer(file *os.File, lines [][]string) error {
-	if m.fail {
+	if m.failWrite {
 		return errTestFail
 	}
 
@@ -159,13 +161,8 @@ func (t *mockSender) send(req *graphqlclient.Request) error {
 	return nil
 }
 
-func mockJsonMarshalError(v interface{}) ([]byte, error) {
-	return []byte{}, errors.New("Marshalling failed")
-}
-
-type mockTeportWebhookGetter interface {
-	getRepositoryList(*reportWebhook) ([]repositoryCursorList, error)
-	getWebhooks(*reportWebhook, []repositoryCursorList) (map[string][]WebhookResponse, error)
+func mockJSONMarshalError(v interface{}) ([]byte, error) {
+	return []byte{}, errTestMarshalFail
 }
 
 type mockReportWebhookGetterService struct {
@@ -177,15 +174,18 @@ type mockReportWebhookGetterService struct {
 
 func (r *mockReportWebhookGetterService) getRepositoryList(report *reportWebhook) ([]repositoryCursorList, error) {
 	if r.failRepoList {
-		return r.returnRepoList, errors.New("fail")
+		return r.returnRepoList, errTestFail
 	}
 
 	return r.returnRepoList, nil
 }
 
-func (r *mockReportWebhookGetterService) getWebhooks(report *reportWebhook, list []repositoryCursorList) (map[string][]WebhookResponse, error) {
+func (r *mockReportWebhookGetterService) getWebhooks(
+	report *reportWebhook,
+	list []repositoryCursorList,
+) (map[string][]WebhookResponse, error) {
 	if r.failWebhook {
-		return r.returnRepositoryCursorList, errors.New("fail")
+		return r.returnRepositoryCursorList, errTestFail
 	}
 
 	return r.returnRepositoryCursorList, nil
@@ -196,6 +196,7 @@ func mockHTTPResponder(method, url, responseFile string, statusCode int) {
 	if err != nil {
 		log.Fatalf("failed to read test data: %v", err)
 	}
+
 	httpmock.RegisterResponder(
 		method,
 		url,

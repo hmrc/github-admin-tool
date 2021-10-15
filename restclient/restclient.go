@@ -12,7 +12,10 @@ import (
 
 const RestEndpoint = "https://api.github.com"
 
-var errStatusCode = errors.New("returned a non-200 status code")
+var (
+	errStatusCode       = errors.New("returned a non-200 status code")
+	errHTTPUnauthorised = errors.New("unauthorised status")
+)
 
 type Client struct {
 	endpoint   string
@@ -81,7 +84,7 @@ func (c *Client) Run(ctx context.Context, resp interface{}) (err error) {
 		}
 
 		if res.StatusCode == http.StatusUnauthorized {
-			return fmt.Errorf("unauthorised status: %s", c.endpoint)
+			return fmt.Errorf("%w, %s", errHTTPUnauthorised, c.endpoint)
 		}
 
 		return fmt.Errorf("incorrect status: %w, %s", errStatusCode, c.endpoint)

@@ -31,7 +31,7 @@ func (r *reportCSVService) writer(file *os.File, lines [][]string) error {
 	writer := csv.NewWriter(file)
 
 	if err := writer.WriteAll(lines); err != nil {
-		return fmt.Errorf("failed to create %s: %w", filePath, err)
+		return fmt.Errorf("failed to write to file %s: %w", filePath, err)
 	}
 
 	log.Printf("Report written to %s", filePath)
@@ -45,7 +45,11 @@ func reportCSVUpload(service reportCSV, filePath string, lines [][]string) error
 		return fmt.Errorf("%w", err)
 	}
 
-	return service.writer(file, lines)
+	if err := service.writer(file, lines); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }
 
 func reportCSVGenerate(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string {

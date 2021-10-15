@@ -29,15 +29,17 @@ func (t *mockBodyReader) read(body io.Reader) ([]byte, error) {
 }
 
 func Test_bodyReaderService_read(t *testing.T) {
-	var client = &http.Client{
+	client := &http.Client{
 		Timeout: time.Duration(1000) * time.Millisecond,
 	}
 	bodyErrorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Length", "1")
 	}))
-	mockResponse, err := client.Get(bodyErrorServer.URL)
+
+	mockResponse, err := client.Get(bodyErrorServer.URL) // nolint // noctx lint fail - this is only for test so ignore
 	if err != nil {
 		t.Errorf("bodyReaderService.read() could not setup read failure %+v", err)
+
 		return
 	}
 
@@ -46,6 +48,7 @@ func Test_bodyReaderService_read(t *testing.T) {
 	type args struct {
 		body io.Reader
 	}
+
 	tests := []struct {
 		name         string
 		b            *bodyReaderService
@@ -67,15 +70,19 @@ func Test_bodyReaderService_read(t *testing.T) {
 			wantErr:      false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.args.body = tt.stringToRead
 			b := &bodyReaderService{}
 			gotResult, err := b.read(tt.args.body)
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("bodyReaderService.read() error = %+v, wantErr %+v", err, tt.wantErr)
+
 				return
 			}
+
 			if !reflect.DeepEqual(gotResult, tt.wantResult) {
 				t.Errorf("bodyReaderService.read() = %v, want %v", gotResult, tt.wantResult)
 			}
@@ -88,6 +95,7 @@ func TestNewClient(t *testing.T) {
 		path  string
 		token string
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -108,6 +116,7 @@ func TestNewClient(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := NewClient(tt.args.path, tt.args.token); !reflect.DeepEqual(got, tt.want) {

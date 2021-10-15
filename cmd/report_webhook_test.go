@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	"testing"
 	"time"
@@ -24,12 +23,12 @@ func Test_reportWebhookPostRun(t *testing.T) {
 		name          string
 		args          args
 		filePath      string
-		mockJsonError bool
+		mockJSONError bool
 		wantErr       bool
 	}{
 		{
 			name:          "reportWebhookPostRun marshal failure",
-			mockJsonError: true,
+			mockJSONError: true,
 			wantErr:       true,
 		},
 		{
@@ -50,8 +49,8 @@ func Test_reportWebhookPostRun(t *testing.T) {
 	}()
 
 	for _, tt := range tests {
-		if tt.mockJsonError {
-			jsonMarshal = mockJsonMarshalError
+		if tt.mockJSONError {
+			jsonMarshal = mockJSONMarshalError
 		} else {
 			jsonMarshal = json.Marshal
 		}
@@ -299,6 +298,7 @@ func Test_reportWebhookCreate(t *testing.T) {
 	type args struct {
 		r *reportWebhook
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -381,7 +381,7 @@ func Test_reportWebhookCreate(t *testing.T) {
 				r: &reportWebhook{
 					reportWebhookGetter: &mockReportWebhookGetterService{},
 					reportCSV: &mockReportCSV{
-						fail: true,
+						failOpen: true,
 					},
 				},
 			},
@@ -398,6 +398,7 @@ func Test_reportWebhookCreate(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := reportWebhookCreate(tt.args.r); (err != nil) != tt.wantErr {
@@ -410,9 +411,11 @@ func Test_reportWebhookCreate(t *testing.T) {
 func Test_reportWebhookGetterService_getRepositoryList(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
+
 	type args struct {
 		report *reportWebhook
 	}
+
 	tests := []struct {
 		name               string
 		r                  *reportWebhookGetterService
@@ -464,17 +467,22 @@ func Test_reportWebhookGetterService_getRepositoryList(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.mockHTTPReturnFile != "" {
 				mockHTTPResponder("POST", tt.mockHTTPURL, tt.mockHTTPReturnFile, tt.mockHTTPStatusCode)
 			}
+
 			r := &reportWebhookGetterService{}
 			got, err := r.getRepositoryList(tt.args.report)
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reportWebhookGetterService.getRepositoryList() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
+
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("reportWebhookGetterService.getRepositoryList() = %+v, want %+v", got, tt.want)
 			}
@@ -487,8 +495,10 @@ func Test_reportWebhookGetterService_getWebhooks(t *testing.T) {
 	originalConfig := config
 
 	httpmock.Activate()
+
 	defer func() {
 		httpmock.DeactivateAndReset()
+
 		config = originalConfig
 	}()
 
@@ -626,8 +636,6 @@ func Test_reportWebhookGetterService_getWebhooks(t *testing.T) {
 							"../testdata/mockRestWebhookResponse.json",
 							200,
 						)
-
-						log.Printf("setting up responder for %s", repoName)
 					}
 				}
 			}
@@ -635,6 +643,7 @@ func Test_reportWebhookGetterService_getWebhooks(t *testing.T) {
 			got, err := r.getWebhooks(tt.args.report, tt.args.repositories)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reportWebhookGetterService.getWebhooks() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {

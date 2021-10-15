@@ -200,7 +200,7 @@ func Test_reportCreate(t *testing.T) {
 			args: args{
 				r: &report{
 					reportGetter: &mockReportGetter{},
-					reportCSV:    &mockReportCSV{fail: true},
+					reportCSV:    &mockReportCSV{failOpen: true},
 					reportAccess: &mockReportAccess{},
 				},
 			},

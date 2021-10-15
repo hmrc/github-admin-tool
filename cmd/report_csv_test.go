@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -229,8 +230,23 @@ func Test_reportCSVService_writer(t *testing.T) {
 		lines [][]string
 	}
 
-	nonReadFile, _ := os.Open("../testdata/mockFileReadButNotWrite.txt")
-	newFile, _ := os.Create("/tmp/test_file.txt")
+	errFileName := "../testdata/mockFileReadButNotWrite.txt"
+	os.Chmod(errFileName, 0700)
+	defer os.Chmod(errFileName, 0700)
+	nonReadFile, err := os.Open(errFileName)
+	if err != nil {
+		fmt.Println("could not open file")
+
+		return
+	}
+	os.Chmod(errFileName, 0000)
+
+	newFile, err := os.Create("/tmp/test_file.txt")
+	if err != nil {
+		fmt.Println("could not create file")
+
+		return
+	}
 
 	tests := []struct {
 		name    string
@@ -334,6 +350,52 @@ func Test_reportCSVWebhookGenerate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := reportCSVWebhookGenerate(tt.args.webhooks); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("reportCSVWebhookGenerate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_reportCSVUpload(t *testing.T) {
+	type args struct {
+		service  reportCSV
+		filePath string
+		lines    [][]string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "reportCSVUpload fails on open",
+			args: args{
+				service: &mockReportCSV{
+					failOpen: true,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "reportCSVUpload fails on write",
+			args: args{
+				service: &mockReportCSV{
+					failWrite: true,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "reportCSVUpload success",
+			args: args{
+				service: &mockReportCSV{},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := reportCSVUpload(tt.args.service, tt.args.filePath, tt.args.lines); (err != nil) != tt.wantErr {
+				t.Errorf("reportCSVUpload() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

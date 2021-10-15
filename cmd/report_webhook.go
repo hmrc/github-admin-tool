@@ -16,9 +16,9 @@ import (
 )
 
 var (
-	jsonMarshal           = json.Marshal
-	reportWebhookResponse WebhookCmdResponse // nolint // needed for cobra
-	reportWebhookCmd      = &cobra.Command{  // nolint // needed for cobra
+	jsonMarshal           = json.Marshal     // nolint // expected global
+	reportWebhookResponse WebhookCmdResponse // nolint // expected global
+	reportWebhookCmd      = &cobra.Command{  // nolint // expected global
 		Use:   "report-webhook",
 		Short: "Run a report to generate a csv containing webhooks for organisation repos",
 		Long: `Webhook report can often run over 15 minutes depending on large number of repositories in your org.  
@@ -133,6 +133,7 @@ func reportWebhookValidateFlags(r *reportWebhook, cmd *cobra.Command) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
+
 	reportWebhookResponse.FilePath = r.filePath
 
 	r.fileType, err = cmd.Flags().GetString("file-type")
