@@ -29,7 +29,7 @@ func TestGetRateLimit(t *testing.T) {
 			args: args{
 				token: "TOKEN",
 			},
-			mockHTTPReturnFile: "../testdata/mockEmptyResponse.json",
+			mockHTTPReturnFile: "testdata/mockEmptyResponse.json",
 			wantErr:            true,
 		},
 		{
@@ -37,7 +37,7 @@ func TestGetRateLimit(t *testing.T) {
 			args: args{
 				token: "TOKEN",
 			},
-			mockHTTPReturnFile: "../testdata/mockRestRateLimitResponse.json",
+			mockHTTPReturnFile: "testdata/mockRestRateLimitResponse.json",
 			want: RateResponse{
 				Resources: RateResources{
 					Rest: RateRest{

@@ -189,7 +189,7 @@ func Test_reportCSVService_writer(t *testing.T) {
 		lines [][]string
 	}
 
-	errFileName := "../testdata/mockFileReadButNotWrite.txt"
+	errFileName := "testdata/mockFileReadButNotWrite.txt"
 	defer os.Chmod(errFileName, 0700) // nolint // only testing so won't check err
 
 	nonReadFile, err := os.Open(errFileName)

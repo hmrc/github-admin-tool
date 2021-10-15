@@ -111,7 +111,7 @@ func Test_reportWebhookRun(t *testing.T) {
 			args: args{
 				cmd: cmdAllSetFlags,
 			},
-			mockHTTPReturnFile: "../testdata/blank.json",
+			mockHTTPReturnFile: "testdata/blank.json",
 			mockHTTPURL:        "https://api.github.com/rate_limit",
 			mockHTTPStatusCode: 401,
 			wantErr:            true,
@@ -138,7 +138,7 @@ func Test_reportWebhookRun(t *testing.T) {
 					mockHTTPResponder(
 						"POST",
 						"https://api.github.com/graphql",
-						"../testdata/mockGraphqlWebhookRepoResponse.json",
+						"testdata/mockGraphqlWebhookRepoResponse.json",
 						200,
 					)
 				}
@@ -433,7 +433,7 @@ func Test_reportWebhookGetterService_getRepositoryList(t *testing.T) {
 					startCursor: "some-cursor",
 				},
 			},
-			mockHTTPReturnFile: "../testdata/mockEmptyResponse.json",
+			mockHTTPReturnFile: "testdata/mockEmptyResponse.json",
 			mockHTTPURL:        "https://api.github.com/graphql",
 			mockHTTPStatusCode: 401,
 			wantErr:            true,
@@ -445,7 +445,7 @@ func Test_reportWebhookGetterService_getRepositoryList(t *testing.T) {
 					dryRun: true,
 				},
 			},
-			mockHTTPReturnFile: "../testdata/mockGraphqlWebhookRepoResponse.json",
+			mockHTTPReturnFile: "testdata/mockGraphqlWebhookRepoResponse.json",
 			mockHTTPURL:        "https://api.github.com/graphql",
 			mockHTTPStatusCode: 200,
 			wantErr:            false,
@@ -457,7 +457,7 @@ func Test_reportWebhookGetterService_getRepositoryList(t *testing.T) {
 					ignoreArchived: true,
 				},
 			},
-			mockHTTPReturnFile: "../testdata/mockGraphqlWebhookRepoWithArchivedResponse.json",
+			mockHTTPReturnFile: "testdata/mockGraphqlWebhookRepoWithArchivedResponse.json",
 			mockHTTPURL:        "https://api.github.com/graphql",
 			mockHTTPStatusCode: 200,
 			want: []repositoryCursorList{{
@@ -633,7 +633,7 @@ func Test_reportWebhookGetterService_getWebhooks(t *testing.T) {
 						mockHTTPResponder(
 							"GET",
 							fmt.Sprintf("https://api.github.com/repos/some-org/%s/hooks", repoName),
-							"../testdata/mockRestWebhookResponse.json",
+							"testdata/mockRestWebhookResponse.json",
 							200,
 						)
 					}

@@ -14,11 +14,11 @@ import (
 var (
 	errTestFail                    = errors.New("fail")
 	errTestAccessFail              = errors.New("access fail")
-	errTestMarshalFail             = errors.New("Marshalling failed")                  // nolint // expected global
-	mockRateLimitResponseFile      = "../testdata/mockRestRateLimitResponse.json"      // nolint // expected global
-	mockRateLimitEmptyResponseFile = "../testdata/mockRestRateLimitEmptyResponse.json" // nolint // expected global
-	mockRestEmptyBodyResponseFile  = "../testdata/mockRestEmptyBodyResponse.json"      // nolint // expected global
-	mockEmptyCSVReportRows         = [][]string{                                       // nolint // expected global
+	errTestMarshalFail             = errors.New("Marshalling failed")               // nolint // expected global
+	mockRateLimitResponseFile      = "testdata/mockRestRateLimitResponse.json"      // nolint // expected global
+	mockRateLimitEmptyResponseFile = "testdata/mockRestRateLimitEmptyResponse.json" // nolint // expected global
+	mockRestEmptyBodyResponseFile  = "testdata/mockRestEmptyBodyResponse.json"      // nolint // expected global
+	mockEmptyCSVReportRows         = [][]string{                                    // nolint // expected global
 		{
 			"Repo Name",
 			"Default Branch Name",

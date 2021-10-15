@@ -47,7 +47,7 @@ func Test_reportAccessService_getReport(t *testing.T) {
 			wantErr:            true,
 			teamValue:          "some-org",
 			dryRunValue:        false,
-			mockHTTPReturnFile: "../testdata/mockAccessResponseError.json",
+			mockHTTPReturnFile: "testdata/mockAccessResponseError.json",
 			mockHTTPStatus:     400,
 		},
 		{
@@ -61,7 +61,7 @@ func Test_reportAccessService_getReport(t *testing.T) {
 			wantErr:            false,
 			teamValue:          "some-org",
 			dryRunValue:        false,
-			mockHTTPReturnFile: "../testdata/mockAccessResponse.json",
+			mockHTTPReturnFile: "testdata/mockAccessResponse.json",
 			mockHTTPStatus:     200,
 		},
 	}

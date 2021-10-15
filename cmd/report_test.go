@@ -28,19 +28,19 @@ func Test_reportGetterService_getReport(t *testing.T) {
 	}{
 		{
 			name:               "getReport returns empty",
-			mockHTTPReturnFile: "../testdata/mockEmptyResponse.json",
+			mockHTTPReturnFile: "testdata/mockEmptyResponse.json",
 			want:               nil,
 			dryRunValue:        false,
 		},
 		{
 			name:               "getReport dry run true",
-			mockHTTPReturnFile: "../testdata/mockRepoNodesJsonResponse.json",
+			mockHTTPReturnFile: "testdata/mockRepoNodesJsonResponse.json",
 			want:               mockEmptyResult,
 			dryRunValue:        true,
 		},
 		{
 			name:               "getReport returns one",
-			mockHTTPReturnFile: "../testdata/mockRepoNodesJsonResponse.json",
+			mockHTTPReturnFile: "testdata/mockRepoNodesJsonResponse.json",
 			want: []ReportResponse{{Organization{Repositories{
 				TotalCount: 1,
 				Nodes: []RepositoriesNode{{

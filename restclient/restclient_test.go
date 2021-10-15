@@ -186,7 +186,7 @@ func TestClient_Run(t *testing.T) {
 				ctx: ctx,
 			},
 			mockHTTPStatusCode: 401,
-			mockHTTPReturnFile: "../testdata/mockEmptyResponse.json",
+			mockHTTPReturnFile: "testdata/mockEmptyResponse.json",
 		},
 		{
 			name:    "Run fails on status code",
@@ -199,7 +199,7 @@ func TestClient_Run(t *testing.T) {
 				ctx: ctx,
 			},
 			mockHTTPStatusCode: 404,
-			mockHTTPReturnFile: "../testdata/mockRest404Response.json",
+			mockHTTPReturnFile: "testdata/mockRest404Response.json",
 		},
 		{
 			name:    "Run fails on unauthorized code",
@@ -212,7 +212,7 @@ func TestClient_Run(t *testing.T) {
 				ctx: ctx,
 			},
 			mockHTTPStatusCode: 401,
-			mockHTTPReturnFile: "../testdata/mockRest401Response.json",
+			mockHTTPReturnFile: "testdata/mockRest401Response.json",
 		},
 		{
 			name:    "Run fails on reading body",
@@ -228,7 +228,7 @@ func TestClient_Run(t *testing.T) {
 				ctx: ctx,
 			},
 			mockHTTPStatusCode: 200,
-			mockHTTPReturnFile: "../testdata/mockRestEmptyBodyResponse.json",
+			mockHTTPReturnFile: "testdata/mockRestEmptyBodyResponse.json",
 		},
 		{
 			name:    "Run fails on unmarshalling",
@@ -241,7 +241,7 @@ func TestClient_Run(t *testing.T) {
 				ctx: ctx,
 			},
 			mockHTTPStatusCode: 200,
-			mockHTTPReturnFile: "../testdata/mockEmptyResponse.json",
+			mockHTTPReturnFile: "testdata/mockEmptyResponse.json",
 		},
 		{
 			name:    "Run is success",
@@ -257,7 +257,7 @@ func TestClient_Run(t *testing.T) {
 				ctx: ctx,
 			},
 			mockHTTPStatusCode: 200,
-			mockHTTPReturnFile: "../testdata/mockRestRateLimitResponse.json",
+			mockHTTPReturnFile: "testdata/mockRestRateLimitResponse.json",
 		},
 	}
 

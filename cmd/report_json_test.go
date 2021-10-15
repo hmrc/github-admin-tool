@@ -61,7 +61,7 @@ func Test_reportJSONService_generate(t *testing.T) {
 		{
 			name:     "reportJSONService_generate error",
 			wantErr:  true,
-			wantFile: "../testdata/blank.json",
+			wantFile: "testdata/blank.json",
 		},
 		{
 			name: "reportJSONService_generate is success",
@@ -78,7 +78,7 @@ func Test_reportJSONService_generate(t *testing.T) {
 					},
 				}},
 			},
-			wantFile: "../testdata/generate_one_repo.json",
+			wantFile: "testdata/generate_one_repo.json",
 		},
 		{
 			name: "reportJSONService_generate is success with one archived",
@@ -109,7 +109,7 @@ func Test_reportJSONService_generate(t *testing.T) {
 					},
 				},
 			},
-			wantFile: "../testdata/generate_one_repo.json",
+			wantFile: "testdata/generate_one_repo.json",
 		},
 	}
 
@@ -152,7 +152,7 @@ func Test_reportJSONService_generateWebhook(t *testing.T) {
 		{
 			name:     "reportJSONService_generateWebhook error",
 			wantErr:  true,
-			wantFile: "../testdata/blank.json",
+			wantFile: "testdata/blank.json",
 		},
 		{
 			name: "reportJSONService_generateWebhook is success",
@@ -170,7 +170,7 @@ func Test_reportJSONService_generateWebhook(t *testing.T) {
 					},
 				},
 			},
-			wantFile: "../testdata/generate_one_webhook_response.json",
+			wantFile: "testdata/generate_one_webhook_response.json",
 		},
 	}
 
