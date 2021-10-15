@@ -344,8 +344,6 @@ func (r *reportWebhookGetterService) getWebhooks(
 				continue
 			}
 
-			log.Printf("repo name is %s, cursor is %s", repositoryName, repositoryCursorList.cursor)
-
 			allResults[repositoryName] = response
 			reportWebhookResponse.RestCalls++
 		}
