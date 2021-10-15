@@ -25,6 +25,7 @@ fmt-check: gofmt
 
 .PHONY: test
 test: go
+	echo ${PWD}
 	@$(DOCKER) go test -cover ./...
 
 .PHONY: test-coverage
