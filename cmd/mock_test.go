@@ -18,6 +18,45 @@ var (
 	mockRateLimitResponseFile      = "../testdata/mockRestRateLimitResponse.json"      // nolint // expected global
 	mockRateLimitEmptyResponseFile = "../testdata/mockRestRateLimitEmptyResponse.json" // nolint // expected global
 	mockRestEmptyBodyResponseFile  = "../testdata/mockRestEmptyBodyResponse.json"      // nolint // expected global
+	mockEmptyCSVReportRows         = [][]string{                                       // nolint // expected global
+		{
+			"Repo Name",
+			"Default Branch Name",
+			"Is Archived",
+			"Is Private",
+			"Is Empty",
+			"Is Fork",
+			"Parent Repo Name",
+			"Merge Commit Allowed",
+			"Squash Merge Allowed",
+			"Rebase Merge Allowed",
+			"Team Permissions",
+			"(BP1) IsAdminEnforced",
+			"(BP1) RequiresCommitSignatures",
+			"(BP1) RestrictsPushes",
+			"(BP1) RequiresApprovingReviews",
+			"(BP1) RequiresStatusChecks",
+			"(BP1) RequiresCodeOwnerReviews",
+			"(BP1) DismissesStaleReviews",
+			"(BP1) RequiresStrictStatusChecks",
+			"(BP1) RequiredApprovingReviewCount",
+			"(BP1) AllowsForcePushes",
+			"(BP1) AllowsDeletions",
+			"(BP1) Branch Protection Pattern",
+			"(BP2) IsAdminEnforced",
+			"(BP2) RequiresCommitSignatures",
+			"(BP2) RestrictsPushes",
+			"(BP2) RequiresApprovingReviews",
+			"(BP2) RequiresStatusChecks",
+			"(BP2) RequiresCodeOwnerReviews",
+			"(BP2) DismissesStaleReviews",
+			"(BP2) RequiresStrictStatusChecks",
+			"(BP2) RequiredApprovingReviewCount",
+			"(BP2) AllowsForcePushes",
+			"(BP2) AllowsDeletions",
+			"(BP2) Branch Protection Pattern",
+		},
+	}
 )
 
 type mockReportGetter struct {

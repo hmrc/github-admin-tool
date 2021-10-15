@@ -51,8 +51,6 @@ func Test_reportWebhookPostRun(t *testing.T) {
 	for _, tt := range tests {
 		if tt.mockJSONError {
 			jsonMarshal = mockJSONMarshalError
-		} else {
-			jsonMarshal = json.Marshal
 		}
 
 		reportWebhookResponse.FilePath = tt.filePath
@@ -62,6 +60,8 @@ func Test_reportWebhookPostRun(t *testing.T) {
 				t.Errorf("reportWebhookPostRun() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+
+		jsonMarshal = json.Marshal
 	}
 }
 
