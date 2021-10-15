@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -191,19 +190,19 @@ func Test_reportCSVService_writer(t *testing.T) {
 	}
 
 	errFileName := "../testdata/mockFileReadButNotWrite.txt"
-	os.Chmod(errFileName, 0700)
-	defer os.Chmod(errFileName, 0700)
+	defer os.Chmod(errFileName, 0700) // nolint // only testing so won't check err
+
 	nonReadFile, err := os.Open(errFileName)
 	if err != nil {
-		fmt.Println("could not open file")
+		t.Error("could not open file")
 
 		return
 	}
-	os.Chmod(errFileName, 0000)
+	os.Chmod(errFileName, 0000) // nolint // only testing so won't check err
 
-	newFile, err := os.Create("/tmp/test_file.txt")
+	newFile, err := os.Create("/tmp/test_file.txt") // nolint // only testing so ignore
 	if err != nil {
-		fmt.Println("could not create file")
+		t.Error("could not create file")
 
 		return
 	}
@@ -321,6 +320,7 @@ func Test_reportCSVUpload(t *testing.T) {
 		filePath string
 		lines    [][]string
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -352,6 +352,7 @@ func Test_reportCSVUpload(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := reportCSVUpload(tt.args.service, tt.args.filePath, tt.args.lines); (err != nil) != tt.wantErr {
