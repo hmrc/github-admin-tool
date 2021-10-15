@@ -1,0 +1,80 @@
+[
+    {
+      "type": "Repository",
+      "id": 12345670,
+      "name": "web",
+      "active": true,
+      "events": [
+        "push"
+      ],
+      "config": {
+        "content_type": "json",
+        "insecure_ssl": "0",
+        "url": "https://trigger.some_url.com/json"
+      },
+      "updated_at": "2019-03-06T12:13:15Z",
+      "created_at": "2018-11-07T10:54:27Z",
+      "url": "https://api.github.com/repos/some-org/repo1/hooks/12345678",
+      "test_url": "https://api.github.com/repos/some-org/repo1/hooks/12345678/test",
+      "ping_url": "https://api.github.com/repos/some-org/repo1/hooks/12345678/pings",
+      "deliveries_url": "https://api.github.com/repos/some-org/repo1/hooks/12345678/deliveries",
+      "last_response": {
+        "code": null,
+        "status": "unused",
+        "message": null
+      }
+    },
+    {
+      "type": "Repository",
+      "id": 12345671,
+      "name": "web",
+      "active": true,
+      "events": [
+        "push"
+      ],
+      "config": {
+        "url": "https://www.some_url.com/sync",
+        "insecure_ssl": "0",
+        "content_type": "form"
+      },
+      "updated_at": "2018-11-07T11:47:40Z",
+      "created_at": "2018-11-07T11:47:40Z",
+      "url": "https://api.github.com/repos/some-org/repo1/hooks/12345671",
+      "test_url": "https://api.github.com/repos/some-org/repo1/hooks/12345671/test",
+      "ping_url": "https://api.github.com/repos/some-org/repo1/hooks/12345671/pings",
+      "deliveries_url": "https://api.github.com/some-org/repo1/hooks/12345671/deliveries",
+      "last_response": {
+        "code": null,
+        "status": "unused",
+        "message": null
+      }
+    },
+    {
+      "type": "Repository",
+      "id": 12345672,
+      "name": "web",
+      "active": true,
+      "events": [
+        "issue_comment",
+        "pull_request",
+        "pull_request_review_comment",
+        "push"
+      ],
+      "config": {
+        "content_type": "json",
+        "url": "https://www.some_url.com/sync",
+        "insecure_ssl": "0"
+      },
+      "updated_at": "2018-11-07T11:47:41Z",
+      "created_at": "2018-11-07T11:47:41Z",
+      "url": "https://api.github.com/repos/some-org/repo1/hooks/12345672",
+      "test_url": "https://api.github.com/repos/some-org/repo1/hooks/12345672/test",
+      "ping_url": "https://api.github.com/repos/some-org/repo1/hooks/12345672/pings",
+      "deliveries_url": "https://api.github.com/some-org/repo1/hooks/12345672/deliveries",
+      "last_response": {
+        "code": null,
+        "status": "unused",
+        "message": null
+      }
+    }
+]

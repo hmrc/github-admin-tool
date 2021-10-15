@@ -1,0 +1,23 @@
+{
+  "data": {
+    "organization": {
+      "repositories": {
+        "totalCount": 2,
+        "pageInfo": {
+          "endCursor": "some-cursor",
+          "hasNextPage": false
+        },
+        "nodes": [
+          {
+            "isArchived": true,
+            "name": "repo1"
+          },
+          {
+            "isArchived": false,
+            "name": "repo2"
+          }
+        ]
+      }
+    }
+  }
+}   
