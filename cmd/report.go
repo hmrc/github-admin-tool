@@ -11,22 +11,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	// IterationCount the number of repos per result set.
-	IterationCount int = 100
-)
-
-var (
-	ignoreArchived bool   // nolint // modifying within this package
-	filePath       string // nolint // modifying within this package
-	fileType       string // nolint // modifying within this package
-
-	reportCmd = &cobra.Command{ // nolint // needed for cobra
-		Use:   "report",
-		Short: "Run a report to generate a csv containing information on all organisation repos",
-		RunE:  reportRun,
-	}
-)
+var reportCmd = &cobra.Command{ // nolint // needed for cobra
+	Use:   "report",
+	Short: "Run a report to generate a csv containing information on all organisation repos",
+	RunE:  reportRun,
+}
 
 type report struct {
 	reportGetter reportGetter
@@ -106,8 +95,8 @@ func reportCreate(r *report, dryRun, ignoreArchived bool, filePath, fileType str
 		return nil
 	}
 
-	lines := r.reportCSV.generate(ignoreArchived, allResults, teamAccess)
-	if err := r.reportCSV.uploader(filePath, lines); err != nil {
+	lines := reportCSVGenerate(ignoreArchived, allResults, teamAccess)
+	if err := reportCSVUpload(r.reportCSV, filePath, lines); err != nil {
 		return fmt.Errorf("upload CSV failed: %w", err)
 	}
 
@@ -116,7 +105,7 @@ func reportCreate(r *report, dryRun, ignoreArchived bool, filePath, fileType str
 
 // nolint // needed for cobra
 func init() {
-	reportCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", true, "Ignore archived repositores")
+	reportCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", true, "Ignore archived repositories")
 	reportCmd.Flags().StringVarP(&filePath, "file-path", "f", "report.csv", "file path for report to be created, must be .csv or .json")
 	reportCmd.Flags().StringVarP(&fileType, "file-type", "t", "csv", "file type, must be csv or json")
 	rootCmd.AddCommand(reportCmd)
@@ -199,7 +188,7 @@ func (r *reportGetterService) getReport() ([]ReportResponse, error) {
 		bar              progressbar.Bar
 	)
 
-	client := graphqlclient.NewClient("https://api.github.com/graphql")
+	client := graphqlclient.NewClient()
 
 	query := reportQuery()
 

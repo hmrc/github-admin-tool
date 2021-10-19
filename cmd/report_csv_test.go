@@ -1,49 +1,10 @@
 package cmd
 
 import (
+	"os"
 	"reflect"
 	"testing"
 )
-
-var TestEmptyCSVRows = [][]string{ // nolint // want to use this in both tests
-	{
-		"Repo Name",
-		"Default Branch Name",
-		"Is Archived",
-		"Is Private",
-		"Is Empty",
-		"Is Fork",
-		"Parent Repo Name",
-		"Merge Commit Allowed",
-		"Squash Merge Allowed",
-		"Rebase Merge Allowed",
-		"Team Permissions",
-		"(BP1) IsAdminEnforced",
-		"(BP1) RequiresCommitSignatures",
-		"(BP1) RestrictsPushes",
-		"(BP1) RequiresApprovingReviews",
-		"(BP1) RequiresStatusChecks",
-		"(BP1) RequiresCodeOwnerReviews",
-		"(BP1) DismissesStaleReviews",
-		"(BP1) RequiresStrictStatusChecks",
-		"(BP1) RequiredApprovingReviewCount",
-		"(BP1) AllowsForcePushes",
-		"(BP1) AllowsDeletions",
-		"(BP1) Branch Protection Pattern",
-		"(BP2) IsAdminEnforced",
-		"(BP2) RequiresCommitSignatures",
-		"(BP2) RestrictsPushes",
-		"(BP2) RequiresApprovingReviews",
-		"(BP2) RequiresStatusChecks",
-		"(BP2) RequiresCodeOwnerReviews",
-		"(BP2) DismissesStaleReviews",
-		"(BP2) RequiresStrictStatusChecks",
-		"(BP2) RequiredApprovingReviewCount",
-		"(BP2) AllowsForcePushes",
-		"(BP2) AllowsDeletions",
-		"(BP2) Branch Protection Pattern",
-	},
-}
 
 func Test_reportCSVParse(t *testing.T) {
 	var (
@@ -153,7 +114,7 @@ func Test_reportCSVLines(t *testing.T) {
 		"false", "0", "false", "false", "SOMEREGEXP",
 	)
 
-	twoCSVRows := TestEmptyCSVRows
+	twoCSVRows := mockEmptyCSVReportRows
 	twoCSVRows = append(twoCSVRows, wantWithBP...)
 
 	type args struct {
@@ -168,7 +129,7 @@ func Test_reportCSVLines(t *testing.T) {
 		{
 			name: "reportCSVLines returns no extra rows",
 			args: args{parsed: testEmptyList},
-			want: TestEmptyCSVRows,
+			want: mockEmptyCSVReportRows,
 		},
 		{
 			name: "reportCSVLines returns some rows",
@@ -186,10 +147,9 @@ func Test_reportCSVLines(t *testing.T) {
 	}
 }
 
-func Test_reportCSVService_uploader(t *testing.T) {
+func Test_reportCSVService_opener(t *testing.T) {
 	type args struct {
 		filePath string
-		lines    [][]string
 	}
 
 	tests := []struct {
@@ -199,14 +159,14 @@ func Test_reportCSVService_uploader(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "reportCSVFile success",
+			name: "reportCSVFile opener success",
 			args: args{
 				filePath: "/tmp/report.csv",
 			},
 			wantErr: false,
 		},
 		{
-			name: "reportCSVFile error",
+			name: "reportCSVFile opener error",
 			args: args{
 				filePath: "/some/dir/doesnt/exist/report.csv",
 			},
@@ -216,14 +176,71 @@ func Test_reportCSVService_uploader(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.r.uploader(tt.args.filePath, tt.args.lines); (err != nil) != tt.wantErr {
+			if _, err := tt.r.opener(tt.args.filePath); (err != nil) != tt.wantErr {
 				t.Errorf("reportCSVFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func Test_reportCSVService_generate(t *testing.T) {
+func Test_reportCSVService_writer(t *testing.T) {
+	type args struct {
+		file  *os.File
+		lines [][]string
+	}
+
+	errFileName := "testdata/mockFileReadButNotWrite.txt"
+	defer os.Chmod(errFileName, 0700) // nolint // only testing so won't check err
+
+	nonReadFile, err := os.Open(errFileName)
+	if err != nil {
+		t.Error("could not open file")
+
+		return
+	}
+	os.Chmod(errFileName, 0000) // nolint // only testing so won't check err
+
+	newFile, err := os.Create("/tmp/test_file.txt") // nolint // only testing so ignore
+	if err != nil {
+		t.Error("could not create file")
+
+		return
+	}
+
+	tests := []struct {
+		name    string
+		r       *reportCSVService
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "reportCSVFile writer failure",
+			args: args{
+				file:  nonReadFile,
+				lines: [][]string{{"blah de blah"}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "reportCSVFile writer success",
+			args: args{
+				file:  newFile,
+				lines: [][]string{{"blah de blah"}},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.r.writer(tt.args.file, tt.args.lines); (err != nil) != tt.wantErr {
+				t.Errorf("reportCSVFile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_reportCSVGenerate(t *testing.T) {
 	type args struct {
 		ignoreArchived bool
 		allResults     []ReportResponse
@@ -238,18 +255,108 @@ func Test_reportCSVService_generate(t *testing.T) {
 	}{
 		{
 			name: "generator returns lines",
-			want: TestEmptyCSVRows,
+			want: mockEmptyCSVReportRows,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.r.generate(
+			if got := reportCSVGenerate(
 				tt.args.ignoreArchived,
 				tt.args.allResults,
 				tt.args.teamAccess,
 			); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("reportCSVService.generator() = \n%v\n%v\n", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_reportCSVWebhookGenerate(t *testing.T) {
+	type args struct {
+		webhooks map[string][]WebhookResponse
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want [][]string
+	}{
+		{
+			name: "reportCSVWebhookGenerate",
+			args: args{
+				webhooks: map[string][]WebhookResponse{
+					"repo1": {
+						WebhookResponse{
+							Config: WebhookResponseConfig{
+								URL: "some_url", InsecureURL: 0,
+							},
+							Events: []string{
+								"an_event",
+							},
+						},
+					},
+				},
+			},
+			want: [][]string{
+				{"Repo Name", "Webhook ID", "Webhook URL", "Is Active", "Insecure URL", "Events"},
+				{"repo1", "0", "some_url", "false", "0", "[an_event]"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := reportCSVWebhookGenerate(tt.args.webhooks); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("reportCSVWebhookGenerate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_reportCSVUpload(t *testing.T) {
+	type args struct {
+		service  reportCSV
+		filePath string
+		lines    [][]string
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "reportCSVUpload fails on open",
+			args: args{
+				service: &mockReportCSV{
+					failOpen: true,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "reportCSVUpload fails on write",
+			args: args{
+				service: &mockReportCSV{
+					failWrite: true,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "reportCSVUpload success",
+			args: args{
+				service: &mockReportCSV{},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := reportCSVUpload(tt.args.service, tt.args.filePath, tt.args.lines); (err != nil) != tt.wantErr {
+				t.Errorf("reportCSVUpload() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

@@ -136,3 +136,64 @@ func Test_reportJSONService_generate(t *testing.T) {
 		})
 	}
 }
+
+func Test_reportJSONService_generateWebhook(t *testing.T) {
+	type args struct {
+		allResults map[string][]WebhookResponse
+	}
+
+	tests := []struct {
+		name     string
+		r        *reportJSONService
+		args     args
+		wantFile string
+		wantErr  bool
+	}{
+		{
+			name:     "reportJSONService_generateWebhook error",
+			wantErr:  true,
+			wantFile: "testdata/blank.json",
+		},
+		{
+			name: "reportJSONService_generateWebhook is success",
+			args: args{
+				allResults: map[string][]WebhookResponse{
+					"repo1": {
+						WebhookResponse{
+							Config: WebhookResponseConfig{
+								URL: "some_url", InsecureURL: 0,
+							},
+							Events: []string{
+								"an_event",
+							},
+						},
+					},
+				},
+			},
+			wantFile: "testdata/generate_one_webhook_response.json",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &reportJSONService{}
+			got, err := r.generateWebhook(tt.args.allResults)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reportJSONService.generateWebhook() error = %v, wantErr %v", err, tt.wantErr)
+
+				return
+			}
+
+			mockReturn, err := ioutil.ReadFile(tt.wantFile)
+			if err != nil {
+				t.Fatalf("failed to read test data: %v", err)
+			}
+
+			want := string(mockReturn)
+
+			if !reflect.DeepEqual(string(got), want) {
+				t.Errorf("reportJSONService.generateWebhook() = %v, want %v", string(got), want)
+			}
+		})
+	}
+}

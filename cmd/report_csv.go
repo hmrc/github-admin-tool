@@ -10,22 +10,28 @@ import (
 )
 
 type reportCSV interface {
-	generate(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string
-	uploader(filePath string, lines [][]string) error
+	opener(string) (*os.File, error)
+	writer(*os.File, [][]string) error
 }
+
 type reportCSVService struct{}
 
-func (r *reportCSVService) uploader(filePath string, lines [][]string) error {
-	file, err := os.Create(filePath)
+func (r *reportCSVService) opener(filePath string) (file *os.File, err error) {
+	file, err = os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
+		return file, fmt.Errorf("failed to create file: %w", err)
 	}
+
+	return file, nil
+}
+
+func (r *reportCSVService) writer(file *os.File, lines [][]string) error {
 	defer file.Close()
 
 	writer := csv.NewWriter(file)
 
-	if err = writer.WriteAll(lines); err != nil {
-		return fmt.Errorf("failed to create %s: %w", filePath, err)
+	if err := writer.WriteAll(lines); err != nil {
+		return fmt.Errorf("failed to write to file %s: %w", filePath, err)
 	}
 
 	log.Printf("Report written to %s", filePath)
@@ -33,13 +39,29 @@ func (r *reportCSVService) uploader(filePath string, lines [][]string) error {
 	return nil
 }
 
-func (r *reportCSVService) generate(
-	ignoreArchived bool,
-	allResults []ReportResponse,
-	teamAccess map[string]string,
-) [][]string {
+func reportCSVUpload(service reportCSV, filePath string, lines [][]string) error {
+	file, err := service.opener(filePath)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	if err := service.writer(file, lines); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
+}
+
+func reportCSVGenerate(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) [][]string {
 	parsed := reportCSVParse(ignoreArchived, allResults, teamAccess)
 	lines := reportCSVLines(parsed)
+
+	return lines
+}
+
+func reportCSVWebhookGenerate(webhooks map[string][]WebhookResponse) [][]string {
+	parsed := reportCSVWebhookParse(webhooks)
+	lines := reportCSVWebhookLines(parsed)
 
 	return lines
 }
@@ -129,6 +151,43 @@ func reportCSVLines(parsed [][]string) [][]string {
 			"(BP2) AllowsForcePushes",
 			"(BP2) AllowsDeletions",
 			"(BP2) Branch Protection Pattern",
+		},
+	}
+	lines = append(lines, parsed...)
+
+	return lines
+}
+
+func reportCSVWebhookParse(webhooks map[string][]WebhookResponse) [][]string {
+	var parsed [][]string
+
+	for repositoryName, webhooks := range webhooks {
+		for _, webhook := range webhooks {
+			repoSlice := []string{
+				strings.TrimSpace(repositoryName),
+				strconv.Itoa(webhook.ID),
+				strings.TrimSpace(webhook.Config.URL),
+				strconv.FormatBool(webhook.Active),
+				strconv.Itoa(webhook.Config.InsecureURL),
+				fmt.Sprintf("%+v", webhook.Events),
+			}
+
+			parsed = append(parsed, repoSlice)
+		}
+	}
+
+	return parsed
+}
+
+func reportCSVWebhookLines(parsed [][]string) [][]string {
+	lines := [][]string{
+		{
+			"Repo Name",
+			"Webhook ID",
+			"Webhook URL",
+			"Is Active",
+			"Insecure URL",
+			"Events",
 		},
 	}
 	lines = append(lines, parsed...)

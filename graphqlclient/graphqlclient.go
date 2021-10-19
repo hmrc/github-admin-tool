@@ -9,6 +9,8 @@ import (
 	"net/http"
 )
 
+const GraphqlEndpoint = "https://api.github.com/graphql"
+
 // Client is a client for interacting with a GraphQL API.
 type Client struct {
 	endpoint   string
@@ -20,9 +22,9 @@ type Client struct {
 }
 
 // NewClient makes a new Client capable of making GraphQL requests.
-func NewClient(endpoint string) *Client {
+func NewClient() *Client {
 	c := &Client{
-		endpoint: endpoint,
+		endpoint: GraphqlEndpoint,
 		Log:      func(string) {},
 	}
 

@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"errors"
-	"io/ioutil"
 	"reflect"
 	"testing"
 
@@ -57,16 +55,7 @@ func Test_reportGetterService_getReport(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
-			if err != nil {
-				t.Fatalf("failed to read test data: %v", err)
-			}
-
-			httpmock.RegisterResponder(
-				"POST",
-				"https://api.github.com/graphql",
-				httpmock.NewStringResponder(200, string(mockHTTPReturn)),
-			)
+			mockHTTPResponder("POST", "https://api.github.com/graphql", tt.mockHTTPReturnFile, 200)
 
 			dryRun = tt.dryRunValue
 
@@ -124,12 +113,10 @@ func Test_reportRun(t *testing.T) {
 	mockCmdAllFlagsSet.Flags().StringVarP(&mockFileType, "file-type", "t", "csv", "file type flag")
 
 	tests := []struct {
-		name                         string
-		args                         args
-		wantErr                      bool
-		wantErrMsg                   string
-		mockRequestErrorFunction     bool
-		mockCSVGenerateErrorFunction bool
+		name       string
+		args       args
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "reportRun dry run flag error",
@@ -184,76 +171,6 @@ func Test_reportRun(t *testing.T) {
 	}
 }
 
-type mockReportGetter struct {
-	fail bool
-}
-
-func (m *mockReportGetter) getReport() ([]ReportResponse, error) {
-	if m.fail {
-		return []ReportResponse{}, errors.New("fail") // nolint // just for testing
-	}
-
-	return []ReportResponse{}, nil
-}
-
-type mockReportCSV struct {
-	fail bool
-}
-
-func (m *mockReportCSV) uploader(filePath string, lines [][]string) error {
-	if m.fail {
-		return errors.New("fail") // nolint // just for testing
-	}
-
-	return nil
-}
-
-func (m *mockReportCSV) generate(
-	ignoreArchived bool,
-	allResults []ReportResponse,
-	teamAccess map[string]string,
-) [][]string {
-	return nil
-}
-
-type mockReportJSON struct {
-	failupload   bool
-	failgenerate bool
-}
-
-func (m *mockReportJSON) uploader(filePath string, reportJSON []byte) error {
-	if m.failupload {
-		return errors.New("fail") // nolint // just for testing
-	}
-
-	return nil
-}
-
-func (m *mockReportJSON) generate(
-	ignoreArchived bool,
-	allResults []ReportResponse,
-	teamAccess map[string]string,
-) ([]byte, error) {
-	if m.failgenerate {
-		return nil, errors.New("fail") // nolint // just for testing
-	}
-
-	return nil, nil
-}
-
-type mockReportAccess struct {
-	fail        bool
-	returnValue map[string]string
-}
-
-func (m *mockReportAccess) getReport() (map[string]string, error) {
-	if m.fail {
-		return m.returnValue, errors.New("access fail") // nolint // just for testing
-	}
-
-	return m.returnValue, nil
-}
-
 func Test_reportCreate(t *testing.T) {
 	type args struct {
 		r              *report
@@ -283,7 +200,7 @@ func Test_reportCreate(t *testing.T) {
 			args: args{
 				r: &report{
 					reportGetter: &mockReportGetter{},
-					reportCSV:    &mockReportCSV{fail: true},
+					reportCSV:    &mockReportCSV{failOpen: true},
 					reportAccess: &mockReportAccess{},
 				},
 			},
