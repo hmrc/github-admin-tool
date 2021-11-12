@@ -6,22 +6,25 @@ By default it runs in a dry run mode.  Turn this off by adding `--dry-run=false`
 
 ## Installation
 
-```bash
-wget -O- https://github.com/hmrc/github-admin-tool/releases/download/v0.1.4/github-admin-tool_0.1.4_<OS_VERSION>.tar.gz | tar -xzv && chmod 755 github-admin-tool
-```
+1. Download the [latest](https://github.com/hmrc/github-admin-tool/releases/latest) archive for your OS. Older releases
+[here](https://github.com/hmrc/github-admin-tool/releases)
+2. Extract the binary e.g. `tar xvzf <archive>`
+3. Make it executable e.g. `chmod +x github-admin-tool`
 
 ## Config
 
-Please set the following ENV vars or use config.yml.example->config.yaml as file.
+Set the following in config.yml ([template](config.yml.example)) OR set them as
+environment variables, upper cased and prefixed with `GHTOOL_`
 
-github-bearer-token (PAT) should have the following: admin:org, repo, user.
-
-github-admin-team will add the teams permission level to audit report.
+* token: (required) your GitHub personal access token  
+           required scopes: admin:org, repo, user
+* org:   (required) the GitHub organisation that you will scan
+* team:  (optional) when specified will return the permissions that this team has on the repository
 
 ```bash
-GHTOOL_TOKEN=github-bearer-token
-GHTOOL_ORG=github-org-name
-GHTOOL_TEAM=github-admin-team
+GHTOOL_TOKEN=token
+GHTOOL_ORG=org
+GHTOOL_TEAM=team
 ```
 
 ## Help
