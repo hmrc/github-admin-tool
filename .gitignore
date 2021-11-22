@@ -6,6 +6,5 @@ cover.out
 run.sh
 dist/
 report*.json
-webhook*
 /*.json
 *.status

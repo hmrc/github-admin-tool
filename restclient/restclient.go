@@ -23,6 +23,7 @@ type Client struct {
 	httpClient *http.Client
 	closeReq   bool
 	bodyReader bodyReader
+	method     string
 }
 
 type bodyReader interface {
@@ -40,13 +41,14 @@ func (b *bodyReaderService) read(body io.Reader) ([]byte, error) {
 	return result, nil
 }
 
-func NewClient(path, token string) *Client {
+func NewClient(path, token, method string) *Client {
 	return &Client{
 		endpoint:   RestEndpoint + path,
 		token:      token,
 		httpClient: http.DefaultClient,
 		closeReq:   true,
 		bodyReader: &bodyReaderService{},
+		method:     method,
 	}
 }
 
@@ -56,7 +58,7 @@ type errorResponse struct {
 }
 
 func (c *Client) Run(ctx context.Context, resp interface{}) (err error) {
-	req, err := http.NewRequest(http.MethodGet, c.endpoint, nil)
+	req, err := http.NewRequest(c.method, c.endpoint, nil)
 	if err != nil {
 		return fmt.Errorf("new request: %w", err)
 	}
@@ -76,7 +78,7 @@ func (c *Client) Run(ctx context.Context, resp interface{}) (err error) {
 
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusNoContent {
 		var errRes errorResponse
 
 		if err = json.NewDecoder(res.Body).Decode(&errRes); err != nil {
@@ -95,8 +97,10 @@ func (c *Client) Run(ctx context.Context, resp interface{}) (err error) {
 		return fmt.Errorf("reading body: %w", err)
 	}
 
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return fmt.Errorf("unmarshall: %w", err)
+	if c.method != http.MethodDelete {
+		if err := json.Unmarshal(body, &resp); err != nil {
+			return fmt.Errorf("unmarshall: %w", err)
+		}
 	}
 
 	return nil

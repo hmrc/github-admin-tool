@@ -71,7 +71,7 @@ func setApprovalArgs(
 
 // nolint // needed for cobra
 func init() {
-	prApprovalCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "file containing repositories on new line without org/ prefix")
+	prApprovalCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "path to file containing repositories (file should contain repos on new line without org/ prefix)")
 	prApprovalCmd.Flags().StringVarP(&prBranchName, "branch", "b", "", "branch name to create or update the branch protection rule for")
 	prApprovalCmd.Flags().BoolVarP(&prApprovalFlag, "pr-approval", "p", true, "boolean indicating pr reviews before merging, if this is false ignore all other flags")
 	prApprovalCmd.Flags().IntVarP(&prApprovalNumber, "number", "n", 1, "number of required approving reviews before PR can be merged")
