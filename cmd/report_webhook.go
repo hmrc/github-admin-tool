@@ -9,6 +9,7 @@ import (
 	"github-admin-tool/ratelimit"
 	"github-admin-tool/restclient"
 	"log"
+	"net/http"
 	"strings"
 	"time"
 
@@ -334,6 +335,7 @@ func (r *reportWebhookGetterService) getWebhooks(
 			client := restclient.NewClient(
 				fmt.Sprintf("/repos/%s/%s/hooks", config.Org, repositoryName),
 				config.Token,
+				http.MethodGet,
 			)
 
 			response := []WebhookResponse{}

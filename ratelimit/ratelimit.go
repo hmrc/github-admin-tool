@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github-admin-tool/restclient"
+	"net/http"
 )
 
 type RateResponse struct {
@@ -30,7 +31,7 @@ type RateGraphql struct {
 }
 
 func GetRateLimit(token string) (RateResponse, error) {
-	client := restclient.NewClient("/rate_limit", token)
+	client := restclient.NewClient("/rate_limit", token, http.MethodGet)
 	response := RateResponse{}
 
 	if err := client.Run(context.Background(), &response); err != nil {

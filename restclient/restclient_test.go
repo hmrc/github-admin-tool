@@ -113,13 +113,14 @@ func TestNewClient(t *testing.T) {
 				httpClient: http.DefaultClient,
 				closeReq:   true,
 				bodyReader: &bodyReaderService{},
+				method:     "GET",
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewClient(tt.args.path, tt.args.token); !reflect.DeepEqual(got, tt.want) {
+			if got := NewClient(tt.args.path, tt.args.token, http.MethodGet); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewClient() = %+v, want %+v", got, tt.want)
 			}
 		})
@@ -136,6 +137,7 @@ func TestClient_Run(t *testing.T) {
 		httpClient *http.Client
 		closeReq   bool
 		bodyReader mockBodyReader
+		method     string
 	}
 
 	type args struct {
@@ -207,6 +209,7 @@ func TestClient_Run(t *testing.T) {
 			fields: fields{
 				httpClient: http.DefaultClient,
 				endpoint:   "https://api.github.com/rate_limit",
+				method:     "GET",
 			},
 			args: args{
 				ctx: ctx,
@@ -223,6 +226,7 @@ func TestClient_Run(t *testing.T) {
 				bodyReader: mockBodyReader{
 					readFail: true,
 				},
+				method: "GET",
 			},
 			args: args{
 				ctx: ctx,
@@ -236,6 +240,7 @@ func TestClient_Run(t *testing.T) {
 			fields: fields{
 				httpClient: http.DefaultClient,
 				endpoint:   "https://api.github.com/rate_limit",
+				method:     "GET",
 			},
 			args: args{
 				ctx: ctx,
@@ -252,6 +257,7 @@ func TestClient_Run(t *testing.T) {
 				bodyReader: mockBodyReader{
 					returnValue: []byte{123, 10, 125},
 				},
+				method: "GET",
 			},
 			args: args{
 				ctx: ctx,
@@ -282,6 +288,7 @@ func TestClient_Run(t *testing.T) {
 				httpClient: tt.fields.httpClient,
 				closeReq:   tt.fields.closeReq,
 				bodyReader: &tt.fields.bodyReader,
+				method:     tt.fields.method,
 			}
 			if err := c.Run(tt.args.ctx, tt.args.resp); (err != nil) != tt.wantErr {
 				t.Errorf("Client.Run() error = %v, wantErr %v", err, tt.wantErr)
