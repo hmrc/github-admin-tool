@@ -1,6 +1,10 @@
 # github-admin-tool
 
-This is a CLI tool used to audit/report on repositories, update branch protection signing and pr-approval settings for a given organisation.
+This is a CLI tool used to :
+* Audit/report on repositories
+* Update branch protection signing and pr-approval settings for a given organisation
+* Report on repository webhooks
+* Removal of webhooks by hostname for a given list of reposiotories
 
 By default it runs in a dry run mode.  Turn this off by adding `--dry-run=false` to any command.
 
@@ -35,9 +39,15 @@ As with any cli tool just run the following to see available actions/arguments.
 
 ## Repository Report
 
-Run the following command generate a CSV report with respository settings and branch protection rules.
+Run the following command to generate a CSV or JSON report with respository settings and branch protection rules.
 
 `./github-admin-tool report`
+
+## Repository Webhook Report
+
+Run the following command to generate a CSV or JSON report with respository webhook settings.
+
+`./github-admin-tool report-webhook`
 
 ## Signing
 
@@ -54,3 +64,9 @@ Run the following command to set pr-approval rules for a given branch name for t
 If the passed in branch does not have a protection rule, it will be created.
 
 `./github-admin-tool pr-approval -r repo_list.txt -b branch_name`
+
+## Webhook Removal
+
+Run the following command to remove a webhook for the repos contained in the given list and hostname (full URL with protocol).   The list should be a text file with repository names (without owner name) on new lines.  Check the command line help for different settings.
+
+`./github-admin-tool webhook-remove -r repo_list.txt -n host_name`
