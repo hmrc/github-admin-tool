@@ -49,6 +49,10 @@ Run the following command to generate a CSV or JSON report with respository webh
 
 `./github-admin-tool report-webhook`
 
+Note: You can use jq to generate a list of repositories containing a certain webhook with this command:
+
+`jq 'to_entries | map(select(.value[].config.url | contains("WEBHOOK_URL"))) | map(.key)' github_webhook_report.json`
+
 ## Signing
 
 Run the following command to turn commit signing on for all branch protection rules for the repos contained in the list.   The list should be a text file with repository names (without owner name) on new lines.
@@ -67,6 +71,6 @@ If the passed in branch does not have a protection rule, it will be created.
 
 ## Webhook Removal
 
-Run the following command to remove a webhook for the repos contained in the given list and hostname (full URL with protocol).   The list should be a text file with repository names (without owner name) on new lines.  Check the command line help for different settings.
+Run the following command to remove a webhook for the repos contained in the given list and URL (full URL with protocol).   The list should be a text file with repository names (without owner name) on new lines.  Check the command line help for different settings.
 
-`./github-admin-tool webhook-remove -r repo_list.txt -n host_name`
+`./github-admin-tool webhook-remove -r repo_list.txt -u webhook_url`

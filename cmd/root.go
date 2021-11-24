@@ -12,7 +12,7 @@ var (
 	configFile        string // nolint // needed for cobra
 	reposFile         string // nolint // needed for cobra
 	branchName        string // nolint // needed for cobra
-	webhookHost       string // nolint // needed for cobra
+	webhookURL        string // nolint // needed for cobra
 	config            Config // nolint // using with viper
 	dryRun            bool   // nolint // using for global flag
 	ignoreArchived    bool   // nolint // modifying within this package
