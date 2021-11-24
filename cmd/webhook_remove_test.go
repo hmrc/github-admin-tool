@@ -91,7 +91,7 @@ func Test_getWebhookID(t *testing.T) {
 
 	type args struct {
 		ctx            context.Context
-		host           string
+		webhookURL     string
 		repositoryName string
 	}
 
@@ -106,7 +106,7 @@ func Test_getWebhookID(t *testing.T) {
 			name: "getWebhookID not found",
 			args: args{
 				ctx:            ctx,
-				host:           "https://some-webhook-host",
+				webhookURL:     "https://some-webhook-host",
 				repositoryName: "some-repo-name",
 			},
 			mockHTTPResponseFile: "testdata/blank.json",
@@ -116,7 +116,7 @@ func Test_getWebhookID(t *testing.T) {
 			name: "getWebhookID found",
 			args: args{
 				ctx:            ctx,
-				host:           "https://some-external-webhook.org",
+				webhookURL:     "https://some-external-webhook.org",
 				repositoryName: "some-repo-name2",
 			},
 			mockHTTPResponseFile: "testdata/mockGetWebhooksResponse.json",
@@ -135,7 +135,7 @@ func Test_getWebhookID(t *testing.T) {
 			)
 			if gotWebhookID := getWebhookID(
 				tt.args.ctx,
-				tt.args.host,
+				tt.args.webhookURL,
 				tt.args.repositoryName,
 			); gotWebhookID != tt.wantWebhookID {
 				t.Errorf("getWebhookID() = %v, want %v", gotWebhookID, tt.wantWebhookID)
@@ -151,26 +151,26 @@ func Test_removeWebhookFlagCheck(t *testing.T) {
 
 	cmdInvalidFlags := &cobra.Command{Use: "webhook-remove"}
 
-	cmdNoHostFlags := &cobra.Command{Use: "webhook-remove"}
-	cmdNoHostFlags.Flags().BoolP("dry-run", "d", false, "dry run flag")
+	cmdNoWebhookURLFlags := &cobra.Command{Use: "webhook-remove"}
+	cmdNoWebhookURLFlags.Flags().BoolP("dry-run", "d", false, "dry run flag")
 
-	cmdInvalidHostFlags := &cobra.Command{Use: "webhook-remove"}
-	cmdInvalidHostFlags.Flags().BoolP("dry-run", "d", false, "dry run flag")
-	cmdInvalidHostFlags.Flags().StringP("host", "", "http//invalid-host", "host flag")
+	cmdInvalidWebhookURLFlags := &cobra.Command{Use: "webhook-remove"}
+	cmdInvalidWebhookURLFlags.Flags().BoolP("dry-run", "d", false, "dry run flag")
+	cmdInvalidWebhookURLFlags.Flags().StringP("url", "", "http//invalid-host", "url flag")
 
 	cmdNoReposFlags := &cobra.Command{Use: "webhook-remove"}
 	cmdNoReposFlags.Flags().BoolP("dry-run", "d", false, "dry run flag")
-	cmdNoReposFlags.Flags().StringP("host", "", "https://valid-host", "host flag")
+	cmdNoReposFlags.Flags().StringP("url", "", "https://valid-host", "url flag")
 
 	cmdValidFlags := &cobra.Command{Use: "webhook-remove"}
 	cmdValidFlags.Flags().BoolP("dry-run", "d", false, "dry run flag")
-	cmdValidFlags.Flags().StringP("host", "", "https://valid-host", "host flag")
+	cmdValidFlags.Flags().StringP("url", "", "https://valid-host", "url flag")
 	cmdValidFlags.Flags().StringP("repos", "", "filepath", "repos flag")
 
 	tests := []struct {
 		name              string
 		args              args
-		wantHost          string
+		wantWebhookURL    string
 		wantReposFilePath string
 		wantDryRun        bool
 		wantErr           bool
@@ -183,34 +183,34 @@ func Test_removeWebhookFlagCheck(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "removeWebhookFlagCheck fails no host",
+			name: "removeWebhookFlagCheck fails no url",
 			args: args{
-				cmd: cmdNoHostFlags,
+				cmd: cmdNoWebhookURLFlags,
 			},
 			wantErr: true,
 		},
 		{
-			name: "removeWebhookFlagCheck fails invalid host",
+			name: "removeWebhookFlagCheck fails invalid url",
 			args: args{
-				cmd: cmdInvalidHostFlags,
+				cmd: cmdInvalidWebhookURLFlags,
 			},
-			wantHost: "http//invalid-host",
-			wantErr:  true,
+			wantWebhookURL: "http//invalid-host",
+			wantErr:        true,
 		},
 		{
 			name: "removeWebhookFlagCheck fails no repos",
 			args: args{
 				cmd: cmdNoReposFlags,
 			},
-			wantHost: "https://valid-host",
-			wantErr:  true,
+			wantWebhookURL: "https://valid-host",
+			wantErr:        true,
 		},
 		{
 			name: "removeWebhookFlagCheck fails no repos",
 			args: args{
 				cmd: cmdValidFlags,
 			},
-			wantHost:          "https://valid-host",
+			wantWebhookURL:    "https://valid-host",
 			wantDryRun:        false,
 			wantReposFilePath: "filepath",
 			wantErr:           false,
@@ -218,14 +218,14 @@ func Test_removeWebhookFlagCheck(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotHost, gotReposFilePath, gotDryRun, err := removeWebhookFlagCheck(tt.args.cmd)
+			gotWebhookURL, gotReposFilePath, gotDryRun, err := removeWebhookFlagCheck(tt.args.cmd)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("removeWebhookFlagCheck() error = %v, wantErr %v", err, tt.wantErr)
 
 				return
 			}
-			if gotHost != tt.wantHost {
-				t.Errorf("removeWebhookFlagCheck() gotHost = %v, want %v", gotHost, tt.wantHost)
+			if gotWebhookURL != tt.wantWebhookURL {
+				t.Errorf("removeWebhookFlagCheck() gotWebhookURL = %v, want %v", gotWebhookURL, tt.wantWebhookURL)
 			}
 			if gotReposFilePath != tt.wantReposFilePath {
 				t.Errorf("removeWebhookFlagCheck() gotReposFilePath = %v, want %v", gotReposFilePath, tt.wantReposFilePath)
@@ -259,12 +259,12 @@ func Test_removeWebhookCommand(t *testing.T) {
 
 	cmdDryRunOnFlags := &cobra.Command{Use: "webhook-remove"}
 	cmdDryRunOnFlags.Flags().BoolP("dry-run", "d", true, "dry run flag")
-	cmdDryRunOnFlags.Flags().StringP("host", "", "https://some-external-webhook.com", "host flag")
+	cmdDryRunOnFlags.Flags().StringP("url", "", "https://some-external-webhook.com", "url flag")
 	cmdDryRunOnFlags.Flags().StringP("repos", "", "filepath", "repos flag")
 
 	cmdDryRunOffFlags := &cobra.Command{Use: "webhook-remove"}
 	cmdDryRunOffFlags.Flags().BoolP("dry-run", "d", false, "dry run flag")
-	cmdDryRunOffFlags.Flags().StringP("host", "", "https://some-external-webhook.com", "host flag")
+	cmdDryRunOffFlags.Flags().StringP("url", "", "https://some-external-webhook.com", "url flag")
 	cmdDryRunOffFlags.Flags().StringP("repos", "", "filepath", "repos flag")
 
 	tests := []struct {
@@ -396,7 +396,7 @@ func Test_webhookRemoveRun(t *testing.T) {
 
 	cmdDryRunOnFlags := &cobra.Command{Use: "webhook-remove"}
 	cmdDryRunOnFlags.Flags().BoolP("dry-run", "d", true, "dry run flag")
-	cmdDryRunOnFlags.Flags().StringP("host", "", "https://some-external-webhook.com", "host flag")
+	cmdDryRunOnFlags.Flags().StringP("url", "", "https://some-external-webhook.com", "url flag")
 	cmdDryRunOnFlags.Flags().StringP("repos", "", "testdata/one_repo_list.txt", "repos flag")
 
 	tests := []struct {

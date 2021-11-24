@@ -22,9 +22,9 @@ func init() {
 	webhookRemoveCmd.Flags().StringVarP(
 		&reposFile, "repos", "r", "", "path to file containing repositories (file should contain repos on new line without org/ prefix)",
 	)
-	webhookRemoveCmd.Flags().StringVarP(&webhookHost, "host", "n", "", "hostname to remove webhook for")
+	webhookRemoveCmd.Flags().StringVarP(&webhookURL, "url", "u", "", "full url to remove webhook for")
 	webhookRemoveCmd.MarkFlagRequired("repos")
-	webhookRemoveCmd.MarkFlagRequired("host")
+	webhookRemoveCmd.MarkFlagRequired("url")
 	webhookRemoveCmd.Flags().SortFlags = true
 	rootCmd.AddCommand(webhookRemoveCmd)
 }
@@ -41,7 +41,7 @@ func webhookRemoveRun(cmd *cobra.Command, args []string) error {
 }
 
 func removeWebhookCommand(cmd *cobra.Command, repo *repository) error {
-	host, reposFilePath, dryRun, err := removeWebhookFlagCheck(cmd)
+	webhookURL, reposFilePath, dryRun, err := removeWebhookFlagCheck(cmd)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
@@ -60,9 +60,9 @@ func removeWebhookCommand(cmd *cobra.Command, repo *repository) error {
 	ctx := context.Background()
 
 	for _, repositoryName := range repositoryList {
-		webhookID := getWebhookID(ctx, host, repositoryName)
+		webhookID := getWebhookID(ctx, webhookURL, repositoryName)
 		if webhookID > 0 {
-			log.Printf("Removing %s for repo %s id is %d", host, repositoryName, webhookID)
+			log.Printf("Removing %s for repo %s id is %d", webhookURL, repositoryName, webhookID)
 
 			if err = removeWebhook(ctx, webhookID, repositoryName); err != nil {
 				return fmt.Errorf("%w", err)
@@ -111,26 +111,26 @@ func getWebhookID(ctx context.Context, host, repositoryName string) (webhookID i
 	return webhookID
 }
 
-func removeWebhookFlagCheck(cmd *cobra.Command) (host, reposFilePath string, dryRun bool, err error) {
+func removeWebhookFlagCheck(cmd *cobra.Command) (webhookURL, reposFilePath string, dryRun bool, err error) {
 	dryRun, err = cmd.Flags().GetBool("dry-run")
 	if err != nil {
-		return host, reposFilePath, dryRun, fmt.Errorf("%w", err)
+		return webhookURL, reposFilePath, dryRun, fmt.Errorf("%w", err)
 	}
 
-	host, err = cmd.Flags().GetString("host")
+	webhookURL, err = cmd.Flags().GetString("url")
 	if err != nil {
-		return host, reposFilePath, dryRun, fmt.Errorf("%w", err)
+		return webhookURL, reposFilePath, dryRun, fmt.Errorf("%w", err)
 	}
 
-	_, err = url.ParseRequestURI(host)
+	_, err = url.ParseRequestURI(webhookURL)
 	if err != nil {
-		return host, reposFilePath, dryRun, fmt.Errorf("%w", err)
+		return webhookURL, reposFilePath, dryRun, fmt.Errorf("%w", err)
 	}
 
 	reposFilePath, err = cmd.Flags().GetString("repos")
 	if err != nil {
-		return host, reposFilePath, dryRun, fmt.Errorf("%w", err)
+		return webhookURL, reposFilePath, dryRun, fmt.Errorf("%w", err)
 	}
 
-	return host, reposFilePath, dryRun, nil
+	return webhookURL, reposFilePath, dryRun, nil
 }
