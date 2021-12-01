@@ -139,7 +139,7 @@ func Test_reportJSONService_generate(t *testing.T) {
 
 func Test_reportJSONService_generateWebhook(t *testing.T) {
 	type args struct {
-		allResults map[string][]WebhookResponse
+		allResults []Webhooks
 	}
 
 	tests := []struct {
@@ -157,18 +157,17 @@ func Test_reportJSONService_generateWebhook(t *testing.T) {
 		{
 			name: "reportJSONService_generateWebhook is success",
 			args: args{
-				allResults: map[string][]WebhookResponse{
-					"repo1": {
-						WebhookResponse{
-							Config: WebhookResponseConfig{
-								URL: "some_url", InsecureURL: 0,
-							},
-							Events: []string{
-								"an_event",
-							},
+				allResults: []Webhooks{{
+					RepositoryName: "repo1",
+					Webhooks: []WebhookResponse{{
+						Config: WebhookResponseConfig{
+							URL: "some_url", InsecureURL: 0,
 						},
-					},
-				},
+						Events: []string{
+							"an_event",
+						},
+					}},
+				}},
 			},
 			wantFile: "testdata/generate_one_webhook_response.json",
 		},

@@ -59,7 +59,7 @@ func reportCSVGenerate(ignoreArchived bool, allResults []ReportResponse, teamAcc
 	return lines
 }
 
-func reportCSVWebhookGenerate(webhooks map[string][]WebhookResponse) [][]string {
+func reportCSVWebhookGenerate(webhooks []Webhooks) [][]string {
 	parsed := reportCSVWebhookParse(webhooks)
 	lines := reportCSVWebhookLines(parsed)
 
@@ -158,13 +158,13 @@ func reportCSVLines(parsed [][]string) [][]string {
 	return lines
 }
 
-func reportCSVWebhookParse(webhooks map[string][]WebhookResponse) [][]string {
+func reportCSVWebhookParse(allResults []Webhooks) [][]string {
 	var parsed [][]string
 
-	for repositoryName, webhooks := range webhooks {
-		for _, webhook := range webhooks {
+	for _, webhooks := range allResults {
+		for _, webhook := range webhooks.Webhooks {
 			repoSlice := []string{
-				strings.TrimSpace(repositoryName),
+				strings.TrimSpace(webhooks.RepositoryName),
 				strconv.Itoa(webhook.ID),
 				strings.TrimSpace(webhook.Config.URL),
 				strconv.FormatBool(webhook.Active),
