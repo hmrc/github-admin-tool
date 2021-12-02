@@ -70,7 +70,7 @@ type reportWebhook struct {
 
 type reportWebhookGetter interface {
 	getRepositoryList(*reportWebhook) ([]repositoryCursorList, error)
-	getWebhooks(*reportWebhook, []repositoryCursorList) (map[string][]WebhookResponse, error)
+	getWebhooks(*reportWebhook, []repositoryCursorList) ([]Webhooks, error)
 }
 
 type repositoryCursorList struct {
@@ -301,14 +301,15 @@ func (r *reportWebhookGetterService) getRepositoryList(report *reportWebhook) ([
 func (r *reportWebhookGetterService) getWebhooks(
 	report *reportWebhook,
 	repositories []repositoryCursorList,
-) (map[string][]WebhookResponse, error) {
-	allResults := make(map[string][]WebhookResponse, len(repositories))
+) ([]Webhooks, error) {
+	var (
+		allResults []Webhooks
+		bar        progressbar.Bar
+		iteration  int
+	)
 
 	ctx := context.Background()
 	totalCount := len(repositories)
-	iteration := 0
-
-	var bar progressbar.Bar
 
 	// This loops through every set of 100 repos and set last cursor for each group
 	for _, repositoryCursorList := range repositories {
@@ -346,7 +347,7 @@ func (r *reportWebhookGetterService) getWebhooks(
 				continue
 			}
 
-			allResults[repositoryName] = response
+			allResults = append(allResults, Webhooks{RepositoryName: repositoryName, Webhooks: response})
 			reportWebhookResponse.RestCalls++
 		}
 

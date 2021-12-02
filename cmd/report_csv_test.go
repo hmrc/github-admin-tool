@@ -274,7 +274,7 @@ func Test_reportCSVGenerate(t *testing.T) {
 
 func Test_reportCSVWebhookGenerate(t *testing.T) {
 	type args struct {
-		webhooks map[string][]WebhookResponse
+		webhooks []Webhooks
 	}
 
 	tests := []struct {
@@ -285,18 +285,17 @@ func Test_reportCSVWebhookGenerate(t *testing.T) {
 		{
 			name: "reportCSVWebhookGenerate",
 			args: args{
-				webhooks: map[string][]WebhookResponse{
-					"repo1": {
-						WebhookResponse{
-							Config: WebhookResponseConfig{
-								URL: "some_url", InsecureURL: 0,
-							},
-							Events: []string{
-								"an_event",
-							},
+				webhooks: []Webhooks{{
+					RepositoryName: "repo1",
+					Webhooks: []WebhookResponse{{
+						Config: WebhookResponseConfig{
+							URL: "some_url", InsecureURL: 0,
 						},
-					},
-				},
+						Events: []string{
+							"an_event",
+						},
+					}},
+				}},
 			},
 			want: [][]string{
 				{"Repo Name", "Webhook ID", "Webhook URL", "Is Active", "Insecure URL", "Events"},

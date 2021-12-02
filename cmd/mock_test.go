@@ -119,7 +119,7 @@ func (m *mockReportJSON) generate(
 	return nil, nil
 }
 
-func (m *mockReportJSON) generateWebhook(map[string][]WebhookResponse) ([]byte, error) {
+func (m *mockReportJSON) generateWebhook([]Webhooks) ([]byte, error) {
 	if m.failgenerate {
 		return nil, errTestFail
 	}
@@ -207,10 +207,10 @@ func mockJSONMarshalError(v interface{}) ([]byte, error) {
 }
 
 type mockReportWebhookGetterService struct {
-	failRepoList               bool
-	failWebhook                bool
-	returnRepoList             []repositoryCursorList
-	returnRepositoryCursorList map[string][]WebhookResponse
+	failRepoList      bool
+	failWebhook       bool
+	returnRepoList    []repositoryCursorList
+	returnWebhookList []Webhooks
 }
 
 func (r *mockReportWebhookGetterService) getRepositoryList(report *reportWebhook) ([]repositoryCursorList, error) {
@@ -224,12 +224,12 @@ func (r *mockReportWebhookGetterService) getRepositoryList(report *reportWebhook
 func (r *mockReportWebhookGetterService) getWebhooks(
 	report *reportWebhook,
 	list []repositoryCursorList,
-) (map[string][]WebhookResponse, error) {
+) ([]Webhooks, error) {
 	if r.failWebhook {
-		return r.returnRepositoryCursorList, errTestFail
+		return r.returnWebhookList, errTestFail
 	}
 
-	return r.returnRepositoryCursorList, nil
+	return r.returnWebhookList, nil
 }
 
 func mockHTTPResponder(method, url, responseFile string, statusCode int) {

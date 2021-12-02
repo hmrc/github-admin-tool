@@ -125,3 +125,8 @@ type WebhookResponseConfig struct {
 	URL         string `json:"url"`
 	InsecureURL int    `json:"insecure_url"` // nolint // this is from github
 }
+
+type Webhooks struct {
+	RepositoryName string
+	Webhooks       []WebhookResponse
+}

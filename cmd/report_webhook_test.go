@@ -509,6 +509,8 @@ func Test_reportWebhookGetterService_getWebhooks(t *testing.T) {
 		repositories []repositoryCursorList
 	}
 
+	var mockEmptyResult []Webhooks
+
 	tests := []struct {
 		name                  string
 		r                     *reportWebhookGetterService
@@ -516,7 +518,7 @@ func Test_reportWebhookGetterService_getWebhooks(t *testing.T) {
 		rateLimitResponseFile string
 		setEndTimeSecs        int64
 		setupWebhookCalls     bool
-		want                  map[string][]WebhookResponse
+		want                  []Webhooks
 		wantErr               bool
 	}{
 		{
@@ -525,7 +527,7 @@ func Test_reportWebhookGetterService_getWebhooks(t *testing.T) {
 			args: args{
 				repositories: []repositoryCursorList{{cursor: "some-cursor", repositories: []string{"repo1"}}},
 			},
-			want:    make(map[string][]WebhookResponse, 1),
+			want:    mockEmptyResult,
 			wantErr: false,
 		},
 		{
@@ -535,7 +537,7 @@ func Test_reportWebhookGetterService_getWebhooks(t *testing.T) {
 				repositories: []repositoryCursorList{{cursor: "some-cursor", repositories: []string{"repo1"}}},
 			},
 			setEndTimeSecs: 0,
-			want:           make(map[string][]WebhookResponse, 1),
+			want:           mockEmptyResult,
 			wantErr:        false,
 		},
 		{
@@ -555,63 +557,69 @@ func Test_reportWebhookGetterService_getWebhooks(t *testing.T) {
 				},
 			},
 			setupWebhookCalls: true,
-			want: map[string][]WebhookResponse{
-				"repo1": {
-					{
-						Config: WebhookResponseConfig{
-							URL:         "https://trigger.some_url.com/json",
-							InsecureURL: 0,
+			want: []Webhooks{
+				{
+					RepositoryName: "repo1",
+					Webhooks: []WebhookResponse{
+						{
+							Config: WebhookResponseConfig{
+								URL:         "https://trigger.some_url.com/json",
+								InsecureURL: 0,
+							},
+							Active: true,
+							ID:     12345670,
+							Events: []string{"push"},
 						},
-						Active: true,
-						ID:     12345670,
-						Events: []string{"push"},
-					},
-					{
-						Config: WebhookResponseConfig{
-							URL:         "https://www.some_url.com/sync",
-							InsecureURL: 0,
+						{
+							Config: WebhookResponseConfig{
+								URL:         "https://www.some_url.com/sync",
+								InsecureURL: 0,
+							},
+							Active: true,
+							ID:     12345671,
+							Events: []string{"push"},
 						},
-						Active: true,
-						ID:     12345671,
-						Events: []string{"push"},
-					},
-					{
-						Config: WebhookResponseConfig{
-							URL:         "https://www.some_url.com/sync",
-							InsecureURL: 0,
+						{
+							Config: WebhookResponseConfig{
+								URL:         "https://www.some_url.com/sync",
+								InsecureURL: 0,
+							},
+							Active: true,
+							ID:     12345672,
+							Events: []string{"issue_comment", "pull_request", "pull_request_review_comment", "push"},
 						},
-						Active: true,
-						ID:     12345672,
-						Events: []string{"issue_comment", "pull_request", "pull_request_review_comment", "push"},
 					},
 				},
-				"repo2": {
-					{
-						Config: WebhookResponseConfig{
-							URL:         "https://trigger.some_url.com/json",
-							InsecureURL: 0,
+				{
+					RepositoryName: "repo2",
+					Webhooks: []WebhookResponse{
+						{
+							Config: WebhookResponseConfig{
+								URL:         "https://trigger.some_url.com/json",
+								InsecureURL: 0,
+							},
+							Active: true,
+							ID:     12345670,
+							Events: []string{"push"},
 						},
-						Active: true,
-						ID:     12345670,
-						Events: []string{"push"},
-					},
-					{
-						Config: WebhookResponseConfig{
-							URL:         "https://www.some_url.com/sync",
-							InsecureURL: 0,
+						{
+							Config: WebhookResponseConfig{
+								URL:         "https://www.some_url.com/sync",
+								InsecureURL: 0,
+							},
+							Active: true,
+							ID:     12345671,
+							Events: []string{"push"},
 						},
-						Active: true,
-						ID:     12345671,
-						Events: []string{"push"},
-					},
-					{
-						Config: WebhookResponseConfig{
-							URL:         "https://www.some_url.com/sync",
-							InsecureURL: 0,
+						{
+							Config: WebhookResponseConfig{
+								URL:         "https://www.some_url.com/sync",
+								InsecureURL: 0,
+							},
+							Active: true,
+							ID:     12345672,
+							Events: []string{"issue_comment", "pull_request", "pull_request_review_comment", "push"},
 						},
-						Active: true,
-						ID:     12345672,
-						Events: []string{"issue_comment", "pull_request", "pull_request_review_comment", "push"},
 					},
 				},
 			},

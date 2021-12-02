@@ -9,7 +9,7 @@ import (
 
 type reportJSON interface {
 	generate(bool, []ReportResponse, map[string]string) ([]byte, error)
-	generateWebhook(map[string][]WebhookResponse) ([]byte, error)
+	generateWebhook([]Webhooks) ([]byte, error)
 	uploader(string, []byte) error
 }
 
@@ -52,7 +52,7 @@ func (r *reportJSONService) generate(
 	return reportJSON, nil
 }
 
-func (r *reportJSONService) generateWebhook(allResults map[string][]WebhookResponse) ([]byte, error) {
+func (r *reportJSONService) generateWebhook(allResults []Webhooks) ([]byte, error) {
 	reportJSON, err := json.Marshal(allResults)
 
 	if err != nil || len(allResults) == 0 {
