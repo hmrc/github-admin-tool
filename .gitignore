@@ -8,3 +8,4 @@ dist/
 report*.json
 /*.json
 *.status
+.vscode/
