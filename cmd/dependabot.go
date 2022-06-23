@@ -1,15 +1,18 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
+	"errors"
 	"fmt"
 	"log"
+
+	"github.com/spf13/cobra"
 )
 
 var (
-	dependabotAlerts bool 
-	dependabotSecurityUpdates bool
-	dependabotCmd = &cobra.Command{ // nolint // needed for cobra
+	dependabotAlerts          bool // nolint // expected global
+	dependabotSecurityUpdates bool // nolint // expected global
+	errDependabotOptions      = errors.New("must set option to update alerts or security-updates or both")
+	dependabotCmd             = &cobra.Command{ // nolint // needed for cobra
 		Use:   "dependabot",
 		Short: "Enable and disable dependabot alerts and updates for repos in provided list",
 		RunE:  dependabotRun,
@@ -30,12 +33,10 @@ func dependabotRun(cmd *cobra.Command, args []string) error {
 	)
 
 	return err
-	
 }
 
-
 func dependabotCommand(cmd *cobra.Command, repo *repository) error {
-	//reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, err := dependabotFlagCheck(cmd)
+	// reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, err := dependabotFlagCheck(cmd)
 	reposFilePath, _, _, dryRun, err := dependabotFlagCheck(cmd)
 	if err != nil {
 		return fmt.Errorf("%w", err)
@@ -55,7 +56,18 @@ func dependabotCommand(cmd *cobra.Command, repo *repository) error {
 	return nil
 }
 
-func dependabotFlagCheck(cmd *cobra.Command) (reposFilePath string, dependabotAlerts, dependabotSecurityUpdates, dryRun bool,  err error) {
+func dependabotFlagCheck(cmd *cobra.Command) (
+	reposFilePath string,
+	dependabotAlerts,
+	dependabotSecurityUpdates,
+	dryRun bool,
+	err error,
+) {
+	dryRun, err = cmd.Flags().GetBool("dry-run")
+	if err != nil {
+		return reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, fmt.Errorf("%w", err)
+	}
+
 	reposFilePath, err = cmd.Flags().GetString("repos")
 	if err != nil {
 		return reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, fmt.Errorf("%w", err)
@@ -70,15 +82,13 @@ func dependabotFlagCheck(cmd *cobra.Command) (reposFilePath string, dependabotAl
 	if err != nil {
 		return reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, fmt.Errorf("%w", err)
 	}
-	
-	dryRun, err = cmd.Flags().GetBool("dry-run")
-	if err != nil {
-		return reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, fmt.Errorf("%w", err)
+
+	if !cmd.Flags().Changed("alerts") && !cmd.Flags().Changed("security-updates") {
+		return reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, errDependabotOptions
 	}
 
 	return reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, nil
 }
-
 
 // nolint // needed for cobra
 func init() {
