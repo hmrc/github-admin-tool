@@ -180,3 +180,68 @@ func Test_dependabotRun(t *testing.T) {
 		})
 	}
 }
+
+func Test_dependabotCommand(t *testing.T) {
+	type args struct {
+		cmd  *cobra.Command
+		repo *repository
+	}
+
+	var (
+		mockDependabotAlerts           bool
+		mockDdependabotSecurityUpdates bool
+		mockDryRun                     bool
+		mockDryRunFalse                bool
+		mockReposFile                  string
+		mockRepos2File                 string
+	)
+
+
+	mockCmd := &cobra.Command{
+		Use: "dependabot",
+	}
+
+	mockCmdWithDryRunAndRepos := &cobra.Command{
+		Use: "dependabot",
+	}
+	mockCmdWithDryRunAndRepos.Flags().BoolVarP(&mockDryRun, "dry-run", "d", true, "dry run flag")
+	mockCmdWithDryRunAndRepos.Flags().StringVarP(&mockReposFile, "repos", "r", "", "repos file")
+
+	
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "dependabotCommand flag check error",
+			args: args{
+				cmd: mockCmd,
+			},
+			wantErr: true,
+		},
+
+		{
+			name: "dependabotCommand no repo file error",
+			args: args{
+				cmd: mockCmdWithDryRunAndRepos,
+				repo: &repository{
+					reader: &mockRepositoryReader{
+						readFail: true,
+					},
+
+				},
+			},
+			wantErr: true,
+		},
+
+
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := dependabotCommand(tt.args.cmd, tt.args.repo); (err != nil) != tt.wantErr {
+				t.Errorf("dependabotCommand() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
