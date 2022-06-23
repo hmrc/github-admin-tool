@@ -188,14 +188,11 @@ func Test_dependabotCommand(t *testing.T) {
 	}
 
 	var (
+		mockDryRun                     bool
+		mockReposFile                  string
 		mockDependabotAlerts           bool
 		mockDdependabotSecurityUpdates bool
-		mockDryRun                     bool
-		mockDryRunFalse                bool
-		mockReposFile                  string
-		mockRepos2File                 string
 	)
-
 
 	mockCmd := &cobra.Command{
 		Use: "dependabot",
@@ -206,8 +203,49 @@ func Test_dependabotCommand(t *testing.T) {
 	}
 	mockCmdWithDryRunAndRepos.Flags().BoolVarP(&mockDryRun, "dry-run", "d", true, "dry run flag")
 	mockCmdWithDryRunAndRepos.Flags().StringVarP(&mockReposFile, "repos", "r", "", "repos file")
+	mockCmdWithDryRunAndRepos.Flags().BoolVarP(
+		&mockDependabotAlerts,
+		"alerts",
+		"a",
+		true,
+		"boolean indicating the status of dependabot alerts setting",
+	)
+	mockCmdWithDryRunAndRepos.Flags().BoolVarP(
+		&mockDdependabotSecurityUpdates,
+		"security-updates",
+		"s",
+		true,
+		"boolean indicating the status of dependabot security updates setting",
+	)
 
-	
+	if err := mockCmdWithDryRunAndRepos.Flags().Set("alerts", "true"); err != nil {
+		t.Errorf("setting alerts flag errors with error = %v", err)
+	}
+
+	mockCmdSuccess := &cobra.Command{
+		Use: "dependabot",
+	}
+	mockCmdSuccess.Flags().BoolVarP(&mockDryRun, "dry-run", "d", false, "dry run flag")
+	mockCmdSuccess.Flags().StringVarP(&mockReposFile, "repos", "", "r", "repos file")
+	mockCmdSuccess.Flags().BoolVarP(
+		&mockDependabotAlerts,
+		"alerts",
+		"a",
+		true,
+		"boolean indicating the status of dependabot alerts setting",
+	)
+	mockCmdSuccess.Flags().BoolVarP(
+		&mockDdependabotSecurityUpdates,
+		"security-updates",
+		"s",
+		true,
+		"boolean indicating the status of dependabot security updates setting",
+	)
+
+	if err := mockCmdSuccess.Flags().Set("alerts", "true"); err != nil {
+		t.Errorf("setting alerts flag errors with error = %v", err)
+	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -220,7 +258,6 @@ func Test_dependabotCommand(t *testing.T) {
 			},
 			wantErr: true,
 		},
-
 		{
 			name: "dependabotCommand no repo file error",
 			args: args{
@@ -229,13 +266,24 @@ func Test_dependabotCommand(t *testing.T) {
 					reader: &mockRepositoryReader{
 						readFail: true,
 					},
-
 				},
 			},
 			wantErr: true,
 		},
-
-
+		{
+			name: "dependabotCommand is successful",
+			args: args{
+				cmd: mockCmdSuccess,
+				repo: &repository{
+					reader: &mockRepositoryReader{
+						returnValue: []string{
+							"some-repo",
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

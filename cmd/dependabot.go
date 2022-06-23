@@ -1,22 +1,30 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github-admin-tool/restclient"
 	"log"
+	"net/http"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	dependabotAlerts          bool // nolint // expected global
-	dependabotSecurityUpdates bool // nolint // expected global
-	errDependabotOptions      = errors.New("must set option to update alerts or security-updates or both")
-	dependabotCmd             = &cobra.Command{ // nolint // needed for cobra
+	dependabotAlertsFlag          bool // nolint // expected global
+	dependabotSecurityUpdatesFlag bool // nolint // expected global
+	errDependabotFlags            = errors.New("must set option to update alerts or security-updates or both")
+	dependabotCmd                 = &cobra.Command{ // nolint // needed for cobra
 		Use:   "dependabot",
 		Short: "Enable and disable dependabot alerts and updates for repos in provided list",
 		RunE:  dependabotRun,
 	}
+)
+
+const (
+	// EmptyFlagCount the number of flags to check empty
+	EmptyFlagCount int = 2
 )
 
 func dependabotRun(cmd *cobra.Command, args []string) error {
@@ -36,8 +44,7 @@ func dependabotRun(cmd *cobra.Command, args []string) error {
 }
 
 func dependabotCommand(cmd *cobra.Command, repo *repository) error {
-	// reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, err := dependabotFlagCheck(cmd)
-	reposFilePath, _, _, dryRun, err := dependabotFlagCheck(cmd)
+	reposFilePath, dependabotAlertsSet, dependabotSecurityUpdatesSet, dryRun, err := dependabotFlagCheck(cmd)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
@@ -53,48 +60,118 @@ func dependabotCommand(cmd *cobra.Command, repo *repository) error {
 		return nil
 	}
 
+	/*ctx := context.Background()
+
+	 for _, repositoryName := range repositoryList {
+		if err := dependabotToggleAlerts(ctx, repositoryName, dependabotAlertsSet); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+
+		if err := dependabotToggleSecurityUpdates(ctx, repositoryName, dependabotSecurityUpdatesSet); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+	} */
+
+	return nil
+}
+
+func dependabotToggleAlerts(ctx context.Context, repositoryName string, alertsSet bool) error {
+	method := http.MethodPut
+	if !dependabotAlertsFlag {
+		method = http.MethodDelete
+	}
+
+	if alertsSet {
+		log.Printf("Updating alerts for repo %s", repositoryName)
+		client := restclient.NewClient(
+			fmt.Sprintf("/repos/%s/%s/vulnerability-alerts", config.Org, repositoryName),
+			config.Token,
+			method,
+		)
+
+		var response interface{}
+
+		if err := client.Run(ctx, response); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+	}
+
+	return nil
+}
+
+func dependabotToggleSecurityUpdates(ctx context.Context, repositoryName string, updatesSet bool) error {
+	method := http.MethodPut
+	if !dependabotSecurityUpdatesFlag {
+		method = http.MethodDelete
+	}
+
+	if updatesSet {
+		log.Printf("Updating security updates for repo %s", repositoryName)
+		client := restclient.NewClient(
+			fmt.Sprintf("/repos/%s/%s/automated-security-fixes", config.Org, repositoryName),
+			config.Token,
+			method,
+		)
+
+		var response interface{}
+
+		if err := client.Run(ctx, response); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+	}
+
 	return nil
 }
 
 func dependabotFlagCheck(cmd *cobra.Command) (
 	reposFilePath string,
-	dependabotAlerts,
-	dependabotSecurityUpdates,
+	dependabotAlertsSet,
+	dependabotSecurityUpdatesSet,
 	dryRun bool,
 	err error,
 ) {
 	dryRun, err = cmd.Flags().GetBool("dry-run")
 	if err != nil {
-		return reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, fmt.Errorf("%w", err)
+		return reposFilePath, dependabotAlertsSet, dependabotSecurityUpdatesSet, dryRun, fmt.Errorf("%w", err)
 	}
 
 	reposFilePath, err = cmd.Flags().GetString("repos")
 	if err != nil {
-		return reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, fmt.Errorf("%w", err)
+		return reposFilePath, dependabotAlertsSet, dependabotSecurityUpdatesSet, dryRun, fmt.Errorf("%w", err)
 	}
 
-	dependabotAlerts, err = cmd.Flags().GetBool("alerts")
+	dependabotAlertsFlag, err = cmd.Flags().GetBool("alerts")
 	if err != nil {
-		return reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, fmt.Errorf("%w", err)
+		return reposFilePath, dependabotAlertsSet, dependabotSecurityUpdatesSet, dryRun, fmt.Errorf("%w", err)
 	}
 
-	dependabotSecurityUpdates, err = cmd.Flags().GetBool("security-updates")
+	dependabotSecurityUpdatesFlag, err = cmd.Flags().GetBool("security-updates")
 	if err != nil {
-		return reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, fmt.Errorf("%w", err)
+		return reposFilePath, dependabotAlertsSet, dependabotSecurityUpdatesSet, dryRun, fmt.Errorf("%w", err)
 	}
 
-	if !cmd.Flags().Changed("alerts") && !cmd.Flags().Changed("security-updates") {
-		return reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, errDependabotOptions
+	var missingFlags int
+
+	if dependabotAlertsSet = cmd.Flags().Changed("alerts"); dependabotAlertsSet == false {
+		missingFlags++
 	}
 
-	return reposFilePath, dependabotAlerts, dependabotSecurityUpdates, dryRun, nil
+	if dependabotSecurityUpdatesSet = cmd.Flags().Changed("security-updates"); dependabotSecurityUpdatesSet == false {
+		missingFlags++
+	}
+
+	if missingFlags == EmptyFlagCount {
+		return reposFilePath, dependabotAlertsSet, dependabotSecurityUpdatesSet, dryRun, errDependabotFlags
+	}
+
+	return reposFilePath, dependabotAlertsSet, dependabotSecurityUpdatesSet, dryRun, nil
 }
 
 // nolint // needed for cobra
 func init() {
 	dependabotCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "path to file containing repositories (file should contain repos on new line without org/ prefix)")
-	dependabotCmd.Flags().BoolVarP(&dependabotAlerts, "alerts", "a", true, "boolean indicating the status of dependabot alerts setting")
-	dependabotCmd.Flags().BoolVarP(&dependabotSecurityUpdates, "security-updates", "s", true, "boolean indicating the status of dependabot security updates setting")
+	dependabotCmd.Flags().BoolVarP(&dependabotAlertsFlag, "alerts", "a", true, "boolean indicating the status of dependabot alerts setting")
+	dependabotCmd.Flags().BoolVarP(&dependabotSecurityUpdatesFlag, "security-updates", "s", true, "boolean indicating the status of dependabot security updates setting")
 	dependabotCmd.MarkFlagRequired("repos")
 	dependabotCmd.Flags().SortFlags = true
 	rootCmd.AddCommand(dependabotCmd)
