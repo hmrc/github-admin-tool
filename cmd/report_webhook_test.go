@@ -502,7 +502,7 @@ func Test_reportWebhookGetterService_getWebhooks(t *testing.T) {
 		config = originalConfig
 	}()
 
-	config.Org = MockRepoName
+	config.Org = MockOrgName
 
 	type args struct {
 		report       *reportWebhook

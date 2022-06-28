@@ -20,7 +20,7 @@ func Test_removeWebhook(t *testing.T) {
 		config = originalConfig
 	}()
 
-	config.Org = MockRepoName
+	config.Org = MockOrgName
 
 	type args struct {
 		ctx            context.Context
@@ -85,7 +85,7 @@ func Test_getWebhookID(t *testing.T) {
 		config = originalConfig
 	}()
 
-	config.Org = MockRepoName
+	config.Org = MockOrgName
 
 	ctx := context.Background()
 
@@ -248,7 +248,7 @@ func Test_removeWebhookCommand(t *testing.T) {
 		config = originalConfig
 	}()
 
-	config.Org = MockRepoName
+	config.Org = MockOrgName
 
 	type args struct {
 		cmd  *cobra.Command
