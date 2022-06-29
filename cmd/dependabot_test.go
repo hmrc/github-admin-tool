@@ -266,7 +266,7 @@ func Test_dependabotCommand(t *testing.T) {
 	mockCmdSecurityUpdatesOn.Flags().StringVarP(&mockReposFile, "repos", "", "r", "repos file")
 	mockCmdSecurityUpdatesOn.Flags().Bool(
 		"alerts",
-		false,
+		true,
 		"boolean indicating the status of dependabot alerts setting",
 	)
 	mockCmdSecurityUpdatesOn.Flags().Bool(
@@ -279,6 +279,30 @@ func Test_dependabotCommand(t *testing.T) {
 		t.Errorf("setting security-updates flag errors with error = %v", err)
 	}
 
+	if err := mockCmdSecurityUpdatesOn.Flags().Set("alerts", "true"); err != nil {
+		t.Errorf("setting alerts flag errors with error = %v", err)
+	}
+
+	mockCmdSecurityUpdatesOnNoAlerts := &cobra.Command{
+		Use: "dependabot",
+	}
+	mockCmdSecurityUpdatesOnNoAlerts.Flags().BoolVarP(&mockDryRun, "dry-run", "d", false, "dry run flag")
+	mockCmdSecurityUpdatesOnNoAlerts.Flags().StringVarP(&mockReposFile, "repos", "", "r", "repos file")
+	mockCmdSecurityUpdatesOnNoAlerts.Flags().Bool(
+		"alerts",
+		false,
+		"boolean indicating the status of dependabot alerts setting",
+	)
+	mockCmdSecurityUpdatesOnNoAlerts.Flags().Bool(
+		"security-updates",
+		true,
+		"boolean indicating the status of dependabot security updates setting",
+	)
+
+	if err := mockCmdSecurityUpdatesOnNoAlerts.Flags().Set("security-updates", "true"); err != nil {
+		t.Errorf("setting security-updates flag errors with error = %v", err)
+	}
+
 	tests := []struct {
 		name                 string
 		args                 args
@@ -286,6 +310,7 @@ func Test_dependabotCommand(t *testing.T) {
 		mockHTTPURL          string
 		mockHTTPResponseFile string
 		mockHTTPStatusCode   int
+		mockUpdateCall       bool
 		wantErr              bool
 	}{
 		{
@@ -359,6 +384,7 @@ func Test_dependabotCommand(t *testing.T) {
 			mockHTTPURL:          "/repos/some-org/some-repo/automated-security-fixes",
 			mockHTTPResponseFile: "testdata/mockRest20xEmptyResponse.json",
 			mockHTTPStatusCode:   204,
+			mockUpdateCall:       true,
 			wantErr:              false,
 		},
 		{
@@ -377,13 +403,36 @@ func Test_dependabotCommand(t *testing.T) {
 			mockHTTPURL:          "/repos/some-org/some-repo/automated-security-fixes",
 			mockHTTPResponseFile: "testdata/mockRest404Response.json",
 			mockHTTPStatusCode:   404,
+			mockUpdateCall:       true,
 			wantErr:              true,
+		},
+		{
+			name: "dependabotCommand errors with security updates update with no alerts",
+			args: args{
+				cmd: mockCmdSecurityUpdatesOnNoAlerts,
+				repo: &repository{
+					reader: &mockRepositoryReader{
+						returnValue: []string{
+							"some-repo",
+						},
+					},
+				},
+			},
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.mockHTTPResponseFile != "" {
+				if tt.mockUpdateCall {
+					mockHTTPResponder(
+						"PUT",
+						"/repos/some-org/some-repo/vulnerability-alerts",
+						"testdata/mockRest20xEmptyResponse.json",
+						204,
+					)
+				}
 				mockHTTPResponder(
 					tt.mockHTTPMethod,
 					tt.mockHTTPURL,
@@ -403,6 +452,7 @@ func Test_dependabotToggleAlerts(t *testing.T) {
 	type args struct {
 		ctx            context.Context
 		repositoryName string
+		method         string
 	}
 
 	originalConfig := config
@@ -436,6 +486,7 @@ func Test_dependabotToggleAlerts(t *testing.T) {
 			args: args{
 				ctx:            ctx,
 				repositoryName: "some-repo",
+				method:         "DELETE",
 			},
 			mockHTTPMethod:       "DELETE",
 			mockHTTPURL:          "/repos/some-org/some-repo/vulnerability-alerts",
@@ -448,8 +499,8 @@ func Test_dependabotToggleAlerts(t *testing.T) {
 			args: args{
 				ctx:            ctx,
 				repositoryName: "some-repo",
+				method:         "DELETE",
 			},
-			mockHTTPMethod:       "DELETE",
 			mockHTTPURL:          "/repos/some-org/some-repo/vulnerability-alerts",
 			mockHTTPResponseFile: "testdata/mockRest20xEmptyResponse.json",
 			mockHTTPStatusCode:   204,
@@ -460,12 +511,12 @@ func Test_dependabotToggleAlerts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockHTTPResponder(
-				tt.mockHTTPMethod,
+				tt.args.method,
 				tt.mockHTTPURL,
 				tt.mockHTTPResponseFile,
 				tt.mockHTTPStatusCode,
 			)
-			if err := dependabotToggleAlerts(tt.args.ctx, tt.args.repositoryName); (err != nil) != tt.wantErr {
+			if err := dependabotToggleAlerts(tt.args.ctx, tt.args.repositoryName, tt.args.method); (err != nil) != tt.wantErr {
 				t.Errorf("dependabotToggleAlerts() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -476,6 +527,7 @@ func Test_dependabotToggleSecurityUpdates(t *testing.T) {
 	type args struct {
 		ctx            context.Context
 		repositoryName string
+		method         string
 	}
 
 	originalConfig := config
@@ -498,7 +550,6 @@ func Test_dependabotToggleSecurityUpdates(t *testing.T) {
 	tests := []struct {
 		name                 string
 		args                 args
-		mockHTTPMethod       string
 		mockHTTPURL          string
 		mockHTTPResponseFile string
 		mockHTTPStatusCode   int
@@ -509,8 +560,8 @@ func Test_dependabotToggleSecurityUpdates(t *testing.T) {
 			args: args{
 				ctx:            ctx,
 				repositoryName: "some-repo",
+				method:         "DELETE",
 			},
-			mockHTTPMethod:       "DELETE",
 			mockHTTPURL:          "/repos/some-org/some-repo/automated-security-fixes",
 			mockHTTPResponseFile: "testdata/mockRest404Response.json",
 			mockHTTPStatusCode:   404,
@@ -521,8 +572,8 @@ func Test_dependabotToggleSecurityUpdates(t *testing.T) {
 			args: args{
 				ctx:            ctx,
 				repositoryName: "some-repo",
+				method:         "DELETE",
 			},
-			mockHTTPMethod:       "DELETE",
 			mockHTTPURL:          "/repos/some-org/some-repo/automated-security-fixes",
 			mockHTTPResponseFile: "testdata/mockRest20xEmptyResponse.json",
 			mockHTTPStatusCode:   204,
@@ -532,13 +583,47 @@ func Test_dependabotToggleSecurityUpdates(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockHTTPResponder(
-				tt.mockHTTPMethod,
+				tt.args.method,
 				tt.mockHTTPURL,
 				tt.mockHTTPResponseFile,
 				tt.mockHTTPStatusCode,
 			)
-			if err := dependabotToggleSecurityUpdates(tt.args.ctx, tt.args.repositoryName); (err != nil) != tt.wantErr {
+			if err := dependabotToggleSecurityUpdates(
+				tt.args.ctx,
+				tt.args.repositoryName,
+				tt.args.method,
+			); (err != nil) != tt.wantErr {
 				t.Errorf("dependabotToggleSecurityUpdates() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_dependabotHTTPMethod(t *testing.T) {
+	type args struct {
+		enable bool
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "dependabotHTTPMethod return delete",
+			want: "DELETE",
+		},
+		{
+			name: "dependabotHTTPMethod return put",
+			args: args{
+				enable: true,
+			},
+			want: "PUT",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := dependabotHTTPMethod(tt.args.enable); got != tt.want {
+				t.Errorf("dependabotHTTPMethod() = %v, want %v", got, tt.want)
 			}
 		})
 	}
