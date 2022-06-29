@@ -43,7 +43,7 @@ Run the following command to generate a CSV or JSON report with respository sett
 
 `./github-admin-tool report`
 
-## Repository Webhook Report
+## Repository webhook report
 
 Run the following command to generate a CSV or JSON report with respository webhook settings.
 
@@ -61,7 +61,7 @@ If the default branch does not have a protection rule, it will be created.
 
 `./github-admin-tool signing -r repo_list.txt`
 
-## PR Approval
+## PR approval
 
 Run the following command to set pr-approval rules for a given branch name for the repos contained in the list.   The list should be a text file with repository names (without owner name) on new lines.  Check the command line help for different settings.
 
@@ -69,13 +69,19 @@ If the passed in branch does not have a protection rule, it will be created.
 
 `./github-admin-tool pr-approval -r repo_list.txt -b branch_name`
 
-## Webhook Removal
+## Webhook removal
 
 Run the following command to remove a webhook for the repos contained in the given list and URL (full URL with protocol).   The list should be a text file with repository names (without owner name) on new lines.  Check the command line help for different settings.
 
 `./github-admin-tool webhook-remove -r repo_list.txt -u webhook_url`
 
-## Developer Release
+## Dependabot settings
+
+Run the following command to modify the dependabot settings for the repos contained in the list.   The list should be a text file with repository names (without owner name) on new lines.  Check the command line help for different settings.
+
+`./github-admin-tool dependabot -r repo_list.txt`
+
+## Developer release
 
 Use the go releaser tool to make a release to the repo.
 
