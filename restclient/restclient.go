@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 )
 
@@ -33,7 +32,7 @@ type bodyReader interface {
 type bodyReaderService struct{}
 
 func (b *bodyReaderService) read(body io.Reader) ([]byte, error) {
-	result, err := ioutil.ReadAll(body)
+	result, err := io.ReadAll(body)
 	if err != nil {
 		return result, fmt.Errorf("reading body: %w", err)
 	}
@@ -58,7 +57,7 @@ type errorResponse struct {
 }
 
 func (c *Client) Run(ctx context.Context, resp interface{}) (err error) {
-	req, err := http.NewRequest(c.method, c.endpoint, nil)
+	req, err := http.NewRequest(c.method, c.endpoint, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("new request: %w", err)
 	}
@@ -78,18 +77,8 @@ func (c *Client) Run(ctx context.Context, resp interface{}) (err error) {
 
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusNoContent {
-		var errRes errorResponse
-
-		if err = json.NewDecoder(res.Body).Decode(&errRes); err != nil {
-			return fmt.Errorf("decoding response: %w", err)
-		}
-
-		if res.StatusCode == http.StatusUnauthorized {
-			return fmt.Errorf("%w, %s", errHTTPUnauthorised, c.endpoint)
-		}
-
-		return fmt.Errorf("incorrect status: %w, %s", errStatusCode, c.endpoint)
+	if err := checkHTTPResponse(res, c.endpoint); err != nil {
+		return err
 	}
 
 	body, err := c.bodyReader.read(res.Body)
@@ -97,10 +86,28 @@ func (c *Client) Run(ctx context.Context, resp interface{}) (err error) {
 		return fmt.Errorf("reading body: %w", err)
 	}
 
-	if c.method != http.MethodDelete {
+	if c.method != http.MethodDelete && res.StatusCode != http.StatusNoContent {
 		if err := json.Unmarshal(body, &resp); err != nil {
 			return fmt.Errorf("unmarshall: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func checkHTTPResponse(res *http.Response, endpoint string) error {
+	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusNoContent {
+		var errRes errorResponse
+
+		if err := json.NewDecoder(res.Body).Decode(&errRes); err != nil {
+			return fmt.Errorf("decoding response: %w", err)
+		}
+
+		if res.StatusCode == http.StatusUnauthorized {
+			return fmt.Errorf("%w, %s", errHTTPUnauthorised, endpoint)
+		}
+
+		return fmt.Errorf("incorrect status: %w '%d', %s", errStatusCode, res.StatusCode, endpoint)
 	}
 
 	return nil
