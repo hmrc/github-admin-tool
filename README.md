@@ -74,3 +74,14 @@ If the passed in branch does not have a protection rule, it will be created.
 Run the following command to remove a webhook for the repos contained in the given list and URL (full URL with protocol).   The list should be a text file with repository names (without owner name) on new lines.  Check the command line help for different settings.
 
 `./github-admin-tool webhook-remove -r repo_list.txt -u webhook_url`
+
+## Developer Release
+
+Use the go releaser tool to make a release to the repo.
+
+<https://goreleaser.com/quick-start/>
+
+```git tag -a v0.1.0 -m "First release"
+git push origin v0.1.0
+
+goreleaser release --rm-dist```
