@@ -44,7 +44,7 @@ func dependabotRun(cmd *cobra.Command, args []string) error {
 }
 
 func dependabotCommand(cmd *cobra.Command, repo *repository) error {
-	reposFilePath, dependabotAlertsSet, dependabotSecurityUpdatesSet, dryRun, err := dependabotFlagCheck(cmd)
+	reposFilePath, alertsSet, securityUpdatesSet, dryRun, err := dependabotFlagCheck(cmd)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
@@ -60,64 +60,74 @@ func dependabotCommand(cmd *cobra.Command, repo *repository) error {
 		return nil
 	}
 
-	/*ctx := context.Background()
+	ctx := context.Background()
 
-	 for _, repositoryName := range repositoryList {
-		if err := dependabotToggleAlerts(ctx, repositoryName, dependabotAlertsSet); err != nil {
-			return fmt.Errorf("%w", err)
+	for _, repositoryName := range repositoryList {
+		if alertsSet {
+			if err := dependabotToggleAlerts(ctx, repositoryName); err != nil {
+				return fmt.Errorf("%w", err)
+			}
 		}
 
-		if err := dependabotToggleSecurityUpdates(ctx, repositoryName, dependabotSecurityUpdatesSet); err != nil {
-			return fmt.Errorf("%w", err)
+		if securityUpdatesSet {
+			if err := dependabotToggleSecurityUpdates(ctx, repositoryName); err != nil {
+				return fmt.Errorf("%w", err)
+			}
 		}
-	} */
+	}
 
 	return nil
 }
 
-func dependabotToggleAlerts(ctx context.Context, repositoryName string, alertsSet bool) error {
+func dependabotToggleAlerts(ctx context.Context, repositoryName string) error {
 	method := http.MethodPut
 	if !dependabotAlertsFlag {
 		method = http.MethodDelete
 	}
 
-	if alertsSet {
-		log.Printf("Updating alerts for repo %s", repositoryName)
-		client := restclient.NewClient(
-			fmt.Sprintf("/repos/%s/%s/vulnerability-alerts", config.Org, repositoryName),
-			config.Token,
-			method,
-		)
+	log.Printf(
+		"Setting to '%s' dependabot alerts for repo %s",
+		dependabotStatus(dependabotAlertsFlag),
+		repositoryName,
+	)
 
-		var response interface{}
+	client := restclient.NewClient(
+		fmt.Sprintf("/repos/%s/%s/vulnerability-alerts", config.Org, repositoryName),
+		config.Token,
+		method,
+	)
 
-		if err := client.Run(ctx, response); err != nil {
-			return fmt.Errorf("%w", err)
-		}
+	var response interface{}
+
+	if err := client.Run(ctx, response); err != nil {
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil
 }
 
-func dependabotToggleSecurityUpdates(ctx context.Context, repositoryName string, updatesSet bool) error {
+func dependabotToggleSecurityUpdates(ctx context.Context, repositoryName string) error {
 	method := http.MethodPut
 	if !dependabotSecurityUpdatesFlag {
 		method = http.MethodDelete
 	}
 
-	if updatesSet {
-		log.Printf("Updating security updates for repo %s", repositoryName)
-		client := restclient.NewClient(
-			fmt.Sprintf("/repos/%s/%s/automated-security-fixes", config.Org, repositoryName),
-			config.Token,
-			method,
-		)
+	log.Printf(
+		"Setting to '%s' dependabot security updates for repo %s",
+		dependabotStatus(dependabotSecurityUpdatesFlag),
+		repositoryName,
+	)
 
-		var response interface{}
+	client := restclient.NewClient(
+		fmt.Sprintf("/repos/%s/%s/automated-security-fixes", config.Org, repositoryName),
+		config.Token,
+		method,
+	)
 
-		if err := client.Run(ctx, response); err != nil {
-			return fmt.Errorf("%w", err)
-		}
+	var response interface{}
+
+	if err := client.Run(ctx, response); err != nil {
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil
@@ -152,11 +162,11 @@ func dependabotFlagCheck(cmd *cobra.Command) (
 
 	var missingFlags int
 
-	if dependabotAlertsSet = cmd.Flags().Changed("alerts"); dependabotAlertsSet == false {
+	if dependabotAlertsSet = cmd.Flags().Changed("alerts"); !dependabotAlertsSet {
 		missingFlags++
 	}
 
-	if dependabotSecurityUpdatesSet = cmd.Flags().Changed("security-updates"); dependabotSecurityUpdatesSet == false {
+	if dependabotSecurityUpdatesSet = cmd.Flags().Changed("security-updates"); !dependabotSecurityUpdatesSet {
 		missingFlags++
 	}
 
@@ -165,6 +175,14 @@ func dependabotFlagCheck(cmd *cobra.Command) (
 	}
 
 	return reposFilePath, dependabotAlertsSet, dependabotSecurityUpdatesSet, dryRun, nil
+}
+
+func dependabotStatus(status bool) string {
+	if status {
+		return "ON"
+	}
+
+	return "OFF"
 }
 
 // nolint // needed for cobra
