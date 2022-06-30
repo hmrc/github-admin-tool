@@ -15,12 +15,10 @@ func Test_dependabotRun(t *testing.T) {
 	}
 
 	var (
-		mockDependabotAlerts           bool
-		mockDdependabotSecurityUpdates bool
-		mockDryRun                     bool
-		mockDryRunFalse                bool
-		mockReposFile                  string
-		mockRepos2File                 string
+		mockDryRun      bool
+		mockDryRunFalse bool
+		mockReposFile   string
+		mockRepos2File  string
 	)
 
 	mockCmd := &cobra.Command{
@@ -49,8 +47,7 @@ func Test_dependabotRun(t *testing.T) {
 		"testdata/two_repo_list.txt",
 		"repos file",
 	)
-	mockCmdWithDryRunOnNoSecurityUpdates.Flags().BoolVarP(
-		&mockDependabotAlerts,
+	mockCmdWithDryRunOnNoSecurityUpdates.Flags().BoolP(
 		"alerts",
 		"a",
 		true,
@@ -68,15 +65,13 @@ func Test_dependabotRun(t *testing.T) {
 		"testdata/two_repo_list.txt",
 		"repos file",
 	)
-	mockCmdWithDryRunOnNoOptions.Flags().BoolVarP(
-		&mockDependabotAlerts,
+	mockCmdWithDryRunOnNoOptions.Flags().BoolP(
 		"alerts",
 		"a",
 		true,
 		"boolean indicating the status of dependabot alerts setting",
 	)
-	mockCmdWithDryRunOnNoOptions.Flags().BoolVarP(
-		&mockDependabotAlerts,
+	mockCmdWithDryRunOnNoOptions.Flags().BoolP(
 		"security-updates",
 		"s",
 		true,
@@ -94,15 +89,13 @@ func Test_dependabotRun(t *testing.T) {
 		"testdata/two_repo_list.txt",
 		"repos file",
 	)
-	mockCmdWithDryRunOn.Flags().BoolVarP(
-		&mockDependabotAlerts,
+	mockCmdWithDryRunOn.Flags().BoolP(
 		"alerts",
 		"a",
 		true,
 		"boolean indicating the status of dependabot alerts setting",
 	)
-	mockCmdWithDryRunOn.Flags().BoolVarP(
-		&mockDdependabotSecurityUpdates,
+	mockCmdWithDryRunOn.Flags().BoolP(
 		"security-updates",
 		"s",
 		true,
@@ -182,6 +175,7 @@ func Test_dependabotRun(t *testing.T) {
 	}
 }
 
+// nolint // dont care about cyclomatic linting error for test
 func Test_dependabotCommand(t *testing.T) {
 	type args struct {
 		cmd  *cobra.Command
@@ -201,10 +195,8 @@ func Test_dependabotCommand(t *testing.T) {
 	config.Org = MockOrgName
 
 	var (
-		mockDryRun                    bool
-		mockReposFile                 string
-		mockDependabotAlerts          bool
-		mockDependabotSecurityUpdates bool
+		mockDryRun    bool
+		mockReposFile string
 	)
 
 	mockCmd := &cobra.Command{
@@ -216,15 +208,13 @@ func Test_dependabotCommand(t *testing.T) {
 	}
 	mockCmdWithDryRunAndRepos.Flags().BoolVarP(&mockDryRun, "dry-run", "d", true, "dry run flag")
 	mockCmdWithDryRunAndRepos.Flags().StringVarP(&mockReposFile, "repos", "r", "", "repos file")
-	mockCmdWithDryRunAndRepos.Flags().BoolVarP(
-		&mockDependabotAlerts,
+	mockCmdWithDryRunAndRepos.Flags().BoolP(
 		"alerts",
 		"a",
 		true,
 		"boolean indicating the status of dependabot alerts setting",
 	)
-	mockCmdWithDryRunAndRepos.Flags().BoolVarP(
-		&mockDependabotSecurityUpdates,
+	mockCmdWithDryRunAndRepos.Flags().BoolP(
 		"security-updates",
 		"s",
 		true,
@@ -240,15 +230,13 @@ func Test_dependabotCommand(t *testing.T) {
 	}
 	mockCmdAlertsOn.Flags().BoolVarP(&mockDryRun, "dry-run", "d", false, "dry run flag")
 	mockCmdAlertsOn.Flags().StringVarP(&mockReposFile, "repos", "", "r", "repos file")
-	mockCmdAlertsOn.Flags().BoolVarP(
-		&mockDependabotAlerts,
+	mockCmdAlertsOn.Flags().BoolP(
 		"alerts",
 		"a",
 		true,
 		"boolean indicating the status of dependabot alerts setting",
 	)
-	mockCmdAlertsOn.Flags().BoolVarP(
-		&mockDependabotSecurityUpdates,
+	mockCmdAlertsOn.Flags().BoolP(
 		"security-updates",
 		"s",
 		true,
@@ -264,13 +252,15 @@ func Test_dependabotCommand(t *testing.T) {
 	}
 	mockCmdSecurityUpdatesOn.Flags().BoolVarP(&mockDryRun, "dry-run", "d", false, "dry run flag")
 	mockCmdSecurityUpdatesOn.Flags().StringVarP(&mockReposFile, "repos", "", "r", "repos file")
-	mockCmdSecurityUpdatesOn.Flags().Bool(
+	mockCmdSecurityUpdatesOn.Flags().BoolP(
 		"alerts",
+		"a",
 		true,
 		"boolean indicating the status of dependabot alerts setting",
 	)
-	mockCmdSecurityUpdatesOn.Flags().Bool(
+	mockCmdSecurityUpdatesOn.Flags().BoolP(
 		"security-updates",
+		"s",
 		true,
 		"boolean indicating the status of dependabot security updates setting",
 	)
@@ -288,19 +278,65 @@ func Test_dependabotCommand(t *testing.T) {
 	}
 	mockCmdSecurityUpdatesOnNoAlerts.Flags().BoolVarP(&mockDryRun, "dry-run", "d", false, "dry run flag")
 	mockCmdSecurityUpdatesOnNoAlerts.Flags().StringVarP(&mockReposFile, "repos", "", "r", "repos file")
-	mockCmdSecurityUpdatesOnNoAlerts.Flags().Bool(
+	mockCmdSecurityUpdatesOnNoAlerts.Flags().BoolP(
 		"alerts",
+		"a",
 		false,
 		"boolean indicating the status of dependabot alerts setting",
 	)
-	mockCmdSecurityUpdatesOnNoAlerts.Flags().Bool(
+	mockCmdSecurityUpdatesOnNoAlerts.Flags().BoolP(
 		"security-updates",
+		"s",
 		true,
 		"boolean indicating the status of dependabot security updates setting",
 	)
 
 	if err := mockCmdSecurityUpdatesOnNoAlerts.Flags().Set("security-updates", "true"); err != nil {
 		t.Errorf("setting security-updates flag errors with error = %v", err)
+	}
+
+	mockCmdWithFalseAlertFlag := &cobra.Command{
+		Use: "dependabot",
+	}
+	mockCmdWithFalseAlertFlag.Flags().BoolVarP(&mockDryRun, "dry-run", "d", false, "dry run flag")
+	mockCmdWithFalseAlertFlag.Flags().StringVarP(&mockReposFile, "repos", "r", "", "repos file")
+	mockCmdWithFalseAlertFlag.Flags().BoolP(
+		"alerts",
+		"a",
+		false,
+		"boolean indicating the status of dependabot alerts setting",
+	)
+	mockCmdWithFalseAlertFlag.Flags().BoolP(
+		"security-updates",
+		"s",
+		true,
+		"boolean indicating the status of dependabot security updates setting",
+	)
+
+	if err := mockCmdWithFalseAlertFlag.Flags().Set("alerts", "true"); err != nil {
+		t.Errorf("setting alerts flag errors with error = %v", err)
+	}
+
+	mockCmdAlertsOff := &cobra.Command{
+		Use: "dependabot",
+	}
+	mockCmdAlertsOff.Flags().BoolVarP(&mockDryRun, "dry-run", "d", false, "dry run flag")
+	mockCmdAlertsOff.Flags().StringVarP(&mockReposFile, "repos", "", "r", "repos file")
+	mockCmdAlertsOff.Flags().BoolP(
+		"alerts",
+		"a",
+		false,
+		"boolean indicating the status of dependabot alerts setting",
+	)
+	mockCmdAlertsOff.Flags().BoolP(
+		"security-updates",
+		"s",
+		true,
+		"boolean indicating the status of dependabot security updates setting",
+	)
+
+	if err := mockCmdAlertsOff.Flags().Set("alerts", "false"); err != nil {
+		t.Errorf("setting alerts flag errors with error = %v", err)
 	}
 
 	tests := []struct {
@@ -420,6 +456,43 @@ func Test_dependabotCommand(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "dependabotCommand is successful with false alert flag",
+			args: args{
+				cmd: mockCmdWithFalseAlertFlag,
+				repo: &repository{
+					reader: &mockRepositoryReader{
+						returnValue: []string{
+							"some-repo",
+						},
+					},
+				},
+			},
+			mockHTTPMethod:       "DELETE",
+			mockHTTPURL:          "/repos/some-org/some-repo/automated-security-fixes",
+			mockHTTPResponseFile: "testdata/mockRest20xEmptyResponse.json",
+			mockHTTPStatusCode:   204,
+			mockUpdateCall:       true,
+			wantErr:              false,
+		},
+		{
+			name: "dependabotCommand is successful with alerts off",
+			args: args{
+				cmd: mockCmdAlertsOff,
+				repo: &repository{
+					reader: &mockRepositoryReader{
+						returnValue: []string{
+							"some-repo",
+						},
+					},
+				},
+			},
+			mockHTTPMethod:       "DELETE",
+			mockHTTPURL:          "/repos/some-org/some-repo/vulnerability-alerts",
+			mockHTTPResponseFile: "testdata/mockRest20xEmptyResponse.json",
+			mockHTTPStatusCode:   204,
+			wantErr:              false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -456,7 +529,6 @@ func Test_dependabotToggleAlerts(t *testing.T) {
 	}
 
 	originalConfig := config
-	originalAlertsFlag := dependabotAlertsFlag
 
 	httpmock.Activate()
 
@@ -464,11 +536,9 @@ func Test_dependabotToggleAlerts(t *testing.T) {
 		httpmock.DeactivateAndReset()
 
 		config = originalConfig
-		dependabotAlertsFlag = originalAlertsFlag
 	}()
 
 	config.Org = MockOrgName
-	dependabotAlertsFlag = false
 
 	ctx := context.Background()
 
@@ -531,7 +601,6 @@ func Test_dependabotToggleSecurityUpdates(t *testing.T) {
 	}
 
 	originalConfig := config
-	originalSecurityUpdatesFlag := dependabotSecurityUpdatesFlag
 
 	httpmock.Activate()
 
@@ -539,11 +608,9 @@ func Test_dependabotToggleSecurityUpdates(t *testing.T) {
 		httpmock.DeactivateAndReset()
 
 		config = originalConfig
-		dependabotSecurityUpdatesFlag = originalSecurityUpdatesFlag
 	}()
 
 	config.Org = MockOrgName
-	dependabotSecurityUpdatesFlag = false
 
 	ctx := context.Background()
 
@@ -603,6 +670,7 @@ func Test_dependabotHTTPMethod(t *testing.T) {
 	type args struct {
 		enable bool
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -620,6 +688,7 @@ func Test_dependabotHTTPMethod(t *testing.T) {
 			want: "PUT",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := dependabotHTTPMethod(tt.args.enable); got != tt.want {
