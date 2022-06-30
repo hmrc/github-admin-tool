@@ -59,7 +59,7 @@ var (
 	}
 )
 
-const MockRepoName = "some-org"
+const MockOrgName = "some-org"
 
 type mockReportGetter struct {
 	fail bool
