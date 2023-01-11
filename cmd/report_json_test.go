@@ -70,9 +70,10 @@ func Test_reportJSONService_generate(t *testing.T) {
 					Organization{
 						Repositories{
 							Nodes: []RepositoriesNode{{
-								IsArchived:    false,
-								Name:          "REPONAME2",
-								NameWithOwner: "org/REPONAME2",
+								IsArchived:     false,
+								Name:           "REPONAME2",
+								NameWithOwner:  "org/REPONAME2",
+								HasWikiEnabled: false,
 							}},
 						},
 					},
@@ -89,9 +90,10 @@ func Test_reportJSONService_generate(t *testing.T) {
 						Organization{
 							Repositories{
 								Nodes: []RepositoriesNode{{
-									IsArchived:    false,
-									Name:          "REPONAME2",
-									NameWithOwner: "org/REPONAME2",
+									IsArchived:     false,
+									Name:           "REPONAME2",
+									NameWithOwner:  "org/REPONAME2",
+									HasWikiEnabled: false,
 								}},
 							},
 						},

@@ -26,6 +26,7 @@ var (
 			"Is Private",
 			"Is Empty",
 			"Is Fork",
+			"Has Wiki Enabled",
 			"Parent Repo Name",
 			"Merge Commit Allowed",
 			"Squash Merge Allowed",
