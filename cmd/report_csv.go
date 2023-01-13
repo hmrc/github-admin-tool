@@ -82,6 +82,7 @@ func reportCSVParse(ignoreArchived bool, allResults []ReportResponse, teamAccess
 				strconv.FormatBool(repo.IsPrivate),
 				strconv.FormatBool(repo.IsEmpty),
 				strconv.FormatBool(repo.IsFork),
+				strconv.FormatBool(repo.HasWikiEnabled),
 				strings.TrimSpace(repo.Parent.NameWithOwner),
 				strconv.FormatBool(repo.MergeCommitAllowed),
 				strconv.FormatBool(repo.SquashMergeAllowed),
