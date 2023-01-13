@@ -86,7 +86,10 @@ func Test_reportCSVParse(t *testing.T) {
 				teamAccess: teamAccess,
 			},
 
-			want: [][]string{{"org/REPONAME2", "", "false", "false", "false", "false", "false", "", "false", "false", "false", "ADMIN"}},
+			want: [][]string{{
+				"org/REPONAME2", "", "false", "false", "false", "false",
+				"false", "", "false", "false", "false", "ADMIN",
+			}},
 		},
 	}
 

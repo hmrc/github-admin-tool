@@ -13,7 +13,7 @@ import (
 var (
 	errTestFail                    = errors.New("fail")
 	errTestAccessFail              = errors.New("access fail")
-	errTestMarshalFail             = errors.New("marshalling failed")               // nolint // expected global
+	errTestMarshalFail             = errors.New("marshalling failed")
 	mockRateLimitResponseFile      = "testdata/mockRestRateLimitResponse.json"      // nolint // expected global
 	mockRateLimitEmptyResponseFile = "testdata/mockRestRateLimitEmptyResponse.json" // nolint // expected global
 	mockRestEmptyBodyResponseFile  = "testdata/mockRestEmptyBodyResponse.json"      // nolint // expected global
