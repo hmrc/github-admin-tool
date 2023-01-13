@@ -129,6 +129,7 @@ func reportQuery() string {
 	query.WriteString("					isEmpty")
 	query.WriteString("					isFork")
 	query.WriteString("					isPrivate")
+	query.WriteString("					hasWikiEnabled")
 	query.WriteString("					mergeCommitAllowed")
 	query.WriteString("					name")
 	query.WriteString("					nameWithOwner")
