@@ -39,7 +39,7 @@ func (r *reportAccessService) getReport() (map[string]string, error) {
 		req.Var("after", cursor)
 		req.Var("team", config.Team)
 
-		var respData OrganizationTeamsReponse
+		var respData OrganizationTeamsResponse
 		if err := client.Run(ctx, req, &respData); err != nil {
 			return adminAccess, fmt.Errorf("graphql call: %w", err)
 		}

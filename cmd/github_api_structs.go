@@ -72,7 +72,7 @@ type OrganizationTeams struct {
 	Teams Teams `json:"teams"`
 }
 
-type OrganizationTeamsReponse struct {
+type OrganizationTeamsResponse struct {
 	OrganizationTeams OrganizationTeams `json:"organization"`
 }
 
