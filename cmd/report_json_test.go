@@ -1,9 +1,14 @@
 package cmd
 
 import (
+	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_reportJSONService_uploader(t *testing.T) {
@@ -128,11 +133,16 @@ func Test_reportJSONService_generate(t *testing.T) {
 				t.Fatalf("failed to read test data: %v", err)
 			}
 
-			want := string(mockReturn)
+			cleanedMock := strings.TrimSuffix(string(mockReturn), "\n")
+			cleanedGot := strings.TrimSuffix(string(got), "\n")
 
-			if !reflect.DeepEqual(string(got), want) {
-				t.Errorf("reportJSONService.generate() = %v, want %v", string(got), want)
-			}
+			want, wantErr := json.Marshal(cleanedMock)
+			assert.Nil(t, wantErr)
+
+			returned, gotErr := json.Marshal(cleanedGot)
+			assert.Nil(t, gotErr)
+
+			require.JSONEq(t, string(want), string(returned))
 		})
 	}
 }
