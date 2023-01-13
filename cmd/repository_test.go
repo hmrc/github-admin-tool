@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github-admin-tool/graphqlclient"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 
@@ -99,7 +99,7 @@ func Test_repositoryQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockReturn, err := ioutil.ReadFile(tt.filePath)
+			mockReturn, err := os.ReadFile(tt.filePath)
 			if err != nil {
 				t.Fatalf("failed to read test data: %v", err)
 			}

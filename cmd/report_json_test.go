@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -123,7 +123,7 @@ func Test_reportJSONService_generate(t *testing.T) {
 				return
 			}
 
-			mockReturn, err := ioutil.ReadFile(tt.wantFile)
+			mockReturn, err := os.ReadFile(tt.wantFile)
 			if err != nil {
 				t.Fatalf("failed to read test data: %v", err)
 			}
@@ -183,7 +183,7 @@ func Test_reportJSONService_generateWebhook(t *testing.T) {
 				return
 			}
 
-			mockReturn, err := ioutil.ReadFile(tt.wantFile)
+			mockReturn, err := os.ReadFile(tt.wantFile)
 			if err != nil {
 				t.Fatalf("failed to read test data: %v", err)
 			}
