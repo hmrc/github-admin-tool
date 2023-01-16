@@ -37,6 +37,7 @@ type RepositoriesNode struct {
 	IsEmpty               bool                  `json:"isEmpty"`
 	IsFork                bool                  `json:"isFork"`
 	IsPrivate             bool                  `json:"isPrivate"`
+	HasWikiEnabled        bool                  `json:"hasWikiEnabled"`
 	MergeCommitAllowed    bool                  `json:"mergeCommitAllowed"`
 	Name                  string                `json:"name"`
 	NameWithOwner         string                `json:"nameWithOwner"`
@@ -71,7 +72,7 @@ type OrganizationTeams struct {
 	Teams Teams `json:"teams"`
 }
 
-type OrganizationTeamsReponse struct {
+type OrganizationTeamsResponse struct {
 	OrganizationTeams OrganizationTeams `json:"organization"`
 }
 

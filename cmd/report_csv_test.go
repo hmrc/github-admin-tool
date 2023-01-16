@@ -43,7 +43,7 @@ func Test_reportCSVParse(t *testing.T) {
 			args: args{ignoreArchived: true, allResults: []ReportResponse{{
 				Organization{Repositories{Nodes: []RepositoriesNode{{IsArchived: false, NameWithOwner: "REPONAME1"}}}},
 			}}},
-			want: [][]string{{"REPONAME1", "", "false", "false", "false", "false", "", "false", "false", "false", ""}},
+			want: [][]string{{"REPONAME1", "", "false", "false", "false", "false", "false", "", "false", "false", "false", ""}},
 		},
 		{
 			name: "reportCSVParse branch protection result set",
@@ -64,7 +64,7 @@ func Test_reportCSVParse(t *testing.T) {
 				}},
 			},
 			want: [][]string{{
-				"", "", "false", "false", "false", "false", "", "false", "false", "false", "", "false",
+				"", "", "false", "false", "false", "false", "false", "", "false", "false", "false", "", "false",
 				"false", "false", "false", "false", "false", "false", "false", "0", "false", "false", "SOMEREGEXP",
 			}},
 		},
@@ -86,7 +86,10 @@ func Test_reportCSVParse(t *testing.T) {
 				teamAccess: teamAccess,
 			},
 
-			want: [][]string{{"org/REPONAME2", "", "false", "false", "false", "false", "", "false", "false", "false", "ADMIN"}},
+			want: [][]string{{
+				"org/REPONAME2", "", "false", "false", "false", "false",
+				"false", "", "false", "false", "false", "ADMIN",
+			}},
 		},
 	}
 

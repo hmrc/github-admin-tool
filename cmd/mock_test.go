@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github-admin-tool/graphqlclient"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -14,7 +13,7 @@ import (
 var (
 	errTestFail                    = errors.New("fail")
 	errTestAccessFail              = errors.New("access fail")
-	errTestMarshalFail             = errors.New("Marshalling failed")               // nolint // expected global
+	errTestMarshalFail             = errors.New("marshalling failed")
 	mockRateLimitResponseFile      = "testdata/mockRestRateLimitResponse.json"      // nolint // expected global
 	mockRateLimitEmptyResponseFile = "testdata/mockRestRateLimitEmptyResponse.json" // nolint // expected global
 	mockRestEmptyBodyResponseFile  = "testdata/mockRestEmptyBodyResponse.json"      // nolint // expected global
@@ -26,6 +25,7 @@ var (
 			"Is Private",
 			"Is Empty",
 			"Is Fork",
+			"Has Wiki Enabled",
 			"Parent Repo Name",
 			"Merge Commit Allowed",
 			"Squash Merge Allowed",
@@ -196,7 +196,7 @@ type mockSender struct {
 
 func (t *mockSender) send(req *graphqlclient.Request) error {
 	if t.sendFail {
-		return errors.New(fmt.Sprintf("%s: test", t.action)) // nolint // only mock error for test
+		return fmt.Errorf(fmt.Sprintf("%s: test", t.action)) // nolint // only mock error for test
 	}
 
 	return nil
@@ -233,7 +233,7 @@ func (r *mockReportWebhookGetterService) getWebhooks(
 }
 
 func mockHTTPResponder(method, url, responseFile string, statusCode int) {
-	response, err := ioutil.ReadFile(responseFile)
+	response, err := os.ReadFile(responseFile)
 	if err != nil {
 		log.Fatalf("failed to read test data: %v", err)
 	}
