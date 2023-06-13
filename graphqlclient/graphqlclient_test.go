@@ -2,6 +2,7 @@ package graphqlclient
 
 import (
 	"context"
+	"io/ioutil"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -12,17 +13,18 @@ func TestClient_run_retries(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
-	mockHTTPResponder(
+	mockHTTPReturnFile := "testdata/mockTimeoutResponse.json"
+	mockHTTPReturn, err := ioutil.ReadFile(mockHTTPReturnFile)
+
+	if err != nil {
+		t.Fatalf("failed to read test data: %v", err)
+	}
+
+	httpmock.RegisterResponder(
 		"POST",
 		"https://api.github.com/graphql",
-		"",
-		200,
+		httpmock.NewStringResponder(200, string(mockHTTPReturn)),
 	)
-
-	r := &reportAccessService{}
-
-	dryRun = tt.dryRunValue
-	config.Team = tt.teamValue
 
 	ctx := context.Background()
 
