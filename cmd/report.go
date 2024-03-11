@@ -147,6 +147,7 @@ func reportQuery() string {
 	query.WriteString("							dismissesStaleReviews")
 	query.WriteString("							requiresStrictStatusChecks")
 	query.WriteString("							requiredApprovingReviewCount")
+	query.WriteString("							requireLastPushApproval")
 	query.WriteString("							allowsForcePushes")
 	query.WriteString("							allowsDeletions")
 	query.WriteString("							pattern")
