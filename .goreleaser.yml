@@ -4,7 +4,7 @@ archives:
     # ID of this archive.
     #
     # Default: 'default'
-    id: my-archive
+    id: github-admin-tool-archive
 
     # Builds reference which build instances should be archived in this archive.
     builds:
