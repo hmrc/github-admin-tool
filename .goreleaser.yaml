@@ -22,6 +22,8 @@ builds:
       - linux
       - windows
       - darwin
+    flags:
+      - -trimpath
 
 archives:
   - format: tar.gz
