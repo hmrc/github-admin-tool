@@ -87,7 +87,9 @@ Use the go releaser tool to make a release to the repo.
 
 <https://goreleaser.com/quick-start/>
 
-```git tag -a v0.1.0 -m "First release"
+```bash
+git tag -a v0.1.0 -m "First release"
 git push origin v0.1.0
 
-goreleaser release --rm-dist```
+goreleaser release --clean
+```
