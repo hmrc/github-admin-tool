@@ -88,6 +88,7 @@ Use the go releaser tool to make a release to the repo.
 <https://goreleaser.com/quick-start/>
 
 ```bash
+export GITHUB_TOKEN=<ghp_xxxtokenxxx>
 git tag -a v0.1.0 -m "First release"
 git push origin v0.1.0
 
