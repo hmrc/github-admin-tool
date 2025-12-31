@@ -14,10 +14,10 @@ var (
 	errTestFail                    = errors.New("fail")
 	errTestAccessFail              = errors.New("access fail")
 	errTestMarshalFail             = errors.New("marshalling failed")
-	mockRateLimitResponseFile      = "testdata/mockRestRateLimitResponse.json"      // nolint // expected global
-	mockRateLimitEmptyResponseFile = "testdata/mockRestRateLimitEmptyResponse.json" // nolint // expected global
-	mockRestEmptyBodyResponseFile  = "testdata/mockRestEmptyBodyResponse.json"      // nolint // expected global
-	mockEmptyCSVReportRows         = [][]string{                                    // nolint // expected global
+	mockRateLimitResponseFile      = "testdata/mockRestRateLimitResponse.json"      //nolint // expected global
+	mockRateLimitEmptyResponseFile = "testdata/mockRestRateLimitEmptyResponse.json" //nolint // expected global
+	mockRestEmptyBodyResponseFile  = "testdata/mockRestEmptyBodyResponse.json"      //nolint // expected global
+	mockEmptyCSVReportRows         = [][]string{                                    //nolint // expected global
 		{
 			"Repo Name",
 			"Default Branch Name",
@@ -179,7 +179,7 @@ type mockRepositorySender struct {
 
 func (t *mockRepositorySender) send(req *graphqlclient.Request) (map[string]*RepositoriesNode, error) {
 	if t.sendFail {
-		return nil, errors.New("fail") // nolint // only mock error for test
+		return nil, errors.New("fail") //nolint // only mock error for test
 	}
 
 	if len(t.returnValue) > 0 {
@@ -196,7 +196,7 @@ type mockSender struct {
 
 func (t *mockSender) send(req *graphqlclient.Request) error {
 	if t.sendFail {
-		return fmt.Errorf(fmt.Sprintf("%s: test", t.action)) // nolint // only mock error for test
+		return fmt.Errorf(fmt.Sprintf("%s: test", t.action)) //nolint // only mock error for test
 	}
 
 	return nil

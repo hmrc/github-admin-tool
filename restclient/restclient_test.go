@@ -22,7 +22,7 @@ type mockBodyReader struct {
 
 func (t *mockBodyReader) read(body io.Reader) ([]byte, error) {
 	if t.readFail {
-		return t.returnValue, errors.New("fail") // nolint // only mock error for test
+		return t.returnValue, errors.New("fail") //nolint // only mock error for test
 	}
 
 	return t.returnValue, nil
@@ -36,7 +36,7 @@ func Test_bodyReaderService_read(t *testing.T) {
 		w.Header().Set("Content-Length", "1")
 	}))
 
-	mockResponse, err := client.Get(bodyErrorServer.URL) // nolint // noctx lint fail - this is only for test so ignore
+	mockResponse, err := client.Get(bodyErrorServer.URL) //nolint // noctx lint fail - this is only for test so ignore
 	if err != nil {
 		t.Errorf("bodyReaderService.read() could not setup read failure %+v", err)
 

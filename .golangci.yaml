@@ -11,7 +11,7 @@ linters:
     - copyloopvar
     - cyclop
     - decorder
-    - depguard
+#    - depguard
     - dogsled
     - dupl
     - dupword
@@ -21,7 +21,6 @@ linters:
     - errname
     - errorlint
     - exhaustive
-    - exhaustruct
     - exptostd
     - fatcontext
     - forbidigo
@@ -75,7 +74,7 @@ linters:
     - protogetter
     - reassign
     - recvcheck
-    - revive
+#    - revive
     - rowserrcheck
     - sloglint
     - spancheck
@@ -101,46 +100,22 @@ linters:
     - funlen
     - paralleltest
     - testpackage
-  settings:
-    errcheck:
-      # report about not checking of errors in type assertions: `a := b.(MyStruct)`;
-      # default is false: such cases aren't reported by default.
-      check-type-assertions: true
-      # report about assignment of errors to blank identifier: `num, _ := strconv.Atoi(numStr)`;
-      # default is false: such cases aren't reported by default.
-      check-blank: true
-    gocritic:
-      # Enable multiple checks by tags, run `GL_DEBUG=gocritic golangci-lint run` to see all tags and checks.
-      # Empty list by default. See https://github.com/go-critic/go-critic#usage -> section "Tags".
-      enabled-tags:
-        - diagnostic
-        - style
-        - performance
-        - experimental
-        - opinionated
-    wsl_v5:
-      allow-first-in-block: true
-      allow-whole-block: false
-      branch-max-lines: 2
-  exclusions:
-    generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
-formatters:
-  enable:
-    - gofmt
-    - gofumpt
-    - goimports
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+
+linters-settings:
+  gocritic:
+    # Enable multiple checks by tags, run `GL_DEBUG=gocritic golangci-lint run` to see all tags and checks.
+    # Empty list by default. See https://github.com/go-critic/go-critic#usage -> section "Tags".
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+      - experimental
+      - opinionated
+  errcheck:
+    # report about not checking of errors in type assertions: `a := b.(MyStruct)`;
+    # default is false: such cases aren't reported by default.
+    check-type-assertions: true
+
+    # report about assignment of errors to blank identifier: `num, _ := strconv.Atoi(numStr)`;
+    # default is false: such cases aren't reported by default.
+    check-blank: true

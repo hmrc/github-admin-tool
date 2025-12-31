@@ -70,7 +70,7 @@ func reportCSVParse(ignoreArchived bool, allResults []ReportResponse, teamAccess
 	var parsed [][]string
 
 	for _, allData := range allResults {
-		for _, repo := range allData.Organization.Repositories.Nodes { // nolint // not modifying
+		for _, repo := range allData.Organization.Repositories.Nodes { //nolint // not modifying
 			if ignoreArchived && repo.IsArchived {
 				continue
 			}

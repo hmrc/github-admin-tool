@@ -124,7 +124,7 @@ type WebhookResponse struct {
 
 type WebhookResponseConfig struct {
 	URL         string `json:"url"`
-	InsecureURL int    `json:"insecure_url"` // nolint // this is from github
+	InsecureURL int    `json:"insecure_url"` //nolint // this is from github
 }
 
 type Webhooks struct {

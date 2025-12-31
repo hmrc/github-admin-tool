@@ -17,9 +17,9 @@ import (
 )
 
 var (
-	jsonMarshal           = json.Marshal     // nolint // expected global
-	reportWebhookResponse WebhookCmdResponse // nolint // expected global
-	reportWebhookCmd      = &cobra.Command{  // nolint // expected global
+	jsonMarshal           = json.Marshal     //nolint // expected global
+	reportWebhookResponse WebhookCmdResponse //nolint // expected global
+	reportWebhookCmd      = &cobra.Command{  //nolint // expected global
 		Use:   "report-webhook",
 		Short: "Run a report to generate a csv containing webhooks for organisation repos",
 		Long: `Webhook report can often run over 15 minutes depending on large number of repositories in your org.  
@@ -30,7 +30,7 @@ this is useful when calling from a Lambda.`,
 	}
 )
 
-func init() { // nolint // needed for cobra
+func init() { //nolint // needed for cobra
 	reportWebhookCmd.Flags().BoolP("ignore-archived", "i", true, "Ignore archived repositories")
 	reportWebhookCmd.Flags().StringP(
 		"file-path", "f", "report.csv", "File path for report to be created, must be .csv or .json",

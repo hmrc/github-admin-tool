@@ -33,7 +33,7 @@ func (r *reportJSONService) generate(
 	var repos []RepositoriesNode
 
 	for _, allData := range allResults {
-		for _, repo := range allData.Organization.Repositories.Nodes { // nolint // not modifying
+		for _, repo := range allData.Organization.Repositories.Nodes { //nolint // not modifying
 			if ignoreArchived && repo.IsArchived {
 				continue
 			}

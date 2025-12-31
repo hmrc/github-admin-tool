@@ -11,13 +11,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var webhookRemoveCmd = &cobra.Command{ // nolint // needed for cobra
+var webhookRemoveCmd = &cobra.Command{ //nolint // needed for cobra
 	Use:   "webhook-remove",
 	Short: "Remove webhook settings for repos in provided list by hostname",
 	RunE:  webhookRemoveRun,
 }
 
-// nolint // needed for cobra
+//nolint // needed for cobra
 func init() {
 	webhookRemoveCmd.Flags().StringVarP(
 		&reposFile, "repos", "r", "", "path to file containing repositories (file should contain repos on new line without org/ prefix)",

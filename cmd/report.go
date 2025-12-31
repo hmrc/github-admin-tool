@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var reportCmd = &cobra.Command{ // nolint // needed for cobra
+var reportCmd = &cobra.Command{ //nolint // needed for cobra
 	Use:   "report",
 	Short: "Run a report to generate a csv containing information on all organisation repos",
 	RunE:  reportRun,
@@ -103,7 +103,7 @@ func reportCreate(r *report, dryRun, ignoreArchived bool, filePath, fileType str
 	return nil
 }
 
-// nolint // needed for cobra
+//nolint // needed for cobra
 func init() {
 	reportCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", true, "Ignore archived repositories")
 	reportCmd.Flags().StringVarP(&filePath, "file-path", "f", "report.csv", "file path for report to be created, must be .csv or .json")

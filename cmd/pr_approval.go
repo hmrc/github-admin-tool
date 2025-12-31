@@ -5,12 +5,12 @@ import (
 )
 
 var (
-	prApprovalFlag            bool              // nolint // needed for cobra
-	prApprovalNumber          int               // nolint // needed for cobra
-	prApprovalDismissStale    bool              // nolint // needed for cobra
-	prApprovalCodeOwnerReview bool              // nolint // needed for cobra
-	prBranchName              string            // nolint // needed for cobra
-	prApprovalCmd             = &cobra.Command{ // nolint // needed for cobra
+	prApprovalFlag            bool              //nolint // needed for cobra
+	prApprovalNumber          int               //nolint // needed for cobra
+	prApprovalDismissStale    bool              //nolint // needed for cobra
+	prApprovalCodeOwnerReview bool              //nolint // needed for cobra
+	prBranchName              string            //nolint // needed for cobra
+	prApprovalCmd             = &cobra.Command{ //nolint // needed for cobra
 		Use:   "pr-approval",
 		Short: "Toggle pr-approval settings for repos in provided list",
 		RunE:  prApprovalRun,
@@ -69,7 +69,7 @@ func setApprovalArgs(
 	}
 }
 
-// nolint // needed for cobra
+//nolint // needed for cobra
 func init() {
 	prApprovalCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "path to file containing repositories (file should contain repos on new line without org/ prefix)")
 	prApprovalCmd.Flags().StringVarP(&prBranchName, "branch", "b", "", "branch name to create or update the branch protection rule for")

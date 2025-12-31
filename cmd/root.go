@@ -9,18 +9,18 @@ import (
 )
 
 var (
-	configFile        string // nolint // needed for cobra
-	reposFile         string // nolint // needed for cobra
-	branchName        string // nolint // needed for cobra
-	webhookURL        string // nolint // needed for cobra
-	config            Config // nolint // using with viper
-	dryRun            bool   // nolint // using for global flag
-	ignoreArchived    bool   // nolint // modifying within this package
-	filePath          string // nolint // modifying within this package
-	fileType          string // nolint // modifying within this package
+	configFile        string //nolint // needed for cobra
+	reposFile         string //nolint // needed for cobra
+	branchName        string //nolint // needed for cobra
+	webhookURL        string //nolint // needed for cobra
+	config            Config //nolint // using with viper
+	dryRun            bool   //nolint // using for global flag
+	ignoreArchived    bool   //nolint // modifying within this package
+	filePath          string //nolint // modifying within this package
+	fileType          string //nolint // modifying within this package
 	errInvalidRepo    = errors.New("invalid repo name")
 	errInvalidTimeout = errors.New("invalid timeout")
-	rootCmd           = &cobra.Command{ // nolint // needed for cobra
+	rootCmd           = &cobra.Command{ //nolint // needed for cobra
 		Use:   "github-admin-tool",
 		Short: "Github admin tool allows you to perform actions on your github repos",
 		Long: `Using Github GraphQL API where possible (some actions only available using REST API) 
@@ -47,7 +47,7 @@ func Execute() error {
 	return nil
 }
 
-// nolint // needed for cobra
+//nolint // needed for cobra
 func init() {
 	cobra.OnInitialize(initConfig)
 
@@ -78,7 +78,7 @@ func initConfig() {
 	viper.AddConfigPath(".")
 	viper.SetConfigFile(configFile)
 
-	viper.ReadInConfig() // nolint // don't want to do anything here if no config
+	viper.ReadInConfig() //nolint // don't want to do anything here if no config
 
 	if err = viper.Unmarshal(&config); err != nil {
 		panic(fmt.Errorf("fatal error config file: %w", err))

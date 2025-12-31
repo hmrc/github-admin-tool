@@ -5,8 +5,8 @@ import (
 )
 
 var (
-	requiresCommitSignatures bool              // nolint // needed for cobra
-	signingCmd               = &cobra.Command{ // nolint // needed for cobra
+	requiresCommitSignatures bool              //nolint // needed for cobra
+	signingCmd               = &cobra.Command{ //nolint // needed for cobra
 		Use:   "signing",
 		Short: "Set request signing on to all repos in provided list",
 		RunE:  signingRun,
@@ -48,7 +48,7 @@ func setSigningArgs() (branchProtectionArgs []BranchProtectionArgs) {
 	return branchProtectionArgs
 }
 
-// nolint // needed for cobra
+//nolint // needed for cobra
 func init() {
 	signingCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "path to file containing repositories (file should contain repos on new line without org/ prefix)")
 	signingCmd.MarkFlagRequired("repos")
