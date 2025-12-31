@@ -214,7 +214,7 @@ func dependabotHTTPMethod(enable bool) string {
 	return http.MethodPut
 }
 
-//nolint // needed for cobra
+// nolint // needed for cobra
 func init() {
 	dependabotCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "path to file containing repositories (file should contain repos on new line without org/ prefix)")
 	dependabotCmd.Flags().BoolP("alerts", "a", true, "boolean indicating the status of dependabot alerts setting")

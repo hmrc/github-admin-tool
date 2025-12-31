@@ -47,7 +47,7 @@ func Execute() error {
 	return nil
 }
 
-//nolint // needed for cobra
+// nolint // needed for cobra
 func init() {
 	cobra.OnInitialize(initConfig)
 

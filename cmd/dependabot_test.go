@@ -175,7 +175,7 @@ func Test_dependabotRun(t *testing.T) {
 	}
 }
 
-//nolint // dont care about cyclomatic linting error for test
+// nolint // dont care about cyclomatic linting error for test
 func Test_dependabotCommand(t *testing.T) {
 	type args struct {
 		cmd  *cobra.Command
