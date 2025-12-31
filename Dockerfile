@@ -1,9 +1,9 @@
 ARG registry_prefix=""
-FROM ${registry_prefix}golang:1.16-alpine3.13 AS base
+FROM ${registry_prefix}golang:1.24-alpine3.23 AS base
 RUN apk add --no-cache \
-    shadow~=4.8 \
-    bash~=5.1 \
-    git~=2.30
+    shadow~=4.18 \
+    bash~=5.3 \
+    git~=2.52
 # UID of current user who runs the build
 ARG user_id
 # GID of current user who runs the build
@@ -40,7 +40,7 @@ RUN go mod download
 ENTRYPOINT [ "/usr/local/go/bin/go" ]
 
 FROM go AS golangci-lint
-ENV GOLANGCI_LINT_VERSION=1.40.0
+ENV GOLANGCI_LINT_VERSION=2.7.2
 SHELL [ "/bin/bash", "-euo", "pipefail", "-c" ]
 RUN wget -qO- "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz" \
     | tar -xzv -C /bin --strip-components=1 "golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64/golangci-lint"

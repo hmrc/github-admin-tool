@@ -1,1 +1,1 @@
-[{"RepositoryName":"repo1","Webhooks":[{"config":{"url":"some_url","insecure_url":0},"active":false,"id":0,"events":["an_event"]}]}]
+[{"repositoryName":"repo1","webhooks":[{"config":{"url":"some_url","insecure_url":0},"active":false,"id":0,"events":["an_event"]}]}]

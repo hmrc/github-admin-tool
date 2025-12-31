@@ -23,7 +23,6 @@ func Test_removeWebhook(t *testing.T) {
 	config.Org = MockOrgName
 
 	type args struct {
-		ctx            context.Context
 		webhookID      int
 		repositoryName string
 	}
@@ -39,7 +38,6 @@ func Test_removeWebhook(t *testing.T) {
 		{
 			name: "removeWebhook failure",
 			args: args{
-				ctx:            ctx,
 				webhookID:      12456789,
 				repositoryName: "some-repo-name",
 			},
@@ -49,7 +47,6 @@ func Test_removeWebhook(t *testing.T) {
 		{
 			name: "removeWebhook success",
 			args: args{
-				ctx:            ctx,
 				webhookID:      12456789,
 				repositoryName: "some-repo-name",
 			},
@@ -58,17 +55,17 @@ func Test_removeWebhook(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			mockHTTPResponder(
 				"DELETE",
-				fmt.Sprintf("/repos/some-org/%s/hooks/%d", tt.args.repositoryName, tt.args.webhookID),
+				fmt.Sprintf("/repos/some-org/%s/hooks/%d", test.args.repositoryName, test.args.webhookID),
 				"testdata/mockEmptyResponse.json",
-				tt.mockHTTPStatusCode,
+				test.mockHTTPStatusCode,
 			)
 
-			if err := removeWebhook(tt.args.ctx, tt.args.webhookID, tt.args.repositoryName); (err != nil) != tt.wantErr {
-				t.Errorf("removeWebhook() error = %v, wantErr %v", err, tt.wantErr)
+			if err := removeWebhook(ctx, test.args.webhookID, test.args.repositoryName); (err != nil) != test.wantErr {
+				t.Errorf("removeWebhook() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -90,7 +87,6 @@ func Test_getWebhookID(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
-		ctx            context.Context
 		webhookURL     string
 		repositoryName string
 	}
@@ -105,7 +101,6 @@ func Test_getWebhookID(t *testing.T) {
 		{
 			name: "getWebhookID not found",
 			args: args{
-				ctx:            ctx,
 				webhookURL:     "https://some-webhook-host",
 				repositoryName: "some-repo-name",
 			},
@@ -115,7 +110,6 @@ func Test_getWebhookID(t *testing.T) {
 		{
 			name: "getWebhookID found",
 			args: args{
-				ctx:            ctx,
 				webhookURL:     "https://some-external-webhook.org",
 				repositoryName: "some-repo-name2",
 			},
@@ -125,20 +119,20 @@ func Test_getWebhookID(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			mockHTTPResponder(
 				"GET",
-				fmt.Sprintf("/repos/some-org/%s/hooks", tt.args.repositoryName),
-				tt.mockHTTPResponseFile,
-				tt.mockHTTPStatusCode,
+				fmt.Sprintf("/repos/some-org/%s/hooks", test.args.repositoryName),
+				test.mockHTTPResponseFile,
+				test.mockHTTPStatusCode,
 			)
 			if gotWebhookID := getWebhookID(
-				tt.args.ctx,
-				tt.args.webhookURL,
-				tt.args.repositoryName,
-			); gotWebhookID != tt.wantWebhookID {
-				t.Errorf("getWebhookID() = %v, want %v", gotWebhookID, tt.wantWebhookID)
+				ctx,
+				test.args.webhookURL,
+				test.args.repositoryName,
+			); gotWebhookID != test.wantWebhookID {
+				t.Errorf("getWebhookID() = %v, want %v", gotWebhookID, test.wantWebhookID)
 			}
 		})
 	}
@@ -216,22 +210,22 @@ func Test_removeWebhookFlagCheck(t *testing.T) {
 			wantErr:           false,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotWebhookURL, gotReposFilePath, gotDryRun, err := removeWebhookFlagCheck(tt.args.cmd)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("removeWebhookFlagCheck() error = %v, wantErr %v", err, tt.wantErr)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gotWebhookURL, gotReposFilePath, gotDryRun, err := removeWebhookFlagCheck(test.args.cmd)
+			if (err != nil) != test.wantErr {
+				t.Errorf("removeWebhookFlagCheck() error = %v, wantErr %v", err, test.wantErr)
 
 				return
 			}
-			if gotWebhookURL != tt.wantWebhookURL {
-				t.Errorf("removeWebhookFlagCheck() gotWebhookURL = %v, want %v", gotWebhookURL, tt.wantWebhookURL)
+			if gotWebhookURL != test.wantWebhookURL {
+				t.Errorf("removeWebhookFlagCheck() gotWebhookURL = %v, want %v", gotWebhookURL, test.wantWebhookURL)
 			}
-			if gotReposFilePath != tt.wantReposFilePath {
-				t.Errorf("removeWebhookFlagCheck() gotReposFilePath = %v, want %v", gotReposFilePath, tt.wantReposFilePath)
+			if gotReposFilePath != test.wantReposFilePath {
+				t.Errorf("removeWebhookFlagCheck() gotReposFilePath = %v, want %v", gotReposFilePath, test.wantReposFilePath)
 			}
-			if gotDryRun != tt.wantDryRun {
-				t.Errorf("removeWebhookFlagCheck() gotDryRun = %v, want %v", gotDryRun, tt.wantDryRun)
+			if gotDryRun != test.wantDryRun {
+				t.Errorf("removeWebhookFlagCheck() gotDryRun = %v, want %v", gotDryRun, test.wantDryRun)
 			}
 		})
 	}

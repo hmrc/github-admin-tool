@@ -57,18 +57,18 @@ func Test_setApprovalArgs(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			if gotBranchProtectionArgs := setApprovalArgs(
-				tt.args.codeOwnerReview,
-				tt.args.dismissStale,
-				tt.args.approval,
-				tt.args.approvalNumber,
+				test.args.codeOwnerReview,
+				test.args.dismissStale,
+				test.args.approval,
+				test.args.approvalNumber,
 			); !reflect.DeepEqual(
 				gotBranchProtectionArgs,
-				tt.wantBranchProtectionArgs,
+				test.wantBranchProtectionArgs,
 			) {
-				t.Errorf("setApprovalArgs() = %v, want %v", gotBranchProtectionArgs, tt.wantBranchProtectionArgs)
+				t.Errorf("setApprovalArgs() = %v, want %v", gotBranchProtectionArgs, test.wantBranchProtectionArgs)
 			}
 		})
 	}
@@ -169,25 +169,25 @@ func Test_prApprovalRun(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			var buf bytes.Buffer
 
 			log.SetOutput(&buf)
 
 			defer func() { log.SetOutput(os.Stderr) }()
 
-			err := prApprovalRun(tt.args.cmd, tt.args.args)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("prApprovalRun() error = %v, wantErr %v", err, tt.wantErr)
+			err := prApprovalRun(test.args.cmd, test.args.args)
+			if (err != nil) != test.wantErr {
+				t.Errorf("prApprovalRun() error = %v, wantErr %v", err, test.wantErr)
 			}
 
-			if err != nil && tt.wantErr && err.Error() != tt.wantErrMsg {
-				t.Errorf("prApprovalRun() error = %v, wantErrMsg %v", err.Error(), tt.wantErrMsg)
+			if err != nil && test.wantErr && err.Error() != test.wantErrMsg {
+				t.Errorf("prApprovalRun() error = %v, wantErrMsg %v", err.Error(), test.wantErrMsg)
 			}
 
-			if tt.wantLogOutput != strings.TrimSpace(buf.String()) {
-				t.Errorf("prApprovalRun() log = \n\n%v, wantLogOutput \n\n%v", buf.String(), tt.wantLogOutput)
+			if test.wantLogOutput != strings.TrimSpace(buf.String()) {
+				t.Errorf("prApprovalRun() log = \n\n%v, wantLogOutput \n\n%v", buf.String(), test.wantLogOutput)
 			}
 		})
 	}

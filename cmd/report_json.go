@@ -3,21 +3,27 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 )
 
+const (
+	fmReadWrite        fs.FileMode = 0o600
+	reportJSONUploader             = "failed to create %s: %w"
+)
+
 type reportJSON interface {
-	generate(bool, []ReportResponse, map[string]string) ([]byte, error)
-	generateWebhook([]Webhooks) ([]byte, error)
-	uploader(string, []byte) error
+	generate(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) ([]byte, error)
+	generateWebhook(allResults []Webhooks) ([]byte, error)
+	uploader(filePath string, reportJSON []byte) error
 }
 
 type reportJSONService struct{}
 
 func (r *reportJSONService) uploader(filePath string, reportJSON []byte) error {
-	if err := os.WriteFile(filePath, reportJSON, 0o600); err != nil {
-		return fmt.Errorf("failed to create %s: %w", filePath, err)
+	if err := os.WriteFile(filePath, reportJSON, fmReadWrite); err != nil {
+		return fmt.Errorf(reportJSONUploader, filePath, err)
 	}
 
 	log.Printf("Report written to %s", filePath)
@@ -33,7 +39,7 @@ func (r *reportJSONService) generate(
 	var repos []RepositoriesNode
 
 	for _, allData := range allResults {
-		for _, repo := range allData.Organization.Repositories.Nodes { // nolint // not modifying
+		for _, repo := range allData.Organization.Repositories.Nodes {
 			if ignoreArchived && repo.IsArchived {
 				continue
 			}

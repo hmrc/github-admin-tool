@@ -23,14 +23,14 @@ type Client struct {
 
 // NewClient makes a new Client capable of making GraphQL requests.
 func NewClient() *Client {
-	c := &Client{
+	client := &Client{
 		endpoint: GraphqlEndpoint,
 		Log:      func(string) {},
 	}
 
-	c.httpClient = http.DefaultClient
+	client.httpClient = http.DefaultClient
 
-	return c
+	return client
 }
 
 // func (c *Client) logf(format string, args ...interface{}) {
@@ -66,33 +66,33 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 		return fmt.Errorf("error encode body: %w", err)
 	}
 
-	gr := &graphResponse{
+	graphResponse := &graphResponse{
 		Data: resp,
 	}
 
-	r, err := http.NewRequest(http.MethodPost, c.endpoint, &requestBody)
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, &requestBody)
 	if err != nil {
 		return fmt.Errorf("new request: %w", err)
 	}
 
-	r.Close = c.closeReq
-	r.Header.Set("Content-Type", "application/json; charset=utf-8")
-	r.Header.Set("Accept", "application/json; charset=utf-8")
+	request.Close = c.closeReq
+	request.Header.Set("Content-Type", "application/json; charset=utf-8")
+	request.Header.Set("Accept", "application/json; charset=utf-8")
 
 	for key, values := range req.Header {
 		for _, value := range values {
-			r.Header.Add(key, value)
+			request.Header.Add(key, value)
 		}
 	}
 
-	r = r.WithContext(ctx)
-
-	res, err := c.httpClient.Do(r)
+	res, err := c.httpClient.Do(request)
 	if err != nil {
 		return fmt.Errorf("running do: %w", err)
 	}
 
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 
 	var buf bytes.Buffer
 
@@ -100,7 +100,7 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 		return fmt.Errorf("reading body: %w", err)
 	}
 
-	if err := json.NewDecoder(&buf).Decode(&gr); err != nil {
+	if err := json.NewDecoder(&buf).Decode(&graphResponse); err != nil {
 		if res.StatusCode != http.StatusOK {
 			return fmt.Errorf("graphql: server returned a non-200 status code: %w", err)
 		}
@@ -108,8 +108,8 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 		return fmt.Errorf("decoding response: %w", err)
 	}
 
-	if len(gr.Errors) > 0 {
-		return gr.Errors[0]
+	if len(graphResponse.Errors) > 0 {
+		return graphResponse.Errors[0]
 	}
 
 	return nil
@@ -119,17 +119,17 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 // modify the behaviour of the Client.
 type ClientOption func(*Client)
 
-type graphErr struct {
-	Message string
+type graphError struct {
+	Message string `json:"message"`
 }
 
-func (e graphErr) Error() string {
+func (e graphError) Error() string {
 	return "graphql: " + e.Message
 }
 
 type graphResponse struct {
-	Data   interface{}
-	Errors []graphErr
+	Data   interface{}  `json:"data"`
+	Errors []graphError `json:"errors"`
 }
 
 // Request is a GraphQL request.

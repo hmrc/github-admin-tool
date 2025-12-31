@@ -48,16 +48,16 @@ func Test_reportWebhookPostRun(t *testing.T) {
 		reportWebhookResponse.FilePath = originalFilePath
 	}()
 
-	for _, tt := range tests {
-		if tt.mockJSONError {
+	for _, test := range tests {
+		if test.mockJSONError {
 			jsonMarshal = mockJSONMarshalError
 		}
 
-		reportWebhookResponse.FilePath = tt.filePath
+		reportWebhookResponse.FilePath = test.filePath
 
-		t.Run(tt.name, func(t *testing.T) {
-			if err := reportWebhookPostRun(tt.args.cmd, tt.args.args); (err != nil) != tt.wantErr {
-				t.Errorf("reportWebhookPostRun() error = %v, wantErr %v", err, tt.wantErr)
+		t.Run(test.name, func(t *testing.T) {
+			if err := reportWebhookPostRun(test.args.cmd, test.args.args); (err != nil) != test.wantErr {
+				t.Errorf("reportWebhookPostRun() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 
@@ -129,12 +129,12 @@ func Test_reportWebhookRun(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.mockHTTPReturnFile != "" {
-				mockHTTPResponder("GET", tt.mockHTTPURL, tt.mockHTTPReturnFile, tt.mockHTTPStatusCode)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.mockHTTPReturnFile != "" {
+				mockHTTPResponder("GET", test.mockHTTPURL, test.mockHTTPReturnFile, test.mockHTTPStatusCode)
 
-				if tt.setWebhookResponders {
+				if test.setWebhookResponders {
 					mockHTTPResponder(
 						"POST",
 						"https://api.github.com/graphql",
@@ -144,8 +144,8 @@ func Test_reportWebhookRun(t *testing.T) {
 				}
 			}
 
-			if err := reportWebhookRun(tt.args.cmd, tt.args.args); (err != nil) != tt.wantErr {
-				t.Errorf("reportWebhookRun() error = %v, wantErr %v", err, tt.wantErr)
+			if err := reportWebhookRun(test.args.cmd, test.args.args); (err != nil) != test.wantErr {
+				t.Errorf("reportWebhookRun() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -190,16 +190,16 @@ func Test_reportWebhookValidateFlags(t *testing.T) {
 	cmdInvalidTimeout.Flags().StringP("file-type", "t", "csv", "file type, must be csv or json")
 	cmdInvalidTimeout.Flags().StringP("start-cursor", "s", "", "The starting cursor for webhook search to start from")
 
-	cmdInvalid60Timeout := &cobra.Command{Use: "report-webook"}
-	cmdInvalid60Timeout.Flags().BoolP("dry-run", "d", false, "dry run flag")
-	cmdInvalid60Timeout.Flags().BoolP("ignore-archived", "i", false, "ignore-archived flag")
-	cmdInvalid60Timeout.Flags().StringP(
+	cmdInvalid61Timeout := &cobra.Command{Use: "report-webook"}
+	cmdInvalid61Timeout.Flags().BoolP("dry-run", "d", false, "dry run flag")
+	cmdInvalid61Timeout.Flags().BoolP("ignore-archived", "i", false, "ignore-archived flag")
+	cmdInvalid61Timeout.Flags().StringP(
 		"file-path", "f", "report.csv", "File path for report to be created, must be .csv or .json",
 	)
-	cmdInvalid60Timeout.Flags().StringP("file-type", "t", "csv", "file type, must be csv or json")
-	cmdInvalid60Timeout.Flags().StringP("start-cursor", "s", "", "The starting cursor for webhook search to start from")
-	cmdInvalid60Timeout.Flags().IntP(
-		"timeout", "o", 70, "Timeout for script (in minutes), useful when calling from Lambdas",
+	cmdInvalid61Timeout.Flags().StringP("file-type", "t", "csv", "file type, must be csv or json")
+	cmdInvalid61Timeout.Flags().StringP("start-cursor", "s", "", "The starting cursor for webhook search to start from")
+	cmdInvalid61Timeout.Flags().IntP(
+		"timeout", "o", 61, "Timeout for script (in minutes), useful when calling from Lambdas",
 	)
 
 	cmdValid := &cobra.Command{Use: "report-webook"}
@@ -270,7 +270,7 @@ func Test_reportWebhookValidateFlags(t *testing.T) {
 		{
 			name: "reportWebhookValidateFlags invalid timeout failure",
 			args: args{
-				cmd: cmdInvalid60Timeout,
+				cmd: cmdInvalid61Timeout,
 				r:   &reportWebhook{},
 			},
 			wantErr: true,
@@ -468,23 +468,23 @@ func Test_reportWebhookGetterService_getRepositoryList(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.mockHTTPReturnFile != "" {
-				mockHTTPResponder("POST", tt.mockHTTPURL, tt.mockHTTPReturnFile, tt.mockHTTPStatusCode)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.mockHTTPReturnFile != "" {
+				mockHTTPResponder("POST", test.mockHTTPURL, test.mockHTTPReturnFile, test.mockHTTPStatusCode)
 			}
 
-			r := &reportWebhookGetterService{}
-			got, err := r.getRepositoryList(tt.args.report)
+			reportWebhookService := &reportWebhookGetterService{}
+			got, err := reportWebhookService.getRepositoryList(test.args.report)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("reportWebhookGetterService.getRepositoryList() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != test.wantErr {
+				t.Errorf("reportWebhookGetterService.getRepositoryList() error = %v, wantErr %v", err, test.wantErr)
 
 				return
 			}
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("reportWebhookGetterService.getRepositoryList() = %+v, want %+v", got, tt.want)
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("reportWebhookGetterService.getRepositoryList() = %+v, want %+v", got, test.want)
 			}
 		})
 	}
@@ -627,16 +627,16 @@ func Test_reportWebhookGetterService_getWebhooks(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &reportWebhookGetterService{}
-			reportWebhookResponse.EndTimeSecs = tt.setEndTimeSecs
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			reportWebhookService := &reportWebhookGetterService{}
+			reportWebhookResponse.EndTimeSecs = test.setEndTimeSecs
 
 			// setup rate limit responder
-			mockHTTPResponder("GET", "https://api.github.com/rate_limit", tt.rateLimitResponseFile, 200)
+			mockHTTPResponder("GET", "https://api.github.com/rate_limit", test.rateLimitResponseFile, 200)
 
-			if tt.setupWebhookCalls {
-				for _, cursorList := range tt.args.repositories {
+			if test.setupWebhookCalls {
+				for _, cursorList := range test.args.repositories {
 					for _, repoName := range cursorList.repositories {
 						mockHTTPResponder(
 							"GET",
@@ -648,14 +648,14 @@ func Test_reportWebhookGetterService_getWebhooks(t *testing.T) {
 				}
 			}
 
-			got, err := r.getWebhooks(tt.args.report, tt.args.repositories)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("reportWebhookGetterService.getWebhooks() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := reportWebhookService.getWebhooks(test.args.report, test.args.repositories)
+			if (err != nil) != test.wantErr {
+				t.Errorf("reportWebhookGetterService.getWebhooks() error = %v, wantErr %v", err, test.wantErr)
 
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("reportWebhookGetterService.getWebhooks() = %+v, want %+v", got, tt.want)
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("reportWebhookGetterService.getWebhooks() = %+v, want %+v", got, test.want)
 			}
 
 			reportWebhookResponse.EndTimeSecs = originalEndSecs
@@ -684,13 +684,18 @@ func Test_setRateLimit(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			// setup rate limit responder
-			mockHTTPResponder("GET", "https://api.github.com/rate_limit", tt.rateLimitResponseFile, 200)
+			statusCode := 200
+			if test.wantErr {
+				statusCode = 401
+			}
 
-			if err := setRateLimit(); (err != nil) != tt.wantErr {
-				t.Errorf("setRateLimit() error = %v, wantErr %v", err, tt.wantErr)
+			mockHTTPResponder("GET", "https://api.github.com/rate_limit", test.rateLimitResponseFile, statusCode)
+
+			if err := setRateLimit(); (err != nil) != test.wantErr {
+				t.Errorf("setRateLimit() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -721,13 +726,13 @@ func Test_hasReachedRateLimit(t *testing.T) {
 			want:                  false,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			// setup rate limit responder
-			mockHTTPResponder("GET", "https://api.github.com/rate_limit", tt.rateLimitResponseFile, 200)
+			mockHTTPResponder("GET", "https://api.github.com/rate_limit", test.rateLimitResponseFile, 200)
 
-			if got := hasReachedRateLimit(); got != tt.want {
-				t.Errorf("hasReachedRateLimit() = %v, want %v", got, tt.want)
+			if got := hasReachedRateLimit(); got != test.want {
+				t.Errorf("hasReachedRateLimit() = %v, want %v", got, test.want)
 			}
 		})
 	}

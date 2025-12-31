@@ -93,14 +93,14 @@ func Test_reportCSVParse(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			if got := reportCSVParse(
-				tt.args.ignoreArchived,
-				tt.args.allResults,
-				tt.args.teamAccess,
-			); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("reportCSVParse() = %v, want %v", got, tt.want)
+				test.args.ignoreArchived,
+				test.args.allResults,
+				test.args.teamAccess,
+			); !reflect.DeepEqual(got, test.want) {
+				t.Errorf("reportCSVParse() = %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -193,7 +193,7 @@ func Test_reportCSVService_writer(t *testing.T) {
 	}
 
 	errFileName := "testdata/mockFileReadButNotWrite.txt"
-	defer os.Chmod(errFileName, 0o700) // nolint // only testing so won't check err
+	defer os.Chmod(errFileName, 0o700) //nolint // only testing so won't check err
 
 	nonReadFile, err := os.Open(errFileName)
 	if err != nil {
@@ -201,9 +201,9 @@ func Test_reportCSVService_writer(t *testing.T) {
 
 		return
 	}
-	os.Chmod(errFileName, 0o000) // nolint // only testing so won't check err
+	os.Chmod(errFileName, 0o000) //nolint // only testing so won't check err
 
-	newFile, err := os.Create("/tmp/test_file.txt") // nolint // only testing so ignore
+	newFile, err := os.Create("/tmp/test_file.txt") //nolint // only testing so ignore
 	if err != nil {
 		t.Error("could not create file")
 
@@ -262,14 +262,14 @@ func Test_reportCSVGenerate(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			if got := reportCSVGenerate(
-				tt.args.ignoreArchived,
-				tt.args.allResults,
-				tt.args.teamAccess,
-			); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("reportCSVService.generator() = \n%v\n%v\n", got, tt.want)
+				test.args.ignoreArchived,
+				test.args.allResults,
+				test.args.teamAccess,
+			); !reflect.DeepEqual(got, test.want) {
+				t.Errorf("reportCSVService.generator() = \n%v\n%v\n", got, test.want)
 			}
 		})
 	}

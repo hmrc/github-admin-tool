@@ -6,6 +6,7 @@ import (
 	"github-admin-tool/graphqlclient"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/jarcoal/httpmock"
 )
@@ -14,10 +15,10 @@ var (
 	errTestFail                    = errors.New("fail")
 	errTestAccessFail              = errors.New("access fail")
 	errTestMarshalFail             = errors.New("marshalling failed")
-	mockRateLimitResponseFile      = "testdata/mockRestRateLimitResponse.json"      // nolint // expected global
-	mockRateLimitEmptyResponseFile = "testdata/mockRestRateLimitEmptyResponse.json" // nolint // expected global
-	mockRestEmptyBodyResponseFile  = "testdata/mockRestEmptyBodyResponse.json"      // nolint // expected global
-	mockEmptyCSVReportRows         = [][]string{                                    // nolint // expected global
+	mockRateLimitResponseFile      = "testdata/mockRestRateLimitResponse.json"      //nolint // expected global
+	mockRateLimitEmptyResponseFile = "testdata/mockRestRateLimitEmptyResponse.json" //nolint // expected global
+	mockRestEmptyBodyResponseFile  = "testdata/mockRestEmptyBodyResponse.json"      //nolint // expected global
+	mockEmptyCSVReportRows         = [][]string{                                    //nolint // expected global
 		{
 			"Repo Name",
 			"Default Branch Name",
@@ -78,12 +79,12 @@ type mockReportCSV struct {
 	failWrite bool
 }
 
-func (m *mockReportCSV) opener(filePath string) (file *os.File, err error) {
+func (m *mockReportCSV) opener(filePath string) (*os.File, error) {
 	if m.failOpen {
 		return nil, errTestFail
 	}
 
-	return nil, nil
+	return os.NewFile(0, "mock"), nil
 }
 
 func (m *mockReportCSV) writer(file *os.File, lines [][]string) error {
@@ -116,15 +117,15 @@ func (m *mockReportJSON) generate(
 		return nil, errTestFail
 	}
 
-	return nil, nil
+	return []byte("[]"), nil
 }
 
-func (m *mockReportJSON) generateWebhook([]Webhooks) ([]byte, error) {
+func (m *mockReportJSON) generateWebhook(allResults []Webhooks) ([]byte, error) {
 	if m.failgenerate {
 		return nil, errTestFail
 	}
 
-	return nil, nil
+	return []byte("[]"), nil
 }
 
 type mockReportAccess struct {
@@ -179,7 +180,7 @@ type mockRepositorySender struct {
 
 func (t *mockRepositorySender) send(req *graphqlclient.Request) (map[string]*RepositoriesNode, error) {
 	if t.sendFail {
-		return nil, errors.New("fail") // nolint // only mock error for test
+		return nil, errors.New("fail") //nolint // only mock error for test
 	}
 
 	if len(t.returnValue) > 0 {
@@ -196,7 +197,7 @@ type mockSender struct {
 
 func (t *mockSender) send(req *graphqlclient.Request) error {
 	if t.sendFail {
-		return fmt.Errorf(fmt.Sprintf("%s: test", t.action)) // nolint // only mock error for test
+		return fmt.Errorf("%s: test", t.action) //nolint // only mock error for test
 	}
 
 	return nil
@@ -233,7 +234,7 @@ func (r *mockReportWebhookGetterService) getWebhooks(
 }
 
 func mockHTTPResponder(method, url, responseFile string, statusCode int) {
-	response, err := os.ReadFile(responseFile)
+	response, err := os.ReadFile(filepath.Clean(responseFile))
 	if err != nil {
 		log.Fatalf("failed to read test data: %v", err)
 	}

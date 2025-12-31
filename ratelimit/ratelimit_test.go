@@ -1,7 +1,7 @@
 package ratelimit
 
 import (
-	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 
@@ -57,9 +57,9 @@ func TestGetRateLimit(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockHTTPReturn, err := os.ReadFile(test.mockHTTPReturnFile)
 			if err != nil {
 				t.Fatalf("failed to read test data: %v", err)
 			}
@@ -70,14 +70,14 @@ func TestGetRateLimit(t *testing.T) {
 				httpmock.NewStringResponder(200, string(mockHTTPReturn)),
 			)
 
-			got, err := GetRateLimit(tt.args.token)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetRateLimit() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := GetRateLimit(test.args.token)
+			if (err != nil) != test.wantErr {
+				t.Errorf("GetRateLimit() error = %v, wantErr %v", err, test.wantErr)
 
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetRateLimit() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("GetRateLimit() = %v, want %v", got, test.want)
 			}
 		})
 	}

@@ -10,14 +10,14 @@ import (
 )
 
 type reportCSV interface {
-	opener(string) (*os.File, error)
-	writer(*os.File, [][]string) error
+	opener(filePath string) (*os.File, error)
+	writer(file *os.File, lines [][]string) error
 }
 
 type reportCSVService struct{}
 
-func (r *reportCSVService) opener(filePath string) (file *os.File, err error) {
-	file, err = os.Create(filePath)
+func (r *reportCSVService) opener(filePath string) (*os.File, error) {
+	file, err := os.Create(filePath) //nolint //
 	if err != nil {
 		return file, fmt.Errorf("failed to create file: %w", err)
 	}
@@ -26,7 +26,9 @@ func (r *reportCSVService) opener(filePath string) (file *os.File, err error) {
 }
 
 func (r *reportCSVService) writer(file *os.File, lines [][]string) error {
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	writer := csv.NewWriter(file)
 
@@ -70,7 +72,7 @@ func reportCSVParse(ignoreArchived bool, allResults []ReportResponse, teamAccess
 	var parsed [][]string
 
 	for _, allData := range allResults {
-		for _, repo := range allData.Organization.Repositories.Nodes { // nolint // not modifying
+		for _, repo := range allData.Organization.Repositories.Nodes {
 			if ignoreArchived && repo.IsArchived {
 				continue
 			}

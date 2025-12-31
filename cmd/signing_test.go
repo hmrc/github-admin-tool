@@ -23,13 +23,13 @@ func Test_setSigningArgs(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			if gotBranchProtectionArgs := setSigningArgs(); !reflect.DeepEqual(
 				gotBranchProtectionArgs,
-				tt.wantBranchProtectionArgs,
+				test.wantBranchProtectionArgs,
 			) {
-				t.Errorf("setSigningArgs() = %v, want %v", gotBranchProtectionArgs, tt.wantBranchProtectionArgs)
+				t.Errorf("setSigningArgs() = %v, want %v", gotBranchProtectionArgs, test.wantBranchProtectionArgs)
 			}
 		})
 	}
@@ -72,10 +72,10 @@ func Test_signingRun(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := signingRun(tt.args.cmd, tt.args.args); (err != nil) != tt.wantErr {
-				t.Errorf("signingRun() error = %v, wantErr %v", err, tt.wantErr)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if err := signingRun(test.args.cmd, test.args.args); (err != nil) != test.wantErr {
+				t.Errorf("signingRun() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

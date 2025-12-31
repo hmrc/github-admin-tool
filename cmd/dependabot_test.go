@@ -175,7 +175,7 @@ func Test_dependabotRun(t *testing.T) {
 	}
 }
 
-// nolint // dont care about cyclomatic linting error for test
+//nolint // dont care about cyclomatic linting error for test
 func Test_dependabotCommand(t *testing.T) {
 	type args struct {
 		cmd  *cobra.Command
@@ -523,7 +523,6 @@ func Test_dependabotCommand(t *testing.T) {
 
 func Test_dependabotToggleAlerts(t *testing.T) {
 	type args struct {
-		ctx            context.Context
 		repositoryName string
 		method         string
 	}
@@ -554,7 +553,6 @@ func Test_dependabotToggleAlerts(t *testing.T) {
 		{
 			name: "dependabotToggleAlerts errors with delete method",
 			args: args{
-				ctx:            ctx,
 				repositoryName: "some-repo",
 				method:         "DELETE",
 			},
@@ -567,7 +565,6 @@ func Test_dependabotToggleAlerts(t *testing.T) {
 		{
 			name: "dependabotToggleAlerts is successful",
 			args: args{
-				ctx:            ctx,
 				repositoryName: "some-repo",
 				method:         "DELETE",
 			},
@@ -578,16 +575,16 @@ func Test_dependabotToggleAlerts(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			mockHTTPResponder(
-				tt.args.method,
-				tt.mockHTTPURL,
-				tt.mockHTTPResponseFile,
-				tt.mockHTTPStatusCode,
+				test.args.method,
+				test.mockHTTPURL,
+				test.mockHTTPResponseFile,
+				test.mockHTTPStatusCode,
 			)
-			if err := dependabotToggleAlerts(tt.args.ctx, tt.args.repositoryName, tt.args.method); (err != nil) != tt.wantErr {
-				t.Errorf("dependabotToggleAlerts() error = %v, wantErr %v", err, tt.wantErr)
+			if err := dependabotToggleAlerts(ctx, test.args.repositoryName, test.args.method); (err != nil) != test.wantErr {
+				t.Errorf("dependabotToggleAlerts() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -595,7 +592,6 @@ func Test_dependabotToggleAlerts(t *testing.T) {
 
 func Test_dependabotToggleSecurityUpdates(t *testing.T) {
 	type args struct {
-		ctx            context.Context
 		repositoryName string
 		method         string
 	}
@@ -625,7 +621,6 @@ func Test_dependabotToggleSecurityUpdates(t *testing.T) {
 		{
 			name: "dependabotToggleSecurityUpdates errors with delete method",
 			args: args{
-				ctx:            ctx,
 				repositoryName: "some-repo",
 				method:         "DELETE",
 			},
@@ -637,7 +632,6 @@ func Test_dependabotToggleSecurityUpdates(t *testing.T) {
 		{
 			name: "dependabotToggleSecurityUpdates is successful",
 			args: args{
-				ctx:            ctx,
 				repositoryName: "some-repo",
 				method:         "DELETE",
 			},
@@ -647,20 +641,21 @@ func Test_dependabotToggleSecurityUpdates(t *testing.T) {
 			wantErr:              false,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			mockHTTPResponder(
-				tt.args.method,
-				tt.mockHTTPURL,
-				tt.mockHTTPResponseFile,
-				tt.mockHTTPStatusCode,
+				test.args.method,
+				test.mockHTTPURL,
+				test.mockHTTPResponseFile,
+				test.mockHTTPStatusCode,
 			)
 			if err := dependabotToggleSecurityUpdates(
-				tt.args.ctx,
-				tt.args.repositoryName,
-				tt.args.method,
-			); (err != nil) != tt.wantErr {
-				t.Errorf("dependabotToggleSecurityUpdates() error = %v, wantErr %v", err, tt.wantErr)
+				ctx,
+				test.args.repositoryName,
+				test.args.method,
+			); (err != nil) != test.wantErr {
+				t.Errorf("dependabotToggleSecurityUpdates() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

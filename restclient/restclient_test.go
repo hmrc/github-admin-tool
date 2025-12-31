@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -22,7 +22,7 @@ type mockBodyReader struct {
 
 func (t *mockBodyReader) read(body io.Reader) ([]byte, error) {
 	if t.readFail {
-		return t.returnValue, errors.New("fail") // nolint // only mock error for test
+		return t.returnValue, errors.New("fail") //nolint // only mock error for test
 	}
 
 	return t.returnValue, nil
@@ -36,14 +36,16 @@ func Test_bodyReaderService_read(t *testing.T) {
 		w.Header().Set("Content-Length", "1")
 	}))
 
-	mockResponse, err := client.Get(bodyErrorServer.URL) // nolint // noctx lint fail - this is only for test so ignore
+	mockResponse, err := client.Get(bodyErrorServer.URL) //nolint // noctx lint fail - this is only for test so ignore
 	if err != nil {
 		t.Errorf("bodyReaderService.read() could not setup read failure %+v", err)
 
 		return
 	}
 
-	defer mockResponse.Body.Close()
+	defer func() {
+		_ = mockResponse.Body.Close()
+	}()
 
 	type args struct {
 		body io.Reader
@@ -71,20 +73,20 @@ func Test_bodyReaderService_read(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.args.body = tt.stringToRead
-			b := &bodyReaderService{}
-			gotResult, err := b.read(tt.args.body)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.args.body = test.stringToRead
+			bodyReaderService := &bodyReaderService{}
+			gotResult, err := bodyReaderService.read(test.args.body)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("bodyReaderService.read() error = %+v, wantErr %+v", err, tt.wantErr)
+			if (err != nil) != test.wantErr {
+				t.Errorf("bodyReaderService.read() error = %+v, wantErr %+v", err, test.wantErr)
 
 				return
 			}
 
-			if !reflect.DeepEqual(gotResult, tt.wantResult) {
-				t.Errorf("bodyReaderService.read() = %v, want %v", gotResult, tt.wantResult)
+			if !reflect.DeepEqual(gotResult, test.wantResult) {
+				t.Errorf("bodyReaderService.read() = %v, want %v", gotResult, test.wantResult)
 			}
 		})
 	}
@@ -141,7 +143,6 @@ func TestClient_Run(t *testing.T) {
 	}
 
 	type args struct {
-		ctx  context.Context
 		resp interface{}
 	}
 
@@ -162,9 +163,7 @@ func TestClient_Run(t *testing.T) {
 				httpClient: http.DefaultClient,
 				endpoint:   ":7878",
 			},
-			args: args{
-				ctx: ctx,
-			},
+			args: args{},
 		},
 		{
 			name:    "Run fails on ascii in endpoint",
@@ -173,9 +172,7 @@ func TestClient_Run(t *testing.T) {
 				httpClient: http.DefaultClient,
 				endpoint:   "▒",
 			},
-			args: args{
-				ctx: ctx,
-			},
+			args: args{},
 		},
 		{
 			name:    "Run fails on status code and decode",
@@ -184,9 +181,7 @@ func TestClient_Run(t *testing.T) {
 				httpClient: http.DefaultClient,
 				endpoint:   "https://api.github.com/rate_limit",
 			},
-			args: args{
-				ctx: ctx,
-			},
+			args:               args{},
 			mockHTTPStatusCode: 401,
 			mockHTTPReturnFile: "testdata/mockEmptyResponse.json",
 		},
@@ -197,9 +192,7 @@ func TestClient_Run(t *testing.T) {
 				httpClient: http.DefaultClient,
 				endpoint:   "https://api.github.com/rate_limit",
 			},
-			args: args{
-				ctx: ctx,
-			},
+			args:               args{},
 			mockHTTPStatusCode: 404,
 			mockHTTPReturnFile: "testdata/mockRest404Response.json",
 		},
@@ -211,9 +204,7 @@ func TestClient_Run(t *testing.T) {
 				endpoint:   "https://api.github.com/rate_limit",
 				method:     "GET",
 			},
-			args: args{
-				ctx: ctx,
-			},
+			args:               args{},
 			mockHTTPStatusCode: 401,
 			mockHTTPReturnFile: "testdata/mockRest401Response.json",
 		},
@@ -228,9 +219,7 @@ func TestClient_Run(t *testing.T) {
 				},
 				method: "GET",
 			},
-			args: args{
-				ctx: ctx,
-			},
+			args:               args{},
 			mockHTTPStatusCode: 200,
 			mockHTTPReturnFile: "testdata/mockRestEmptyBodyResponse.json",
 		},
@@ -242,9 +231,7 @@ func TestClient_Run(t *testing.T) {
 				endpoint:   "https://api.github.com/rate_limit",
 				method:     "GET",
 			},
-			args: args{
-				ctx: ctx,
-			},
+			args:               args{},
 			mockHTTPStatusCode: 200,
 			mockHTTPReturnFile: "testdata/mockEmptyResponse.json",
 		},
@@ -259,39 +246,37 @@ func TestClient_Run(t *testing.T) {
 				},
 				method: "GET",
 			},
-			args: args{
-				ctx: ctx,
-			},
+			args:               args{},
 			mockHTTPStatusCode: 200,
 			mockHTTPReturnFile: "testdata/mockRestRateLimitResponse.json",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.mockHTTPReturnFile != "" {
-				mockHTTPReturn, err := ioutil.ReadFile(tt.mockHTTPReturnFile)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.mockHTTPReturnFile != "" {
+				mockHTTPReturn, err := os.ReadFile(test.mockHTTPReturnFile)
 				if err != nil {
 					t.Fatalf("failed to read test data: %v", err)
 				}
 
 				httpmock.RegisterResponder(
-					"GET",
-					tt.fields.endpoint,
-					httpmock.NewStringResponder(tt.mockHTTPStatusCode, string(mockHTTPReturn)),
+					test.fields.method,
+					test.fields.endpoint,
+					httpmock.NewStringResponder(test.mockHTTPStatusCode, string(mockHTTPReturn)),
 				)
 			}
 
-			c := &Client{
-				endpoint:   tt.fields.endpoint,
-				token:      tt.fields.token,
-				httpClient: tt.fields.httpClient,
-				closeReq:   tt.fields.closeReq,
-				bodyReader: &tt.fields.bodyReader,
-				method:     tt.fields.method,
+			client := &Client{
+				endpoint:   test.fields.endpoint,
+				token:      test.fields.token,
+				httpClient: test.fields.httpClient,
+				closeReq:   test.fields.closeReq,
+				bodyReader: &test.fields.bodyReader,
+				method:     test.fields.method,
 			}
-			if err := c.Run(tt.args.ctx, tt.args.resp); (err != nil) != tt.wantErr {
-				t.Errorf("Client.Run() error = %v, wantErr %v", err, tt.wantErr)
+			if err := client.Run(ctx, test.args.resp); (err != nil) != test.wantErr {
+				t.Errorf("Client.Run() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

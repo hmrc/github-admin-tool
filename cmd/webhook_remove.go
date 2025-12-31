@@ -11,13 +11,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var webhookRemoveCmd = &cobra.Command{ // nolint // needed for cobra
+var webhookRemoveCmd = &cobra.Command{ //nolint // needed for cobra
 	Use:   "webhook-remove",
 	Short: "Remove webhook settings for repos in provided list by hostname",
 	RunE:  webhookRemoveRun,
 }
 
-// nolint // needed for cobra
+//nolint // needed for cobra
 func init() {
 	webhookRemoveCmd.Flags().StringVarP(
 		&reposFile, "repos", "r", "", "path to file containing repositories (file should contain repos on new line without org/ prefix)",
@@ -89,7 +89,8 @@ func removeWebhook(ctx context.Context, webhookID int, repositoryName string) er
 	return nil
 }
 
-func getWebhookID(ctx context.Context, host, repositoryName string) (webhookID int) {
+func getWebhookID(ctx context.Context, host, repositoryName string) int {
+	var webhookID int
 	// Get webhooks and find ID if they match the host
 	client := restclient.NewClient(
 		fmt.Sprintf("/repos/%s/%s/hooks", config.Org, repositoryName),
@@ -111,8 +112,9 @@ func getWebhookID(ctx context.Context, host, repositoryName string) (webhookID i
 	return webhookID
 }
 
-func removeWebhookFlagCheck(cmd *cobra.Command) (webhookURL, reposFilePath string, dryRun bool, err error) {
-	dryRun, err = cmd.Flags().GetBool("dry-run")
+func removeWebhookFlagCheck(cmd *cobra.Command) (string, string, bool, error) {
+	var webhookURL, reposFilePath string
+	dryRun, err := cmd.Flags().GetBool("dry-run")
 	if err != nil {
 		return webhookURL, reposFilePath, dryRun, fmt.Errorf("%w", err)
 	}

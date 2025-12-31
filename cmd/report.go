@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var reportCmd = &cobra.Command{ // nolint // needed for cobra
+var reportCmd = &cobra.Command{ //nolint // needed for cobra
 	Use:   "report",
 	Short: "Run a report to generate a csv containing information on all organisation repos",
 	RunE:  reportRun,
@@ -67,8 +67,8 @@ func reportRun(cmd *cobra.Command, args []string) error {
 	)
 }
 
-func reportCreate(r *report, dryRun, ignoreArchived bool, filePath, fileType string) error {
-	allResults, err := r.reportGetter.getReport()
+func reportCreate(reportService *report, dryRun, ignoreArchived bool, filePath, fileType string) error {
+	allResults, err := reportService.reportGetter.getReport()
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
@@ -77,18 +77,18 @@ func reportCreate(r *report, dryRun, ignoreArchived bool, filePath, fileType str
 		return nil
 	}
 
-	teamAccess, err := r.reportAccess.getReport()
+	teamAccess, err := reportService.reportAccess.getReport()
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
 	if fileType == "json" {
-		jsonReport, err := r.reportJSON.generate(ignoreArchived, allResults, teamAccess)
+		jsonReport, err := reportService.reportJSON.generate(ignoreArchived, allResults, teamAccess)
 		if err != nil {
 			return fmt.Errorf("generate json failed: %w", err)
 		}
 
-		if err := r.reportJSON.uploader(filePath, jsonReport); err != nil {
+		if err := reportService.reportJSON.uploader(filePath, jsonReport); err != nil {
 			return fmt.Errorf("upload json failed: %w", err)
 		}
 
@@ -96,14 +96,14 @@ func reportCreate(r *report, dryRun, ignoreArchived bool, filePath, fileType str
 	}
 
 	lines := reportCSVGenerate(ignoreArchived, allResults, teamAccess)
-	if err := reportCSVUpload(r.reportCSV, filePath, lines); err != nil {
+	if err := reportCSVUpload(reportService.reportCSV, filePath, lines); err != nil {
 		return fmt.Errorf("upload CSV failed: %w", err)
 	}
 
 	return nil
 }
 
-// nolint // needed for cobra
+//nolint // needed for cobra
 func init() {
 	reportCmd.Flags().BoolVarP(&ignoreArchived, "ignore-archived", "i", true, "Ignore archived repositories")
 	reportCmd.Flags().StringVarP(&filePath, "file-path", "f", "report.csv", "file path for report to be created, must be .csv or .json")
@@ -170,7 +170,7 @@ func reportQuery() string {
 }
 
 func reportRequest(queryString string) *graphqlclient.Request {
-	authStr := fmt.Sprintf("bearer %s", config.Token)
+	authStr := "bearer " + config.Token
 
 	req := graphqlclient.NewRequest(queryString)
 	req.Var("org", config.Org)

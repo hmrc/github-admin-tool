@@ -41,10 +41,7 @@ func (b *branchProtectionSenderService) send(req *graphqlclient.Request) error {
 func branchProtectionQuery(
 	branchProtectionArgs []BranchProtectionArgs,
 	action string,
-) (
-	query string,
-	requestVars map[string]interface{},
-) {
+) (string, map[string]interface{}) {
 	mutationBlock, inputBlock, requestVars := branchProtectionQueryBlocks(branchProtectionArgs)
 
 	var mutation, input, output strings.Builder
@@ -57,7 +54,8 @@ func branchProtectionQuery(
 	mutation.WriteString(fmt.Sprintf("mutation %s(", mutationName))
 	mutation.WriteString("$clientMutationId: String!,")
 
-	input.WriteString(fmt.Sprintf("%s(", mutationName))
+	input.WriteString(mutationName)
+	input.WriteString("(")
 	input.WriteString("input:{")
 	input.WriteString("clientMutationId: $clientMutationId,")
 
@@ -73,7 +71,7 @@ func branchProtectionQuery(
 	output.WriteString("}")
 	output.WriteString("}}")
 
-	query = mutation.String() + input.String() + output.String()
+	query := mutation.String() + input.String() + output.String()
 
 	return query, requestVars
 }
@@ -87,18 +85,15 @@ func branchProtectionRequest(query string, requestVars map[string]interface{}) *
 	}
 
 	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Authorization", fmt.Sprintf("bearer %s", config.Token))
+	req.Header.Set("Authorization", "bearer "+config.Token)
 
 	return req
 }
 
-func branchProtectionQueryBlocks(branchProtectionArgs []BranchProtectionArgs) (
-	mutation, input string,
-	requestVars map[string]interface{},
-) {
+func branchProtectionQueryBlocks(branchProtectionArgs []BranchProtectionArgs) (string, string, map[string]interface{}) {
 	var mutationBlock, inputBlock strings.Builder
 
-	requestVars = make(map[string]interface{})
+	requestVars := make(map[string]interface{})
 
 	for _, bprs := range branchProtectionArgs {
 		mutationBlock.WriteString(fmt.Sprintf("$%s: %s!,", bprs.Name, bprs.DataType))
@@ -109,18 +104,14 @@ func branchProtectionQueryBlocks(branchProtectionArgs []BranchProtectionArgs) (
 	return mutationBlock.String(), inputBlock.String(), requestVars
 }
 
-func branchProtectionApply( // nolint // cyclomatic error 11 !!! Will sort this soon
+func branchProtectionApply( //nolint // cyclomatic error 11 !!! Will sort this soon
 	repositories map[string]*RepositoriesNode,
 	action,
 	branchName string,
 	branchProtectionArgs []BranchProtectionArgs,
 	sender *githubBranchProtectionSender,
-) (
-	modified,
-	created,
-	info,
-	problems []string,
-) {
+) ([]string, []string, []string, []string) {
+	var modified, created, info, problems []string
 	var err error
 
 	for _, repository := range repositories {
@@ -209,10 +200,7 @@ func branchProtectionUpdateCheck(
 	action,
 	branchNamePattern string,
 	branchProtection BranchProtectionRulesNode,
-) (
-	updateRequired bool,
-	returnInfo bool,
-) {
+) (bool, bool) {
 	// If default branch has already got signing turned on, no need to update
 	if action == "Signing" {
 		if branchProtection.RequiresCommitSignatures {
@@ -241,7 +229,7 @@ func branchProtectionUpdateCheck(
 func branchProtectionUpdate(
 	branchProtectionArgs []BranchProtectionArgs,
 	branchProtectionRuleID string,
-	s *githubBranchProtectionSender,
+	sender *githubBranchProtectionSender,
 ) error {
 	branchProtectionArgs = append(
 		branchProtectionArgs,
@@ -254,7 +242,7 @@ func branchProtectionUpdate(
 	query, requestVars := branchProtectionQuery(branchProtectionArgs, "update")
 	req := branchProtectionRequest(query, requestVars)
 
-	if err := s.sender.send(req); err != nil {
+	if err := sender.sender.send(req); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
@@ -265,7 +253,7 @@ func branchProtectionCreate(
 	branchProtectionArgs []BranchProtectionArgs,
 	repositoryID,
 	pattern string,
-	s *githubBranchProtectionSender,
+	sender *githubBranchProtectionSender,
 ) error {
 	branchProtectionArgs = append(
 		branchProtectionArgs,
@@ -283,7 +271,7 @@ func branchProtectionCreate(
 	query, requestVars := branchProtectionQuery(branchProtectionArgs, "create")
 	req := branchProtectionRequest(query, requestVars)
 
-	if err := s.sender.send(req); err != nil {
+	if err := sender.sender.send(req); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
@@ -343,15 +331,15 @@ func branchProtectionCommand(
 	return nil
 }
 
-func branchProtectionFlagCheck(cmd *cobra.Command) (dryRun bool, reposFilePath string, err error) {
-	dryRun, err = cmd.Flags().GetBool("dry-run")
+func branchProtectionFlagCheck(cmd *cobra.Command) (bool, string, error) {
+	dryRun, err := cmd.Flags().GetBool("dry-run")
 	if err != nil {
-		return dryRun, reposFilePath, fmt.Errorf("%w", err)
+		return false, "", fmt.Errorf("%w", err)
 	}
 
-	reposFilePath, err = cmd.Flags().GetString("repos")
+	reposFilePath, err := cmd.Flags().GetString("repos")
 	if err != nil {
-		return dryRun, reposFilePath, fmt.Errorf("%w", err)
+		return dryRun, "", fmt.Errorf("%w", err)
 	}
 
 	return dryRun, reposFilePath, nil
