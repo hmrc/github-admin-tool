@@ -6,6 +6,7 @@ import (
 	"github-admin-tool/graphqlclient"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/jarcoal/httpmock"
 )
@@ -78,7 +79,7 @@ type mockReportCSV struct {
 	failWrite bool
 }
 
-func (m *mockReportCSV) opener(filePath string) (file *os.File, err error) {
+func (m *mockReportCSV) opener(filePath string) (*os.File, error) {
 	if m.failOpen {
 		return nil, errTestFail
 	}
@@ -233,7 +234,7 @@ func (r *mockReportWebhookGetterService) getWebhooks(
 }
 
 func mockHTTPResponder(method, url, responseFile string, statusCode int) {
-	response, err := os.ReadFile(responseFile)
+	response, err := os.ReadFile(filepath.Clean(responseFile))
 	if err != nil {
 		log.Fatalf("failed to read test data: %v", err)
 	}

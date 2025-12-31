@@ -123,70 +123,70 @@ const (
 	DefaultTimeout = 60
 )
 
-func reportWebhookValidateFlags(r *reportWebhook, cmd *cobra.Command) error {
+func reportWebhookValidateFlags(reportWebhookService *reportWebhook, cmd *cobra.Command) error {
 	var err error
 
-	r.dryRun, err = cmd.Flags().GetBool("dry-run")
+	reportWebhookService.dryRun, err = cmd.Flags().GetBool("dry-run")
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	r.ignoreArchived, err = cmd.Flags().GetBool("ignore-archived")
+	reportWebhookService.ignoreArchived, err = cmd.Flags().GetBool("ignore-archived")
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	r.filePath, err = cmd.Flags().GetString("file-path")
+	reportWebhookService.filePath, err = cmd.Flags().GetString("file-path")
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	reportWebhookResponse.FilePath = r.filePath
+	reportWebhookResponse.FilePath = reportWebhookService.filePath
 
-	r.fileType, err = cmd.Flags().GetString("file-type")
+	reportWebhookService.fileType, err = cmd.Flags().GetString("file-type")
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	r.startCursor, err = cmd.Flags().GetString("start-cursor")
+	reportWebhookService.startCursor, err = cmd.Flags().GetString("start-cursor")
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	r.timeout, err = cmd.Flags().GetInt("timeout")
+	reportWebhookService.timeout, err = cmd.Flags().GetInt("timeout")
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	if r.timeout > MaxTimeout || r.timeout < MinTimeout {
+	if reportWebhookService.timeout > MaxTimeout || reportWebhookService.timeout < MinTimeout {
 		return errInvalidTimeout
 	}
 
 	return nil
 }
 
-func reportWebhookCreate(r *reportWebhook) error {
-	allRepositories, err := r.reportWebhookGetter.getRepositoryList(r)
+func reportWebhookCreate(reportWebhookService *reportWebhook) error {
+	allRepositories, err := reportWebhookService.reportWebhookGetter.getRepositoryList(reportWebhookService)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	if r.dryRun {
+	if reportWebhookService.dryRun {
 		return nil
 	}
 
-	allWebhooks, err := r.reportWebhookGetter.getWebhooks(r, allRepositories)
+	allWebhooks, err := reportWebhookService.reportWebhookGetter.getWebhooks(reportWebhookService, allRepositories)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	if r.fileType == "json" {
-		jsonReport, err := r.reportJSON.generateWebhook(allWebhooks)
+	if reportWebhookService.fileType == "json" {
+		jsonReport, err := reportWebhookService.reportJSON.generateWebhook(allWebhooks)
 		if err != nil {
 			return fmt.Errorf("generate json failed: %w", err)
 		}
 
-		if err := r.reportJSON.uploader(r.filePath, jsonReport); err != nil {
+		if err := reportWebhookService.reportJSON.uploader(reportWebhookService.filePath, jsonReport); err != nil {
 			return fmt.Errorf("upload json failed: %w", err)
 		}
 
@@ -194,7 +194,7 @@ func reportWebhookCreate(r *reportWebhook) error {
 	}
 
 	lines := reportCSVWebhookGenerate(allWebhooks)
-	if err := reportCSVUpload(r.reportCSV, r.filePath, lines); err != nil {
+	if err := reportCSVUpload(reportWebhookService.reportCSV, reportWebhookService.filePath, lines); err != nil {
 		return fmt.Errorf("upload failed: %w", err)
 	}
 
@@ -224,7 +224,7 @@ func reportWebhookQuery() string {
 }
 
 func reportWebhookRequest(queryString string) *graphqlclient.Request {
-	authStr := fmt.Sprintf("bearer %s", config.Token)
+	authStr := "bearer " + config.Token
 
 	req := graphqlclient.NewRequest(queryString)
 	req.Var("org", config.Org)

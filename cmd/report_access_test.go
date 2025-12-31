@@ -65,24 +65,24 @@ func Test_reportAccessService_getReport(t *testing.T) {
 			mockHTTPStatus:     200,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.mockHTTPReturnFile != "" {
-				mockHTTPResponder("POST", "https://api.github.com/graphql", tt.mockHTTPReturnFile, tt.mockHTTPStatus)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.mockHTTPReturnFile != "" {
+				mockHTTPResponder("POST", "https://api.github.com/graphql", test.mockHTTPReturnFile, test.mockHTTPStatus)
 			}
 
 			r := &reportAccessService{}
 
-			dryRun = tt.dryRunValue
-			config.Team = tt.teamValue
+			dryRun = test.dryRunValue
+			config.Team = test.teamValue
 			got, err := r.getReport()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("reportAccessService.getReport() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != test.wantErr {
+				t.Errorf("reportAccessService.getReport() error = %v, wantErr %v", err, test.wantErr)
 
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("reportAccessService.getReport() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("reportAccessService.getReport() = %v, want %v", got, test.want)
 			}
 		})
 	}

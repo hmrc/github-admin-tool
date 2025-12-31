@@ -49,7 +49,7 @@ func setSigningArgs() []BranchProtectionArgs {
 	return branchProtectionArgs
 }
 
-// nolint // needed for cobra
+//nolint // needed for cobra
 func init() {
 	signingCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "path to file containing repositories (file should contain repos on new line without org/ prefix)")
 	signingCmd.MarkFlagRequired("repos")

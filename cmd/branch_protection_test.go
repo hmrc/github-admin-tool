@@ -58,23 +58,23 @@ func Test_branchProtectionQueryBlocks(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotMutation, gotInput, gotRequestVars := branchProtectionQueryBlocks(tt.args.args)
-			if !reflect.DeepEqual(gotMutation, tt.wantMutation) {
-				t.Errorf("branchProtectionQueryBlocks() gotMutation = %v, want %v", gotMutation, tt.wantMutation)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gotMutation, gotInput, gotRequestVars := branchProtectionQueryBlocks(test.args.args)
+			if !reflect.DeepEqual(gotMutation, test.wantMutation) {
+				t.Errorf("branchProtectionQueryBlocks() gotMutation = %v, want %v", gotMutation, test.wantMutation)
 			}
-			if !reflect.DeepEqual(gotInput, tt.wantInput) {
-				t.Errorf("branchProtectionQueryBlocks() gotInput = %v, want = %v", gotInput, tt.wantInput)
+			if !reflect.DeepEqual(gotInput, test.wantInput) {
+				t.Errorf("branchProtectionQueryBlocks() gotInput = %v, want = %v", gotInput, test.wantInput)
 			}
-			if !reflect.DeepEqual(gotRequestVars, tt.wantRequestVars) {
-				t.Errorf("branchProtectionQueryBlocks() gotRequestVars = %v, want %v", gotRequestVars, tt.wantRequestVars)
+			if !reflect.DeepEqual(gotRequestVars, test.wantRequestVars) {
+				t.Errorf("branchProtectionQueryBlocks() gotRequestVars = %v, want %v", gotRequestVars, test.wantRequestVars)
 			}
 		})
 	}
 }
 
-func Test_branchProtectionApply(t *testing.T) {
+func Test_branchProtectionApply(t *testing.T) { //nolint // Test complexity due to mocking Github API
 	type args struct {
 		repoSearchResult     map[string]*RepositoriesNode
 		action               string
@@ -385,26 +385,26 @@ func Test_branchProtectionApply(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			gotModified, gotCreated, gotInfo, gotErrors := branchProtectionApply(
-				tt.args.repoSearchResult,
-				tt.args.action,
-				tt.args.branchName,
-				tt.args.branchProtectionArgs,
-				tt.args.sender,
+				test.args.repoSearchResult,
+				test.args.action,
+				test.args.branchName,
+				test.args.branchProtectionArgs,
+				test.args.sender,
 			)
-			if !reflect.DeepEqual(gotModified, tt.wantModified) {
-				t.Errorf("applySigning() gotModified = %v, want %v", gotModified, tt.wantModified)
+			if !reflect.DeepEqual(gotModified, test.wantModified) {
+				t.Errorf("applySigning() gotModified = %v, want %v", gotModified, test.wantModified)
 			}
-			if !reflect.DeepEqual(gotCreated, tt.wantCreated) {
-				t.Errorf("applySigning() gotCreated = %v, want %v", gotCreated, tt.wantCreated)
+			if !reflect.DeepEqual(gotCreated, test.wantCreated) {
+				t.Errorf("applySigning() gotCreated = %v, want %v", gotCreated, test.wantCreated)
 			}
-			if !reflect.DeepEqual(gotInfo, tt.wantInfo) {
-				t.Errorf("applySigning() gotInfo = %v, want %v", gotInfo, tt.wantInfo)
+			if !reflect.DeepEqual(gotInfo, test.wantInfo) {
+				t.Errorf("applySigning() gotInfo = %v, want %v", gotInfo, test.wantInfo)
 			}
-			if !reflect.DeepEqual(gotErrors, tt.wantErrors) {
-				t.Errorf("applySigning() gotErrors = %v, want %v", gotErrors, tt.wantErrors)
+			if !reflect.DeepEqual(gotErrors, test.wantErrors) {
+				t.Errorf("applySigning() gotErrors = %v, want %v", gotErrors, test.wantErrors)
 			}
 		})
 	}
@@ -470,20 +470,20 @@ func Test_branchProtectionQuery(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockReturn, err := os.ReadFile(tt.filePath)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockReturn, err := os.ReadFile(test.filePath)
 			if err != nil {
 				t.Fatalf("failed to read test data: %v", err)
 			}
 			want := string(mockReturn)
 
-			gotQuery, gotRequestVars := branchProtectionQuery(tt.args.branchProtectionArgs, tt.args.action)
+			gotQuery, gotRequestVars := branchProtectionQuery(test.args.branchProtectionArgs, test.args.action)
 			if gotQuery != want {
 				t.Errorf("branchProtectionQuery() gotQuery = \n\n%v, want \n\n%v", gotQuery, want)
 			}
-			if !reflect.DeepEqual(gotRequestVars, tt.wantRequestVars) {
-				t.Errorf("branchProtectionQuery() gotRequestVars = %v, want %v", gotRequestVars, tt.wantRequestVars)
+			if !reflect.DeepEqual(gotRequestVars, test.wantRequestVars) {
+				t.Errorf("branchProtectionQuery() gotRequestVars = %v, want %v", gotRequestVars, test.wantRequestVars)
 			}
 		})
 	}
@@ -530,16 +530,16 @@ func Test_branchProtectionRequest(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := branchProtectionRequest(tt.args.query, tt.args.requestVars)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := branchProtectionRequest(test.args.query, test.args.requestVars)
 
-			if !reflect.DeepEqual(got.Query(), tt.wantQuery) {
-				t.Errorf("branchProtectionRequest() query = %v, want %v", got.Query(), tt.wantQuery)
+			if !reflect.DeepEqual(got.Query(), test.wantQuery) {
+				t.Errorf("branchProtectionRequest() query = %v, want %v", got.Query(), test.wantQuery)
 			}
 
-			if !reflect.DeepEqual(got.Vars(), tt.wantVars) {
-				t.Errorf("branchProtectionRequest() vars = %v, want %v", got.Vars(), tt.wantVars)
+			if !reflect.DeepEqual(got.Vars(), test.wantVars) {
+				t.Errorf("branchProtectionRequest() vars = %v, want %v", got.Vars(), test.wantVars)
 			}
 		})
 	}
@@ -579,14 +579,14 @@ func Test_branchProtectionUpdate(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			if err := branchProtectionUpdate(
-				tt.args.branchProtectionArgs,
-				tt.args.branchProtectionRuleID,
-				tt.args.sender,
-			); (err != nil) != tt.wantErr {
-				t.Errorf("branchProtectionUpdate() error = %v, wantErr %v", err, tt.wantErr)
+				test.args.branchProtectionArgs,
+				test.args.branchProtectionRuleID,
+				test.args.sender,
+			); (err != nil) != test.wantErr {
+				t.Errorf("branchProtectionUpdate() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -629,15 +629,15 @@ func Test_branchProtectionCreate(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			if err := branchProtectionCreate(
-				tt.args.branchProtectionArgs,
-				tt.args.repositoryID,
-				tt.args.pattern,
-				tt.args.sender,
-			); (err != nil) != tt.wantErr {
-				t.Errorf("branchProtectionCreate() error = %v, wantErr %v", err, tt.wantErr)
+				test.args.branchProtectionArgs,
+				test.args.repositoryID,
+				test.args.pattern,
+				test.args.sender,
+			); (err != nil) != test.wantErr {
+				t.Errorf("branchProtectionCreate() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -679,14 +679,14 @@ func Test_branchProtectionSenderService_send(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			b := &branchProtectionSenderService{}
 
-			mockHTTPResponder("POST", "https://api.github.com/graphql", tt.mockHTTPReturnFile, tt.mockHTTPStatusCode)
+			mockHTTPResponder("POST", "https://api.github.com/graphql", test.mockHTTPReturnFile, test.mockHTTPStatusCode)
 
-			if err := b.send(tt.args.req); (err != nil) != tt.wantErr {
-				t.Errorf("branchProtectionSenderService.send() error = %v, wantErr %v", err, tt.wantErr)
+			if err := b.send(test.args.req); (err != nil) != test.wantErr {
+				t.Errorf("branchProtectionSenderService.send() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -780,18 +780,18 @@ func Test_branchProtectionCommand(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			if err := branchProtectionCommand(
-				tt.args.cmd,
-				tt.args.branchProtectionArgs,
-				tt.args.action,
-				tt.args.branchName,
-				tt.args.repo,
-				tt.args.repoSender,
-				tt.args.branchProtectionSender,
-			); (err != nil) != tt.wantErr {
-				t.Errorf("branchProtectionCommand() error = %v, wantErr %v", err, tt.wantErr)
+				test.args.cmd,
+				test.args.branchProtectionArgs,
+				test.args.action,
+				test.args.branchName,
+				test.args.repo,
+				test.args.repoSender,
+				test.args.branchProtectionSender,
+			); (err != nil) != test.wantErr {
+				t.Errorf("branchProtectionCommand() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

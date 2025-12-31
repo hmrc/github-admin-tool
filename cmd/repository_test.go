@@ -55,17 +55,17 @@ func Test_repositoryReaderService_read(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			r := &repositoryReaderService{}
-			got, err := r.read(tt.args.reposFile)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("repositoryReaderService.read() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := r.read(test.args.reposFile)
+			if (err != nil) != test.wantErr {
+				t.Errorf("repositoryReaderService.read() error = %v, wantErr %v", err, test.wantErr)
 
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("repositoryReaderService.read() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("repositoryReaderService.read() = %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -97,16 +97,16 @@ func Test_repositoryQuery(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockReturn, err := os.ReadFile(tt.filePath)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockReturn, err := os.ReadFile(test.filePath)
 			if err != nil {
 				t.Fatalf("failed to read test data: %v", err)
 			}
 
 			want := string(mockReturn)
 
-			got := repositoryQuery(tt.args.repos)
+			got := repositoryQuery(test.args.repos)
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("repositoryQuery() = %s, mockReturn %s'", got, want)
 			}
@@ -137,16 +137,16 @@ func Test_repositoryRequest(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := repositoryRequest(tt.args.queryString)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := repositoryRequest(test.args.queryString)
 
-			if !reflect.DeepEqual(got.Query(), tt.wantQuery) {
-				t.Errorf("repositoryRequest() query = %v, want %v", got.Query(), tt.wantQuery)
+			if !reflect.DeepEqual(got.Query(), test.wantQuery) {
+				t.Errorf("repositoryRequest() query = %v, want %v", got.Query(), test.wantQuery)
 			}
 
-			if !reflect.DeepEqual(got.Vars(), tt.wantVars) {
-				t.Errorf("repositoryRequest() vars = %T, want %T", got.Vars(), tt.wantVars)
+			if !reflect.DeepEqual(got.Vars(), test.wantVars) {
+				t.Errorf("repositoryRequest() vars = %T, want %T", got.Vars(), test.wantVars)
 			}
 		})
 	}
@@ -194,17 +194,17 @@ func Test_repositoryGetterService_get(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			r := &repositoryGetterService{}
-			gotRepositories, err := r.get(tt.args.repositoryList, tt.args.sender)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("repositoryGetterService.get() error = %v, wantErr %v", err, tt.wantErr)
+			gotRepositories, err := r.get(test.args.repositoryList, test.args.sender)
+			if (err != nil) != test.wantErr {
+				t.Errorf("repositoryGetterService.get() error = %v, wantErr %v", err, test.wantErr)
 
 				return
 			}
-			if !reflect.DeepEqual(gotRepositories, tt.wantRepositories) {
-				t.Errorf("repositoryGetterService.get() = %v, want %v", gotRepositories, tt.wantRepositories)
+			if !reflect.DeepEqual(gotRepositories, test.wantRepositories) {
+				t.Errorf("repositoryGetterService.get() = %v, want %v", gotRepositories, test.wantRepositories)
 			}
 		})
 	}
@@ -251,19 +251,19 @@ func Test_repositorySenderService_send(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockHTTPResponder("POST", "https://api.github.com/graphql", tt.mockHTTPReturnFile, tt.mockHTTPStatusCode)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockHTTPResponder("POST", "https://api.github.com/graphql", test.mockHTTPReturnFile, test.mockHTTPStatusCode)
 
 			r := &repositorySenderService{}
-			got, err := r.send(tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("repositorySenderService.send() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := r.send(test.args.req)
+			if (err != nil) != test.wantErr {
+				t.Errorf("repositorySenderService.send() error = %v, wantErr %v", err, test.wantErr)
 
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("repositorySenderService.send() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("repositorySenderService.send() = %v, want %v", got, test.want)
 			}
 		})
 	}

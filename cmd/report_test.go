@@ -53,17 +53,17 @@ func Test_reportGetterService_getReport(t *testing.T) {
 			dryRunValue: false,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockHTTPResponder("POST", "https://api.github.com/graphql", tt.mockHTTPReturnFile, 200)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockHTTPResponder("POST", "https://api.github.com/graphql", test.mockHTTPReturnFile, 200)
 
-			dryRun = tt.dryRunValue
+			dryRun = test.dryRunValue
 
-			if got, err := tt.r.getReport(); !reflect.DeepEqual(got, tt.want) {
+			if got, err := test.r.getReport(); !reflect.DeepEqual(got, test.want) {
 				if err != nil {
 					t.Fatalf("failed to run reportGet %v", err)
 				}
-				t.Errorf("getReport() = %v, want %v", got, tt.want)
+				t.Errorf("getReport() = %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -158,14 +158,14 @@ func Test_reportRun(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := reportRun(tt.args.cmd, tt.args.args)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("reportRun() error = %v, wantErr %v", err, tt.wantErr)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := reportRun(test.args.cmd, test.args.args)
+			if (err != nil) != test.wantErr {
+				t.Errorf("reportRun() error = %v, wantErr %v", err, test.wantErr)
 			}
-			if err != nil && tt.wantErr && err.Error() != tt.wantErrMsg {
-				t.Errorf("reportRun() error = %v, wantErrMsg %v", err.Error(), tt.wantErrMsg)
+			if err != nil && test.wantErr && err.Error() != test.wantErrMsg {
+				t.Errorf("reportRun() error = %v, wantErrMsg %v", err.Error(), test.wantErrMsg)
 			}
 		})
 	}
@@ -282,20 +282,20 @@ func Test_reportCreate(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			err := reportCreate(
-				tt.args.r,
-				tt.args.dryRun,
-				tt.args.ignoreArchived,
-				tt.args.filePath,
-				tt.args.fileType,
+				test.args.r,
+				test.args.dryRun,
+				test.args.ignoreArchived,
+				test.args.filePath,
+				test.args.fileType,
 			)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("reportCreate() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != test.wantErr {
+				t.Errorf("reportCreate() error = %v, wantErr %v", err, test.wantErr)
 			}
-			if tt.wantErrMsg != "" && tt.wantErrMsg != err.Error() {
-				t.Errorf("reportCreate() error = %v, wantErrMsg %v", err.Error(), tt.wantErrMsg)
+			if test.wantErrMsg != "" && test.wantErrMsg != err.Error() {
+				t.Errorf("reportCreate() error = %v, wantErrMsg %v", err.Error(), test.wantErrMsg)
 			}
 		})
 	}

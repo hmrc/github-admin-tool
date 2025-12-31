@@ -45,8 +45,8 @@ type RepositoriesNode struct {
 	SquashMergeAllowed    bool                  `json:"squashMergeAllowed"`
 	TeamPermissions       string                `json:"teamPermissions"`
 	BranchProtectionRules BranchProtectionRules `json:"branchProtectionRules"`
-	Parent                Parent                `json:"Parent"`
-	DefaultBranchRef      DefaultBranchRef      `json:"DefaultBranchRef"`
+	Parent                Parent                `json:"parent"`
+	DefaultBranchRef      DefaultBranchRef      `json:"defaultBranchRef"`
 }
 
 type PageInfo struct {
@@ -128,6 +128,6 @@ type WebhookResponseConfig struct {
 }
 
 type Webhooks struct {
-	RepositoryName string            `json:"RepositoryName"`
-	Webhooks       []WebhookResponse `json:"Webhooks"`
+	RepositoryName string            `json:"repositoryName"`
+	Webhooks       []WebhookResponse `json:"webhooks"`
 }

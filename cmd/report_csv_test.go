@@ -93,14 +93,14 @@ func Test_reportCSVParse(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			if got := reportCSVParse(
-				tt.args.ignoreArchived,
-				tt.args.allResults,
-				tt.args.teamAccess,
-			); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("reportCSVParse() = %v, want %v", got, tt.want)
+				test.args.ignoreArchived,
+				test.args.allResults,
+				test.args.teamAccess,
+			); !reflect.DeepEqual(got, test.want) {
+				t.Errorf("reportCSVParse() = %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -262,14 +262,14 @@ func Test_reportCSVGenerate(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			if got := reportCSVGenerate(
-				tt.args.ignoreArchived,
-				tt.args.allResults,
-				tt.args.teamAccess,
-			); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("reportCSVService.generator() = \n%v\n%v\n", got, tt.want)
+				test.args.ignoreArchived,
+				test.args.allResults,
+				test.args.teamAccess,
+			); !reflect.DeepEqual(got, test.want) {
+				t.Errorf("reportCSVService.generator() = \n%v\n%v\n", got, test.want)
 			}
 		})
 	}

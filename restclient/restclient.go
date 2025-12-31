@@ -56,7 +56,7 @@ type errorResponse struct {
 	Message string `json:"message"`
 }
 
-func (c *Client) Run(ctx context.Context, resp interface{}) (err error) {
+func (c *Client) Run(ctx context.Context, resp interface{}) error {
 	req, err := http.NewRequestWithContext(ctx, c.method, c.endpoint, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("new request: %w", err)
@@ -66,7 +66,7 @@ func (c *Client) Run(ctx context.Context, resp interface{}) (err error) {
 
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
+	req.Header.Set("Authorization", "Bearer "+c.token)
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {

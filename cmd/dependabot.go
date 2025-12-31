@@ -148,42 +148,33 @@ func dependabotToggleSecurityUpdates(ctx context.Context, repositoryName, method
 	return nil
 }
 
-func dependabotGetFlags(cmd *cobra.Command) (
-	reposFilePath string,
-	alertsFlag,
-	securityUpdatesFlag,
-	dryRun bool,
-	err error) {
-	dryRun, err = cmd.Flags().GetBool("dry-run")
+func dependabotGetFlags(cmd *cobra.Command) (string, bool, bool, bool, error) {
+	dryRun, err := cmd.Flags().GetBool("dry-run")
 	if err != nil {
-		return reposFilePath, alertsFlag, securityUpdatesFlag, dryRun, fmt.Errorf("%w", err)
+		return "", false, false, false, fmt.Errorf("%w", err)
 	}
 
-	reposFilePath, err = cmd.Flags().GetString("repos")
+	reposFilePath, err := cmd.Flags().GetString("repos")
 	if err != nil {
-		return reposFilePath, alertsFlag, securityUpdatesFlag, dryRun, fmt.Errorf("%w", err)
+		return "", false, false, dryRun, fmt.Errorf("%w", err)
 	}
 
-	alertsFlag, err = cmd.Flags().GetBool("alerts")
+	alertsFlag, err := cmd.Flags().GetBool("alerts")
 	if err != nil {
-		return reposFilePath, alertsFlag, securityUpdatesFlag, dryRun, fmt.Errorf("%w", err)
+		return reposFilePath, false, false, dryRun, fmt.Errorf("%w", err)
 	}
 
-	securityUpdatesFlag, err = cmd.Flags().GetBool("security-updates")
+	securityUpdatesFlag, err := cmd.Flags().GetBool("security-updates")
 	if err != nil {
-		return reposFilePath, alertsFlag, securityUpdatesFlag, dryRun, fmt.Errorf("%w", err)
+		return reposFilePath, alertsFlag, false, dryRun, fmt.Errorf("%w", err)
 	}
 
 	return reposFilePath, alertsFlag, securityUpdatesFlag, dryRun, nil
 }
 
-func dependabotFlagCheck(cmd *cobra.Command, alertsFlag, securityUpdatesFlag bool) (
-	isAlertsFlagSet,
-	isSecurityUpdatesFlagSet bool,
-	err error,
-) {
-	isAlertsFlagSet = cmd.Flags().Changed("alerts")
-	isSecurityUpdatesFlagSet = cmd.Flags().Changed("security-updates")
+func dependabotFlagCheck(cmd *cobra.Command, alertsFlag, securityUpdatesFlag bool) (bool, bool, error) {
+	isAlertsFlagSet := cmd.Flags().Changed("alerts")
+	isSecurityUpdatesFlagSet := cmd.Flags().Changed("security-updates")
 
 	if !isAlertsFlagSet && !isSecurityUpdatesFlagSet {
 		return isAlertsFlagSet, isSecurityUpdatesFlagSet, errEmptyFlags
@@ -214,7 +205,7 @@ func dependabotHTTPMethod(enable bool) string {
 	return http.MethodPut
 }
 
-// nolint // needed for cobra
+//nolint // needed for cobra
 func init() {
 	dependabotCmd.Flags().StringVarP(&reposFile, "repos", "r", "", "path to file containing repositories (file should contain repos on new line without org/ prefix)")
 	dependabotCmd.Flags().BoolP("alerts", "a", true, "boolean indicating the status of dependabot alerts setting")

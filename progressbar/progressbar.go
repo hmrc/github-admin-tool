@@ -33,7 +33,7 @@ func (bar *Bar) getPercent() int {
 
 func (bar *Bar) Play(cur int) {
 	bar.cur = cur
-	last := bar.percent //nolint // needs to be set before conditional for progressbar
+	last := bar.percent
 	bar.percent = bar.getPercent()
 
 	if bar.percent != last {
@@ -47,5 +47,5 @@ func (bar *Bar) Play(cur int) {
 }
 
 func (bar *Bar) Finish(msg string) {
-	fmt.Printf("\t%s\n", msg) //nolint // output of last blank line when finished progress
+	fmt.Printf("\t%s\n", msg) //nolint // output for progressbar
 }

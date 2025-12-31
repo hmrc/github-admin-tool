@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -118,17 +117,17 @@ func Test_reportJSONService_generate(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			r := &reportJSONService{}
-			got, err := r.generate(tt.args.ignoreArchived, tt.args.allResults, tt.args.teamAccess)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("reportJSONService.generate() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := r.generate(test.args.ignoreArchived, test.args.allResults, test.args.teamAccess)
+			if (err != nil) != test.wantErr {
+				t.Errorf("reportJSONService.generate() error = %v, wantErr %v", err, test.wantErr)
 
 				return
 			}
 
-			mockReturn, err := os.ReadFile(tt.wantFile)
+			mockReturn, err := os.ReadFile(test.wantFile)
 			if err != nil {
 				t.Fatalf("failed to read test data: %v", err)
 			}
@@ -137,10 +136,10 @@ func Test_reportJSONService_generate(t *testing.T) {
 			cleanedGot := strings.TrimSuffix(string(got), "\n")
 
 			want, wantErr := json.Marshal(cleanedMock)
-			assert.Nil(t, wantErr)
+			require.NoError(t, wantErr)
 
 			returned, gotErr := json.Marshal(cleanedGot)
-			assert.Nil(t, gotErr)
+			require.NoError(t, gotErr)
 
 			require.JSONEq(t, string(want), string(returned))
 		})
@@ -183,17 +182,17 @@ func Test_reportJSONService_generateWebhook(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			r := &reportJSONService{}
-			got, err := r.generateWebhook(tt.args.allResults)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("reportJSONService.generateWebhook() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := r.generateWebhook(test.args.allResults)
+			if (err != nil) != test.wantErr {
+				t.Errorf("reportJSONService.generateWebhook() error = %v, wantErr %v", err, test.wantErr)
 
 				return
 			}
 
-			mockReturn, err := os.ReadFile(tt.wantFile)
+			mockReturn, err := os.ReadFile(test.wantFile)
 			if err != nil {
 				t.Fatalf("failed to read test data: %v", err)
 			}

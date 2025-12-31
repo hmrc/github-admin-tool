@@ -26,7 +26,7 @@ func (r *repositoryReaderService) read(reposFile string) ([]string, error) {
 
 	validRepoName := regexp.MustCompile("^[A-Za-z0-9_.-]+$")
 
-	file, err := os.Open(reposFile)
+	file, err := os.Open(reposFile) //nolint // Potential file inclusion
 	if err != nil {
 		return repos, fmt.Errorf("could not open repo file: %w", err)
 	}
@@ -48,7 +48,7 @@ func (r *repositoryReaderService) read(reposFile string) ([]string, error) {
 }
 
 type repositoryGetter interface {
-	get(repositoryList []string, sender *githubRepositorySender) (repositories map[string]*RepositoriesNode, err error)
+	get(repositoryList []string, sender *githubRepositorySender) (map[string]*RepositoriesNode, error)
 }
 
 type repositoryGetterService struct{}
@@ -56,14 +56,11 @@ type repositoryGetterService struct{}
 func (r *repositoryGetterService) get(
 	repositoryList []string,
 	sender *githubRepositorySender,
-) (
-	repositories map[string]*RepositoriesNode,
-	err error,
-) {
+) (map[string]*RepositoriesNode, error) {
 	query := repositoryQuery(repositoryList)
 	request := repositoryRequest(query)
 
-	repositories, err = sender.sender.send(request)
+	repositories, err := sender.sender.send(request)
 	if err != nil {
 		return repositories, fmt.Errorf("failure in repository get : %w", err)
 	}
@@ -131,7 +128,7 @@ func repositoryQuery(repos []string) string {
 }
 
 func repositoryRequest(queryString string) *graphqlclient.Request {
-	authStr := fmt.Sprintf("bearer %s", config.Token)
+	authStr := "bearer " + config.Token
 
 	req := graphqlclient.NewRequest(queryString)
 	req.Var("org", config.Org)
