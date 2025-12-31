@@ -83,7 +83,7 @@ func (m *mockReportCSV) opener(filePath string) (file *os.File, err error) {
 		return nil, errTestFail
 	}
 
-	return nil, nil
+	return os.NewFile(0, "mock"), nil
 }
 
 func (m *mockReportCSV) writer(file *os.File, lines [][]string) error {
@@ -116,15 +116,15 @@ func (m *mockReportJSON) generate(
 		return nil, errTestFail
 	}
 
-	return nil, nil
+	return []byte("[]"), nil
 }
 
-func (m *mockReportJSON) generateWebhook([]Webhooks) ([]byte, error) {
+func (m *mockReportJSON) generateWebhook(allResults []Webhooks) ([]byte, error) {
 	if m.failgenerate {
 		return nil, errTestFail
 	}
 
-	return nil, nil
+	return []byte("[]"), nil
 }
 
 type mockReportAccess struct {
@@ -196,7 +196,7 @@ type mockSender struct {
 
 func (t *mockSender) send(req *graphqlclient.Request) error {
 	if t.sendFail {
-		return fmt.Errorf(fmt.Sprintf("%s: test", t.action)) //nolint // only mock error for test
+		return fmt.Errorf("%s: test", t.action) //nolint // only mock error for test
 	}
 
 	return nil

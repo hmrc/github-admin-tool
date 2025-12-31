@@ -36,7 +36,8 @@ func signingRun(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func setSigningArgs() (branchProtectionArgs []BranchProtectionArgs) {
+func setSigningArgs() []BranchProtectionArgs {
+	var branchProtectionArgs []BranchProtectionArgs
 	branchProtectionArgs = append(
 		branchProtectionArgs,
 		BranchProtectionArgs{

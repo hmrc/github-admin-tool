@@ -190,16 +190,16 @@ func Test_reportWebhookValidateFlags(t *testing.T) {
 	cmdInvalidTimeout.Flags().StringP("file-type", "t", "csv", "file type, must be csv or json")
 	cmdInvalidTimeout.Flags().StringP("start-cursor", "s", "", "The starting cursor for webhook search to start from")
 
-	cmdInvalid60Timeout := &cobra.Command{Use: "report-webook"}
-	cmdInvalid60Timeout.Flags().BoolP("dry-run", "d", false, "dry run flag")
-	cmdInvalid60Timeout.Flags().BoolP("ignore-archived", "i", false, "ignore-archived flag")
-	cmdInvalid60Timeout.Flags().StringP(
+	cmdInvalid61Timeout := &cobra.Command{Use: "report-webook"}
+	cmdInvalid61Timeout.Flags().BoolP("dry-run", "d", false, "dry run flag")
+	cmdInvalid61Timeout.Flags().BoolP("ignore-archived", "i", false, "ignore-archived flag")
+	cmdInvalid61Timeout.Flags().StringP(
 		"file-path", "f", "report.csv", "File path for report to be created, must be .csv or .json",
 	)
-	cmdInvalid60Timeout.Flags().StringP("file-type", "t", "csv", "file type, must be csv or json")
-	cmdInvalid60Timeout.Flags().StringP("start-cursor", "s", "", "The starting cursor for webhook search to start from")
-	cmdInvalid60Timeout.Flags().IntP(
-		"timeout", "o", 70, "Timeout for script (in minutes), useful when calling from Lambdas",
+	cmdInvalid61Timeout.Flags().StringP("file-type", "t", "csv", "file type, must be csv or json")
+	cmdInvalid61Timeout.Flags().StringP("start-cursor", "s", "", "The starting cursor for webhook search to start from")
+	cmdInvalid61Timeout.Flags().IntP(
+		"timeout", "o", 61, "Timeout for script (in minutes), useful when calling from Lambdas",
 	)
 
 	cmdValid := &cobra.Command{Use: "report-webook"}
@@ -270,7 +270,7 @@ func Test_reportWebhookValidateFlags(t *testing.T) {
 		{
 			name: "reportWebhookValidateFlags invalid timeout failure",
 			args: args{
-				cmd: cmdInvalid60Timeout,
+				cmd: cmdInvalid61Timeout,
 				r:   &reportWebhook{},
 			},
 			wantErr: true,
@@ -687,7 +687,12 @@ func Test_setRateLimit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// setup rate limit responder
-			mockHTTPResponder("GET", "https://api.github.com/rate_limit", tt.rateLimitResponseFile, 200)
+			statusCode := 200
+			if tt.wantErr {
+				statusCode = 401
+			}
+
+			mockHTTPResponder("GET", "https://api.github.com/rate_limit", tt.rateLimitResponseFile, statusCode)
 
 			if err := setRateLimit(); (err != nil) != tt.wantErr {
 				t.Errorf("setRateLimit() error = %v, wantErr %v", err, tt.wantErr)

@@ -70,7 +70,7 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 		Data: resp,
 	}
 
-	r, err := http.NewRequest(http.MethodPost, c.endpoint, &requestBody)
+	r, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, &requestBody)
 	if err != nil {
 		return fmt.Errorf("new request: %w", err)
 	}
@@ -85,14 +85,14 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 		}
 	}
 
-	r = r.WithContext(ctx)
-
 	res, err := c.httpClient.Do(r)
 	if err != nil {
 		return fmt.Errorf("running do: %w", err)
 	}
 
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 
 	var buf bytes.Buffer
 
@@ -119,17 +119,17 @@ func (c *Client) runWithJSON(ctx context.Context, req *Request, resp interface{}
 // modify the behaviour of the Client.
 type ClientOption func(*Client)
 
-type graphErr struct {
+type graphError struct {
 	Message string
 }
 
-func (e graphErr) Error() string {
+func (e graphError) Error() string {
 	return "graphql: " + e.Message
 }
 
 type graphResponse struct {
 	Data   interface{}
-	Errors []graphErr
+	Errors []graphError
 }
 
 // Request is a GraphQL request.

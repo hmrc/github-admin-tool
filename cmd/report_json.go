@@ -8,9 +8,9 @@ import (
 )
 
 type reportJSON interface {
-	generate(bool, []ReportResponse, map[string]string) ([]byte, error)
-	generateWebhook([]Webhooks) ([]byte, error)
-	uploader(string, []byte) error
+	generate(ignoreArchived bool, allResults []ReportResponse, teamAccess map[string]string) ([]byte, error)
+	generateWebhook(allResults []Webhooks) ([]byte, error)
+	uploader(filePath string, reportJSON []byte) error
 }
 
 type reportJSONService struct{}

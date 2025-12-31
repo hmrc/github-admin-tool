@@ -38,7 +38,7 @@ func init() { //nolint // needed for cobra
 	reportWebhookCmd.Flags().StringP("file-type", "t", "csv", "file type, must be csv or json")
 	reportWebhookCmd.Flags().StringP("start-cursor", "s", "", "The starting cursor for webhook search to start from")
 	reportWebhookCmd.Flags().IntP(
-		"timeout", "o", 60, "Timeout for script (in minutes), useful when calling from Lambdas",
+		"timeout", "o", DefaultTimeout, "Timeout for script (in minutes), useful when calling from Lambdas",
 	)
 	rootCmd.AddCommand(reportWebhookCmd)
 }
@@ -69,8 +69,8 @@ type reportWebhook struct {
 }
 
 type reportWebhookGetter interface {
-	getRepositoryList(*reportWebhook) ([]repositoryCursorList, error)
-	getWebhooks(*reportWebhook, []repositoryCursorList) ([]Webhooks, error)
+	getRepositoryList(report *reportWebhook) ([]repositoryCursorList, error)
+	getWebhooks(report *reportWebhook, repositories []repositoryCursorList) ([]Webhooks, error)
 }
 
 type repositoryCursorList struct {
@@ -117,6 +117,12 @@ func reportWebhookRun(cmd *cobra.Command, args []string) error {
 	return reportWebhookCreate(report)
 }
 
+const (
+	MaxTimeout     = 60
+	MinTimeout     = 1
+	DefaultTimeout = 60
+)
+
 func reportWebhookValidateFlags(r *reportWebhook, cmd *cobra.Command) error {
 	var err error
 
@@ -152,7 +158,7 @@ func reportWebhookValidateFlags(r *reportWebhook, cmd *cobra.Command) error {
 		return fmt.Errorf("%w", err)
 	}
 
-	if r.timeout > 60 || r.timeout < 1 {
+	if r.timeout > MaxTimeout || r.timeout < MinTimeout {
 		return errInvalidTimeout
 	}
 

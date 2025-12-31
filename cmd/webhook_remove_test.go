@@ -23,7 +23,6 @@ func Test_removeWebhook(t *testing.T) {
 	config.Org = MockOrgName
 
 	type args struct {
-		ctx            context.Context
 		webhookID      int
 		repositoryName string
 	}
@@ -39,7 +38,6 @@ func Test_removeWebhook(t *testing.T) {
 		{
 			name: "removeWebhook failure",
 			args: args{
-				ctx:            ctx,
 				webhookID:      12456789,
 				repositoryName: "some-repo-name",
 			},
@@ -49,7 +47,6 @@ func Test_removeWebhook(t *testing.T) {
 		{
 			name: "removeWebhook success",
 			args: args{
-				ctx:            ctx,
 				webhookID:      12456789,
 				repositoryName: "some-repo-name",
 			},
@@ -67,7 +64,7 @@ func Test_removeWebhook(t *testing.T) {
 				tt.mockHTTPStatusCode,
 			)
 
-			if err := removeWebhook(tt.args.ctx, tt.args.webhookID, tt.args.repositoryName); (err != nil) != tt.wantErr {
+			if err := removeWebhook(ctx, tt.args.webhookID, tt.args.repositoryName); (err != nil) != tt.wantErr {
 				t.Errorf("removeWebhook() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -90,7 +87,6 @@ func Test_getWebhookID(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
-		ctx            context.Context
 		webhookURL     string
 		repositoryName string
 	}
@@ -105,7 +101,6 @@ func Test_getWebhookID(t *testing.T) {
 		{
 			name: "getWebhookID not found",
 			args: args{
-				ctx:            ctx,
 				webhookURL:     "https://some-webhook-host",
 				repositoryName: "some-repo-name",
 			},
@@ -115,7 +110,6 @@ func Test_getWebhookID(t *testing.T) {
 		{
 			name: "getWebhookID found",
 			args: args{
-				ctx:            ctx,
 				webhookURL:     "https://some-external-webhook.org",
 				repositoryName: "some-repo-name2",
 			},
@@ -134,7 +128,7 @@ func Test_getWebhookID(t *testing.T) {
 				tt.mockHTTPStatusCode,
 			)
 			if gotWebhookID := getWebhookID(
-				tt.args.ctx,
+				ctx,
 				tt.args.webhookURL,
 				tt.args.repositoryName,
 			); gotWebhookID != tt.wantWebhookID {

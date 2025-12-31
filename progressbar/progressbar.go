@@ -22,7 +22,7 @@ func (bar *Bar) NewOption(start, total int) {
 
 	bar.percent = bar.getPercent()
 
-	for i := 0; i < bar.percent; i++ {
+	for range bar.percent {
 		bar.rate += bar.graph // initial progress position
 	}
 }

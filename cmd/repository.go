@@ -30,7 +30,9 @@ func (r *repositoryReaderService) read(reposFile string) ([]string, error) {
 	if err != nil {
 		return repos, fmt.Errorf("could not open repo file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {

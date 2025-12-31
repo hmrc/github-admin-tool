@@ -44,7 +44,7 @@ func setApprovalArgs(
 	dismissStale,
 	approval bool,
 	approvalNumber int,
-) (branchProtectionArgs []BranchProtectionArgs) {
+) []BranchProtectionArgs {
 	return []BranchProtectionArgs{
 		{
 			Name:     "requiresCodeOwnerReviews",

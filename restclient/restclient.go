@@ -26,7 +26,7 @@ type Client struct {
 }
 
 type bodyReader interface {
-	read(io.Reader) ([]byte, error)
+	read(r io.Reader) ([]byte, error)
 }
 
 type bodyReaderService struct{}
@@ -57,14 +57,12 @@ type errorResponse struct {
 }
 
 func (c *Client) Run(ctx context.Context, resp interface{}) (err error) {
-	req, err := http.NewRequest(c.method, c.endpoint, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, c.method, c.endpoint, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("new request: %w", err)
 	}
 
 	req.Close = c.closeReq
-
-	req = req.WithContext(ctx)
 
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
@@ -75,7 +73,9 @@ func (c *Client) Run(ctx context.Context, resp interface{}) (err error) {
 		return fmt.Errorf("running do: %w", err)
 	}
 
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 
 	if err := checkHTTPResponse(res, c.endpoint); err != nil {
 		return err
@@ -99,9 +99,7 @@ func checkHTTPResponse(res *http.Response, endpoint string) error {
 	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusNoContent {
 		var errRes errorResponse
 
-		if err := json.NewDecoder(res.Body).Decode(&errRes); err != nil {
-			return fmt.Errorf("decoding response: %w", err)
-		}
+		_ = json.NewDecoder(res.Body).Decode(&errRes)
 
 		if res.StatusCode == http.StatusUnauthorized {
 			return fmt.Errorf("%w, %s", errHTTPUnauthorised, endpoint)
