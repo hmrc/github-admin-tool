@@ -1,6 +1,7 @@
 # github-admin-tool
 
 This is a CLI tool used to :
+
 * Audit/report on repositories
 * Update branch protection signing and pr-approval settings for a given organisation
 * Report on repository webhooks
