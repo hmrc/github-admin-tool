@@ -1,3 +1,5 @@
+REGISTRY_PREFIX ?=
+GOPROXY ?= direct
 DOCKER = docker run \
 	--interactive \
 	--rm \
@@ -12,6 +14,8 @@ go gofmt golangci-lint:
 		--build-arg "group_id=$(shell id -g)" \
 		--build-arg "home=${HOME}" \
 		--build-arg "workdir=${PWD}" \
+		--build-arg "registry_prefix=${REGISTRY_PREFIX}" \
+		--build-arg "goproxy=${GOPROXY}" \
 		--target $@ . \
 		>/dev/null
 
