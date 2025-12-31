@@ -1,6 +1,6 @@
 module github-admin-tool
 
-go 1.16
+go 1.25
 
 require (
 	github.com/jarcoal/httpmock v1.0.8

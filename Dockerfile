@@ -1,9 +1,9 @@
 ARG registry_prefix=""
-FROM ${registry_prefix}golang:1.16-alpine3.13 AS base
+FROM ${registry_prefix}golang:1.25-alpine3.23 AS base
 RUN apk add --no-cache \
-    shadow~=4.8 \
-    bash~=5.1 \
-    git~=2.30
+    shadow~=4.18 \
+    bash~=5.3 \
+    git~=2.52
 # UID of current user who runs the build
 ARG user_id
 # GID of current user who runs the build
